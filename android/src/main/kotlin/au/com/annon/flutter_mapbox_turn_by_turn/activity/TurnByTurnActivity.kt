@@ -3,6 +3,10 @@ package au.com.annon.flutter_mapbox_turn_by_turn.activity
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.graphics.Color
 import android.location.Location
 import android.os.Bundle
@@ -91,7 +95,7 @@ import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
  *     <string name="mapbox_access_token"><PUT_YOUR_ACCESS_TOKEN_HERE></string>
  * </resources>
  *
- * How to use this example:
+ * How to use this plugin:
  * - The guidance will start to the selected destination while simulating location updates.
  * You can disable simulation by commenting out the [replayLocationEngine] setter in [NavigationOptions].
  * Then, the device's real location will be used.
@@ -99,8 +103,10 @@ import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
  * - You can use buttons to mute/unmute voice instructions, recenter the camera, or show the route overview.
  */
 
-class TurnByTurnActivity : AppCompatActivity() {
+class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
     private var accessToken: String? = null
+    private val darkThreshold = 1.0f
+    private var lightValue = 1.1f
 
     private companion object {
         private const val BUTTON_ANIMATION_DURATION = 1500L
@@ -409,6 +415,16 @@ class TurnByTurnActivity : AppCompatActivity() {
         }
     }
 
+    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
+
+    override fun onSensorChanged(p0: SensorEvent?) {
+        // Sensor change value
+        val value = p0!!.values[0]
+        if (p0.sensor.type == Sensor.TYPE_LIGHT) {
+            lightValue = value;
+        }
+    }
+
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -542,6 +558,14 @@ class TurnByTurnActivity : AppCompatActivity() {
         val routeArrowOptions = RouteArrowOptions.Builder(this)
             .build()
         routeArrowView = MapboxRouteArrowView(routeArrowOptions)
+
+        // TODO: Implement this option in main plugin class
+        /*val styleUri: String
+        if(lightValue <= darkThreshold) {
+            styleUri = FlutterMapboxTurnByTurnPlugin.mapStyleUrlNight ?: Style.MAPBOX_STREETS
+        } else {
+            styleUri = FlutterMapboxTurnByTurnPlugin.mapStyleUrlDay ?: Style.MAPBOX_STREETS
+        }*/
 
         // load map style
         mapboxMap.loadStyleUri(
