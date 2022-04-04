@@ -1,4 +1,4 @@
-au.com.annon.flutter_mapbox_turn_by_turn.activity
+package au.com.annon.flutter_mapbox_turn_by_turn.activity
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
@@ -43,8 +43,6 @@ import com.mapbox.navigation.core.trip.session.LocationMatcherResult
 import com.mapbox.navigation.core.trip.session.LocationObserver
 import com.mapbox.navigation.core.trip.session.RouteProgressObserver
 import com.mapbox.navigation.core.trip.session.VoiceInstructionsObserver
-import com.mapbox.navigation.examples.R
-import com.mapbox.navigation.examples.databinding.MapboxActivityTurnByTurnExperienceBinding
 import com.mapbox.navigation.ui.base.util.MapboxNavigationConsumer
 import com.mapbox.navigation.ui.maneuver.api.MapboxManeuverApi
 import com.mapbox.navigation.ui.maneuver.view.MapboxManeuverView
@@ -79,11 +77,12 @@ import com.mapbox.navigation.ui.voice.model.SpeechValue
 import com.mapbox.navigation.ui.voice.model.SpeechVolume
 import java.util.Locale
 
+import au.com.annon.flutter_mapbox_turn_by_turn.R
+import au.com.annon.flutter_mapbox_turn_by_turn.databinding.MapboxActivityTurnByTurnBinding
+import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
+
 /**
- * This example demonstrates a basic turn-by-turn navigation experience by putting together some UI elements to showcase
- * navigation camera transitions, guidance instructions banners and playback, and progress along the route.
- *
- * Before running the example make sure you have put your access_token in the correct place
+ * Before running the plugin make sure you have put your access_token in the correct place
  * inside [app/src/main/res/values/mapbox_access_token.xml]. If not present then add this file
  * at the location mentioned above and add the following content to it
  *
@@ -92,19 +91,16 @@ import java.util.Locale
  *     <string name="mapbox_access_token"><PUT_YOUR_ACCESS_TOKEN_HERE></string>
  * </resources>
  *
- * The example assumes that you have granted location permissions and does not enforce it. However,
- * the permission is essential for proper functioning of this example. The example also uses replay
- * location engine to facilitate navigation without actually physically moving.
- *
  * How to use this example:
- * - You can long-click the map to select a destination.
  * - The guidance will start to the selected destination while simulating location updates.
  * You can disable simulation by commenting out the [replayLocationEngine] setter in [NavigationOptions].
  * Then, the device's real location will be used.
  * - At any point in time you can finish guidance or select a new destination.
  * - You can use buttons to mute/unmute voice instructions, recenter the camera, or show the route overview.
  */
-class TurnByTurnExperienceActivity : AppCompatActivity() {
+
+class TurnByTurnActivity : AppCompatActivity() {
+    private var accessToken: String? = null
 
     private companion object {
         private const val BUTTON_ANIMATION_DURATION = 1500L
@@ -128,7 +124,7 @@ class TurnByTurnExperienceActivity : AppCompatActivity() {
     /**
      * Bindings to the example layout.
      */
-    private lateinit var binding: MapboxActivityTurnByTurnExperienceBinding
+    private lateinit var binding: MapboxActivityTurnByTurnBinding
 
     /**
      * Mapbox Maps entry point obtained from the [MapView].
@@ -353,7 +349,7 @@ class TurnByTurnExperienceActivity : AppCompatActivity() {
         maneuvers.fold(
             { error ->
                 Toast.makeText(
-                    this@TurnByTurnExperienceActivity,
+                    this@TurnByTurnActivity,
                     error.errorMessage,
                     Toast.LENGTH_SHORT
                 ).show()
@@ -416,15 +412,16 @@ class TurnByTurnExperienceActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = MapboxActivityTurnByTurnExperienceBinding.inflate(layoutInflater)
+        binding = MapboxActivityTurnByTurnBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        accessToken = PluginUtilities.getResourceFromContext(this.applicationContext, "mapbox_access_token")
         mapboxMap = binding.mapView.getMapboxMap()
 
         // initialize the location puck
         binding.mapView.location.apply {
             this.locationPuck = LocationPuck2D(
                 bearingImage = ContextCompat.getDrawable(
-                    this@TurnByTurnExperienceActivity,
+                    this@TurnByTurnActivity,
                     R.drawable.mapbox_navigation_puck_icon
                 )
             )
@@ -438,7 +435,7 @@ class TurnByTurnExperienceActivity : AppCompatActivity() {
         } else {
             MapboxNavigationProvider.create(
                 NavigationOptions.Builder(this.applicationContext)
-                    .accessToken(getString(R.string.mapbox_access_token))
+                    .accessToken(accessToken)
                     // comment out the location engine setting block to disable simulation
                     //.locationEngine(replayLocationEngine)
                     .build()
@@ -509,12 +506,12 @@ class TurnByTurnExperienceActivity : AppCompatActivity() {
         // initialize voice instructions api and the voice instruction player
         speechApi = MapboxSpeechApi(
             this,
-            getString(R.string.mapbox_access_token),
+            accessToken!!,
             Locale.UK.language
         )
         voiceInstructionsPlayer = MapboxVoiceInstructionsPlayer(
             this,
-            getString(R.string.mapbox_access_token),
+            accessToken!!,
             Locale.UK.language
         )
 
