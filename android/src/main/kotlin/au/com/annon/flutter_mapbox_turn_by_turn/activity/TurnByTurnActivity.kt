@@ -421,7 +421,7 @@ class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
         // Sensor change value
         val value = p0!!.values[0]
         if (p0.sensor.type == Sensor.TYPE_LIGHT) {
-            lightValue = value;
+            lightValue = value
         }
     }
 
