@@ -6,7 +6,7 @@
             android:name="${applicationName}"
             android:icon="@mipmap/ic_launcher">
         <activity
-                android:name="${applicationName}"
+                android:name="au.com.annon.flutter_mapbox_turn_by_turn_example.MainActivity"
                 android:exported="true"
                 android:launchMode="singleTop"
                 android:theme="@style/LaunchTheme"

@@ -1,20 +1,24 @@
-package au.com.annon.flutter_mapbox_turn_by_turn.activity
+package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
-import android.hardware.SensorManager
-import android.graphics.Color
 import android.location.Location
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
-import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import au.com.annon.flutter_mapbox_turn_by_turn.R
+import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
+import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
 import com.mapbox.api.directions.v5.models.Bearing
 import com.mapbox.api.directions.v5.models.DirectionsRoute
 import com.mapbox.api.directions.v5.models.RouteOptions
@@ -23,7 +27,6 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.MapView
 import com.mapbox.maps.MapboxMap
-import com.mapbox.maps.Style
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.gestures.gestures
@@ -54,7 +57,6 @@ import com.mapbox.navigation.ui.maps.camera.NavigationCamera
 import com.mapbox.navigation.ui.maps.camera.data.MapboxNavigationViewportDataSource
 import com.mapbox.navigation.ui.maps.camera.lifecycle.NavigationBasicGesturesHandler
 import com.mapbox.navigation.ui.maps.camera.state.NavigationCameraState
-import com.mapbox.navigation.ui.maps.camera.transition.NavigationCameraStateTransition
 import com.mapbox.navigation.ui.maps.camera.transition.NavigationCameraTransitionOptions
 import com.mapbox.navigation.ui.maps.location.NavigationLocationProvider
 import com.mapbox.navigation.ui.maps.route.arrow.api.MapboxRouteArrowApi
@@ -67,11 +69,7 @@ import com.mapbox.navigation.ui.maps.route.line.model.RouteLine
 import com.mapbox.navigation.ui.maps.route.line.model.RouteLineColorResources
 import com.mapbox.navigation.ui.maps.route.line.model.RouteLineResources
 import com.mapbox.navigation.ui.tripprogress.api.MapboxTripProgressApi
-import com.mapbox.navigation.ui.tripprogress.model.DistanceRemainingFormatter
-import com.mapbox.navigation.ui.tripprogress.model.EstimatedTimeToArrivalFormatter
-import com.mapbox.navigation.ui.tripprogress.model.PercentDistanceTraveledFormatter
-import com.mapbox.navigation.ui.tripprogress.model.TimeRemainingFormatter
-import com.mapbox.navigation.ui.tripprogress.model.TripProgressUpdateFormatter
+import com.mapbox.navigation.ui.tripprogress.model.*
 import com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView
 import com.mapbox.navigation.ui.voice.api.MapboxSpeechApi
 import com.mapbox.navigation.ui.voice.api.MapboxVoiceInstructionsPlayer
@@ -79,11 +77,10 @@ import com.mapbox.navigation.ui.voice.model.SpeechAnnouncement
 import com.mapbox.navigation.ui.voice.model.SpeechError
 import com.mapbox.navigation.ui.voice.model.SpeechValue
 import com.mapbox.navigation.ui.voice.model.SpeechVolume
-import java.util.Locale
-
-import au.com.annon.flutter_mapbox_turn_by_turn.R
-import au.com.annon.flutter_mapbox_turn_by_turn.databinding.MapboxActivityTurnByTurnBinding
-import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
+import io.flutter.plugin.common.BinaryMessenger
+import io.flutter.plugin.common.EventChannel
+import io.flutter.plugin.common.MethodChannel
+import java.util.*
 
 /**
  * Before running the plugin make sure you have put your access_token in the correct place
@@ -103,8 +100,11 @@ import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
  * - You can use buttons to mute/unmute voice instructions, recenter the camera, or show the route overview.
  */
 
-class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
-    private var accessToken: String? = null
+open class TurnByTurnActivity(private val context: Context, open val binding: TurnByTurnActivityBinding, open val messenger: BinaryMessenger)
+    : AppCompatActivity(), SensorEventListener {
+    open var methodChannel: MethodChannel? = null
+    open var eventChannel: EventChannel? = null
+
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
 
@@ -128,9 +128,9 @@ class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
     private val replayProgressObserver = ReplayProgressObserver(mapboxReplayer)
 
     /**
-     * Bindings to the example layout.
+     * Mapbox Maps access token.
      */
-    private lateinit var binding: MapboxActivityTurnByTurnBinding
+    private lateinit var accessToken: String
 
     /**
      * Mapbox Maps entry point obtained from the [MapView].
@@ -425,32 +425,17 @@ class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    @SuppressLint("MissingPermission")
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = MapboxActivityTurnByTurnBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        accessToken = PluginUtilities.getResourceFromContext(this.applicationContext, "mapbox_access_token")
+    open fun initializeActivity() {
+        Log.d("TurnByTurnActivity","Activity initialized")
+        accessToken = PluginUtilities.getResourceFromContext(context, "mapbox_access_token")
         mapboxMap = binding.mapView.getMapboxMap()
-
-        // initialize the location puck
-        binding.mapView.location.apply {
-            this.locationPuck = LocationPuck2D(
-                bearingImage = ContextCompat.getDrawable(
-                    this@TurnByTurnActivity,
-                    R.drawable.mapbox_navigation_puck_icon
-                )
-            )
-            setLocationProvider(navigationLocationProvider)
-            enabled = true
-        }
 
         // initialize Mapbox Navigation
         mapboxNavigation = if (MapboxNavigationProvider.isCreated()) {
             MapboxNavigationProvider.retrieve()
         } else {
             MapboxNavigationProvider.create(
-                NavigationOptions.Builder(this.applicationContext)
+                NavigationOptions.Builder(context)
                     .accessToken(accessToken)
                     // comment out the location engine setting block to disable simulation
                     //.locationEngine(replayLocationEngine)
@@ -482,12 +467,12 @@ class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
         }
 
         // set the padding values depending on screen orientation and visible view layout
-        if (this.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             viewportDataSource.overviewPadding = landscapeOverviewPadding
         } else {
             viewportDataSource.overviewPadding = overviewPadding
         }
-        if (this.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             viewportDataSource.followingPadding = landscapeFollowingPadding
         } else {
             viewportDataSource.followingPadding = followingPadding
@@ -503,31 +488,31 @@ class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
 
         // initialize bottom progress view
         tripProgressApi = MapboxTripProgressApi(
-            TripProgressUpdateFormatter.Builder(this)
+            TripProgressUpdateFormatter.Builder(context)
                 .distanceRemainingFormatter(
                     DistanceRemainingFormatter(distanceFormatterOptions)
                 )
                 .timeRemainingFormatter(
-                    TimeRemainingFormatter(this)
+                    TimeRemainingFormatter(context)
                 )
                 .percentRouteTraveledFormatter(
                     PercentDistanceTraveledFormatter()
                 )
                 .estimatedTimeToArrivalFormatter(
-                    EstimatedTimeToArrivalFormatter(this, TimeFormat.NONE_SPECIFIED)
+                    EstimatedTimeToArrivalFormatter(context, TimeFormat.NONE_SPECIFIED)
                 )
                 .build()
         )
 
         // initialize voice instructions api and the voice instruction player
         speechApi = MapboxSpeechApi(
-            this,
-            accessToken!!,
+            context,
+            accessToken,
             Locale.UK.language
         )
         voiceInstructionsPlayer = MapboxVoiceInstructionsPlayer(
-            this,
-            accessToken!!,
+            context,
+            accessToken,
             Locale.UK.language
         )
 
@@ -547,7 +532,7 @@ class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
             .routeLineColorResources(customColorResources)
             .build()
 
-        val mapboxRouteLineOptions = MapboxRouteLineOptions.Builder(this)
+        val mapboxRouteLineOptions = MapboxRouteLineOptions.Builder(context)
             .withRouteLineResources(routeLineResources)
             .withRouteLineBelowLayerId("road-label")
             .build()
@@ -555,7 +540,7 @@ class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
         routeLineView = MapboxRouteLineView(mapboxRouteLineOptions)
 
         // initialize maneuver arrow view to draw arrows on the map
-        val routeArrowOptions = RouteArrowOptions.Builder(this)
+        val routeArrowOptions = RouteArrowOptions.Builder(context)
             .build()
         routeArrowView = MapboxRouteArrowView(routeArrowOptions)
 
@@ -597,6 +582,22 @@ class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
 
         // set initial sounds button state
         binding.soundButton.unmute()
+
+        // initialize the location puck
+        binding.mapView.location.apply {
+            setLocationProvider(navigationLocationProvider)
+
+            locationPuck = LocationPuck2D(
+                bearingImage = ContextCompat.getDrawable(
+                    context,
+                    R.drawable.mapbox_navigation_puck_icon
+                )
+            )
+            enabled = true
+        }
+
+        // initialize navigation trip observers
+        registerObservers()
 
         // start the trip session to being receiving location updates in free drive
         // and later when a route is set also receiving route progress updates
@@ -665,7 +666,7 @@ class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
         mapboxNavigation.requestRoutes(
             RouteOptions.builder()
                 .applyDefaultNavigationOptions()
-                .applyLanguageAndVoiceUnitOptions(this)
+                .applyLanguageAndVoiceUnitOptions(context)
                 .coordinatesList(listOf(originPoint, destination))
                 // provide the bearing for the origin of the request to ensure
                 // that the returned route faces in the direction of the current user movement
@@ -742,5 +743,23 @@ class TurnByTurnActivity : AppCompatActivity(), SensorEventListener {
             seekTo(replayEvents.first())
             play()
         }
+    }
+
+    open fun registerObservers() {
+        // register event listeners
+        mapboxNavigation.registerRoutesObserver(routesObserver)
+        mapboxNavigation.registerRouteProgressObserver(routeProgressObserver)
+        mapboxNavigation.registerLocationObserver(locationObserver)
+        mapboxNavigation.registerVoiceInstructionsObserver(voiceInstructionsObserver)
+        mapboxNavigation.registerRouteProgressObserver(replayProgressObserver)
+    }
+
+    open fun unregisterObservers() {
+        // unregister event listeners to prevent leaks or unnecessary resource consumption
+        mapboxNavigation.unregisterRoutesObserver(routesObserver)
+        mapboxNavigation.unregisterRouteProgressObserver(routeProgressObserver)
+        mapboxNavigation.unregisterLocationObserver(locationObserver)
+        mapboxNavigation.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
+        mapboxNavigation.unregisterRouteProgressObserver(replayProgressObserver)
     }
 }

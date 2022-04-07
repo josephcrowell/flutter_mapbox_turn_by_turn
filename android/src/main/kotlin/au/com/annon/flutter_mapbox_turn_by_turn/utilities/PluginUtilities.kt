@@ -4,8 +4,11 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
+
 import androidx.annotation.NonNull
+
 import io.flutter.plugin.common.MethodCall
+
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.util.*
@@ -102,6 +105,4 @@ class PluginUtilities {
             }
         }
     }
-
-
 }

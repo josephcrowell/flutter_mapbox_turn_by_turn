@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -5,17 +6,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_mapbox_turn_by_turn/flutter_mapbox_turn_by_turn.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const ExampleApp());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+class ExampleApp extends StatefulWidget {
+  const ExampleApp({Key? key}) : super(key: key);
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<ExampleApp> createState() => _ExampleAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _ExampleAppState extends State<ExampleApp> {
   String _platformVersion = 'Unknown';
 
   @override
@@ -30,8 +31,8 @@ class _MyAppState extends State<MyApp> {
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
     try {
-      platformVersion =
-          await FlutterMapboxTurnByTurn.platformVersion ?? 'Unknown platform version';
+      platformVersion = await FlutterMapboxTurnByTurn.platformVersion ??
+          'Unknown platform version';
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
@@ -44,6 +45,14 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _platformVersion = platformVersion;
     });
+
+    try {
+      if (await FlutterMapboxTurnByTurn.hasPermission()) {}
+    } catch (e) {
+      if (kDebugMode) {
+        print(e);
+      }
+    }
   }
 
   @override
@@ -51,10 +60,10 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Plugin example app'),
+          title: const Text('Flutter Mapbox Turn By Turn Example'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: MapView(),
         ),
       ),
     );
