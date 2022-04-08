@@ -426,7 +426,8 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
     }
 
     open fun initializeActivity() {
-        Log.d("TurnByTurnActivity","Activity initialized")
+        Log.d("TurnByTurnActivity","Activity initialize started")
+
         accessToken = PluginUtilities.getResourceFromContext(context, "mapbox_access_token")
         mapboxMap = binding.mapView.getMapboxMap()
 
@@ -596,16 +597,18 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
             enabled = true
         }
 
-        // initialize navigation trip observers
-        registerObservers()
+        // register observers and check routes
+        onStartActivity()
 
         // start the trip session to being receiving location updates in free drive
         // and later when a route is set also receiving route progress updates
         mapboxNavigation.startTripSession()
+
+        Log.d("TurnByTurnActivity","Activity initialize finished")
     }
 
-    override fun onStart() {
-        super.onStart()
+    private fun onStartActivity() {
+        Log.d("TurnByTurnActivity","onStart called")
 
         // register event listeners
         mapboxNavigation.registerRoutesObserver(routesObserver)
@@ -630,8 +633,8 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
         }
     }
 
-    override fun onStop() {
-        super.onStop()
+    fun onStopActivity() {
+        Log.d("TurnByTurnActivity","onStop called")
 
         // unregister event listeners to prevent leaks or unnecessary resource consumption
         mapboxNavigation.unregisterRoutesObserver(routesObserver)
@@ -639,10 +642,7 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
         mapboxNavigation.unregisterLocationObserver(locationObserver)
         mapboxNavigation.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
         mapboxNavigation.unregisterRouteProgressObserver(replayProgressObserver)
-    }
 
-    override fun onDestroy() {
-        super.onDestroy()
         MapboxNavigationProvider.destroy()
         mapboxReplayer.finish()
         maneuverApi.cancel()
@@ -743,23 +743,5 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
             seekTo(replayEvents.first())
             play()
         }
-    }
-
-    open fun registerObservers() {
-        // register event listeners
-        mapboxNavigation.registerRoutesObserver(routesObserver)
-        mapboxNavigation.registerRouteProgressObserver(routeProgressObserver)
-        mapboxNavigation.registerLocationObserver(locationObserver)
-        mapboxNavigation.registerVoiceInstructionsObserver(voiceInstructionsObserver)
-        mapboxNavigation.registerRouteProgressObserver(replayProgressObserver)
-    }
-
-    open fun unregisterObservers() {
-        // unregister event listeners to prevent leaks or unnecessary resource consumption
-        mapboxNavigation.unregisterRoutesObserver(routesObserver)
-        mapboxNavigation.unregisterRouteProgressObserver(routeProgressObserver)
-        mapboxNavigation.unregisterLocationObserver(locationObserver)
-        mapboxNavigation.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
-        mapboxNavigation.unregisterRouteProgressObserver(replayProgressObserver)
     }
 }
