@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
 import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnViewFactory
@@ -78,10 +79,11 @@ class FlutterMapboxTurnByTurnPlugin
     binding.addRequestPermissionsResultListener(this)
   }
 
+  @androidx.annotation.RequiresApi(Build.VERSION_CODES.DONUT)
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
     when (call.method) {
-      "getPlatformVersion" -> {
-        result.success("Android ${Build.VERSION.RELEASE}")
+      "getSdkVersion" -> {
+        result.success(Build.VERSION.SDK_INT)
       }
       "hasPermission" -> {
         hasPermission(result)

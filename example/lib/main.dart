@@ -17,24 +17,25 @@ class ExampleApp extends StatefulWidget {
 }
 
 class _ExampleAppState extends State<ExampleApp> {
-  String _platformVersion = 'Unknown';
+  int _sdkVersion = -1;
+  late bool _hasPermission = false;
 
   @override
   void initState() {
     super.initState();
-    initPlatformState();
+    initMapState();
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
+  Future<void> initMapState() async {
+    int sdkVersion;
+    bool hasPermission;
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
     try {
-      platformVersion = await FlutterMapboxTurnByTurn.platformVersion ??
-          'Unknown platform version';
+      sdkVersion = await FlutterMapboxTurnByTurn.sdkVersion ?? -1;
     } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
+      sdkVersion = 0;
     }
 
     // If the widget was removed from the tree while the asynchronous platform
@@ -42,17 +43,24 @@ class _ExampleAppState extends State<ExampleApp> {
     // setState to update our non-existent appearance.
     if (!mounted) return;
 
-    setState(() {
-      _platformVersion = platformVersion;
-    });
+    hasPermission = await _requestPermission();
 
+    setState(() {
+      _sdkVersion = sdkVersion;
+      _hasPermission = hasPermission;
+    });
+  }
+
+  static Future<bool> _requestPermission() async {
     try {
-      if (await FlutterMapboxTurnByTurn.hasPermission()) {}
+      return await FlutterMapboxTurnByTurn.hasPermission();
     } catch (e) {
       if (kDebugMode) {
         print(e);
       }
     }
+
+    return false;
   }
 
   @override
@@ -62,8 +70,45 @@ class _ExampleAppState extends State<ExampleApp> {
         appBar: AppBar(
           title: const Text('Flutter Mapbox Turn By Turn Example'),
         ),
-        body: Center(
-          child: MapView(),
+        backgroundColor: Colors.black,
+        body: Visibility(
+          visible: _hasPermission,
+          child: const Center(
+            child: MapView(),
+          ),
+          replacement: Padding(
+            padding: const EdgeInsetsDirectional.only(
+              start: 5,
+              end: 5,
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  const Text(
+                    'Location permission required.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      bool hasPermission = await _requestPermission();
+
+                      setState(() {
+                        _hasPermission = hasPermission;
+                      });
+                    },
+                    child: const Text(
+                      "Request Permission",
+                      style: TextStyle(fontSize: 22),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

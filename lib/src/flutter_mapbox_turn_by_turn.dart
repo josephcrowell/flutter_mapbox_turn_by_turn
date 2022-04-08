@@ -7,8 +7,8 @@ class FlutterMapboxTurnByTurn {
   static const MethodChannel _channel =
       MethodChannel('flutter_mapbox_turn_by_turn/method');
 
-  static Future<String?> get platformVersion async {
-    final String? version = await _channel.invokeMethod('getPlatformVersion');
+  static Future<int?> get sdkVersion async {
+    final int? version = await _channel.invokeMethod('getSdkVersion');
     return version;
   }
 
