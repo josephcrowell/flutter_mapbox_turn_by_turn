@@ -20,7 +20,6 @@ internal class TurnByTurnView(
 
     override fun onFlutterViewAttached(flutterView: View) {
         super.onFlutterViewAttached(flutterView)
-        initializeActivity()
     }
 
     override fun getView(): View {
@@ -29,5 +28,9 @@ internal class TurnByTurnView(
 
     override fun dispose() {
         onStopActivity()
+    }
+
+    init {
+        initializeActivity()
     }
 }

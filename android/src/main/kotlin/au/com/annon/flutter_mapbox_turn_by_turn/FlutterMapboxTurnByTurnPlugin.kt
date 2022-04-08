@@ -59,6 +59,7 @@ class FlutterMapboxTurnByTurnPlugin
     binding.addRequestPermissionsResultListener(this)
 
     if(platformViewRegistry != null && binaryMessenger != null && activity != null) {
+      Log.d("FlutterMapboxTurnByTurnPlugin","Registering view factory")
       platformViewRegistry?.registerViewFactory(VIEW_NAME, TurnByTurnViewFactory(context,binaryMessenger!!, activity!!))
     }
   }

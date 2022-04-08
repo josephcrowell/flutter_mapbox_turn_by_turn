@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
@@ -37,6 +39,7 @@ class MapView extends StatelessWidget {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         if (sdkVersion < 29) {
+          debugPrint("Android SDK is less than 29. Using virtual display.");
           return AndroidView(
             viewType: viewType,
             layoutDirection: TextDirection.ltr,
@@ -45,8 +48,31 @@ class MapView extends StatelessWidget {
           );
         }
 
-        return const Center(
-          child: Text("SDK is greater then 29"),
+        debugPrint("Android SDK is greater than 28. Using hybrid composition.");
+        return PlatformViewLink(
+          viewType: viewType,
+          surfaceFactory:
+              (BuildContext context, PlatformViewController controller) {
+            return AndroidViewSurface(
+              controller: controller as AndroidViewController,
+              gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+              hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+            );
+          },
+          onCreatePlatformView: (PlatformViewCreationParams params) {
+            return PlatformViewsService.initSurfaceAndroidView(
+              id: params.id,
+              viewType: viewType,
+              layoutDirection: TextDirection.ltr,
+              creationParams: creationParams,
+              creationParamsCodec: const StandardMessageCodec(),
+              onFocus: () {
+                params.onFocusChanged(true);
+              },
+            )
+              ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
+              ..create();
+          },
         );
       case TargetPlatform.iOS:
         return UiKitView(
