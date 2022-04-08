@@ -73,7 +73,7 @@ class _ExampleAppState extends State<ExampleApp> {
         backgroundColor: Colors.black,
         body: Visibility(
           visible: _hasPermission,
-          child: const Center(
+          child: Center(
             child: MapView(),
           ),
           replacement: Padding(
