@@ -517,6 +517,7 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
         // the route line below road labels layer on the map
         // the value of this option will depend on the style that you are using
         // and under which layer the route line should be placed on the map layers stack
+        // TODO: Implement these colors as options in main plugin class
         val customColorResources = RouteLineColorResources.Builder()
             .routeCasingColor(Color.parseColor("#33ff00"))
             .routeDefaultColor(Color.parseColor("#33ff00"))
