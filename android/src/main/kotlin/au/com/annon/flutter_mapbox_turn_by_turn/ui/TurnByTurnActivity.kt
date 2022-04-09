@@ -78,8 +78,6 @@ import com.mapbox.navigation.ui.voice.model.SpeechError
 import com.mapbox.navigation.ui.voice.model.SpeechValue
 import com.mapbox.navigation.ui.voice.model.SpeechVolume
 import io.flutter.plugin.common.BinaryMessenger
-import io.flutter.plugin.common.EventChannel
-import io.flutter.plugin.common.MethodChannel
 import java.util.*
 
 /**
@@ -102,8 +100,6 @@ import java.util.*
 
 open class TurnByTurnActivity(private val context: Context, open val binding: TurnByTurnActivityBinding, open val messenger: BinaryMessenger)
     : AppCompatActivity(), SensorEventListener {
-    open var methodChannel: MethodChannel? = null
-    open var eventChannel: EventChannel? = null
 
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
