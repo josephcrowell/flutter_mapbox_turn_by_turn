@@ -28,7 +28,9 @@
         <com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView
             android:id="@+id/tripProgressView"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            app:tripProgressTextColor="#FFFFFF"
+            app:tripProgressViewBackgroundColor="#202020" />
 
     </androidx.cardview.widget.CardView>
 
@@ -41,7 +43,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.32"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:maneuverViewBackgroundColor="#202020" />
 
     <com.mapbox.navigation.ui.voice.view.MapboxSoundButton
         android:id="@+id/soundButton"
