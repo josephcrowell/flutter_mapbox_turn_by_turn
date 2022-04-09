@@ -83,9 +83,6 @@ class FlutterMapboxTurnByTurnPlugin
   @androidx.annotation.RequiresApi(Build.VERSION_CODES.DONUT)
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
     when (call.method) {
-      "getSdkVersion" -> {
-        result.success(Build.VERSION.SDK_INT)
-      }
       "hasPermission" -> {
         hasPermission(result)
       }

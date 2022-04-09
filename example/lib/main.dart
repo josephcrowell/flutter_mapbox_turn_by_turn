@@ -17,7 +17,6 @@ class ExampleApp extends StatefulWidget {
 }
 
 class _ExampleAppState extends State<ExampleApp> {
-  int _sdkVersion = -1;
   late bool _hasPermission = false;
 
   @override
@@ -28,15 +27,7 @@ class _ExampleAppState extends State<ExampleApp> {
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initMapState() async {
-    int sdkVersion;
     bool hasPermission;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
-    try {
-      sdkVersion = await FlutterMapboxTurnByTurn.sdkVersion ?? -1;
-    } on PlatformException {
-      sdkVersion = 0;
-    }
 
     // If the widget was removed from the tree while the asynchronous platform
     // message was in flight, we want to discard the reply rather than calling
@@ -46,7 +37,6 @@ class _ExampleAppState extends State<ExampleApp> {
     hasPermission = await _requestPermission();
 
     setState(() {
-      _sdkVersion = sdkVersion;
       _hasPermission = hasPermission;
     });
   }
