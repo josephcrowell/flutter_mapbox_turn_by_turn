@@ -30,7 +30,7 @@ class FlutterMapboxTurnByTurnPlugin
   private var binaryMessenger: BinaryMessenger? = null
 
   companion object {
-    var LOCATION_REQUEST_CODE: Int = 367
+    private var LOCATION_REQUEST_CODE: Int = 367
     private var pendingPermissionResult: Result? = null
     private const val VIEW_NAME = "MapView"
     var eventSink:EventChannel.EventSink? = null
