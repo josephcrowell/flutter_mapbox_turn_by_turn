@@ -78,6 +78,10 @@ import com.mapbox.navigation.ui.voice.model.SpeechError
 import com.mapbox.navigation.ui.voice.model.SpeechValue
 import com.mapbox.navigation.ui.voice.model.SpeechVolume
 import io.flutter.plugin.common.BinaryMessenger
+
+import au.com.annon.flutter_mapbox_turn_by_turn.FlutterMapboxTurnByTurnPlugin
+import com.mapbox.maps.Style
+
 import java.util.*
 
 /**
@@ -542,17 +546,17 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
             .build()
         routeArrowView = MapboxRouteArrowView(routeArrowOptions)
 
-        // TODO: Implement this option in main plugin class
-        /*val styleUri: String
+        // TODO: Implement these options in main plugin class
+        val styleUri: String
         if(lightValue <= darkThreshold) {
             styleUri = FlutterMapboxTurnByTurnPlugin.mapStyleUrlNight ?: Style.MAPBOX_STREETS
         } else {
             styleUri = FlutterMapboxTurnByTurnPlugin.mapStyleUrlDay ?: Style.MAPBOX_STREETS
-        }*/
+        }
 
         // load map style
         mapboxMap.loadStyleUri(
-            "mapbox://styles/computerlinkau/ckqbt6y4k0akg17o6p90cz79d"
+            styleUri
         ) {
             // add long click listener that search for a route to the clicked destination
             // TODO: Make this optional via main plugin class
