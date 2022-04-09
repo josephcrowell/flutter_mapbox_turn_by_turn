@@ -555,6 +555,7 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
             "mapbox://styles/computerlinkau/ckqbt6y4k0akg17o6p90cz79d"
         ) {
             // add long click listener that search for a route to the clicked destination
+            // TODO: Make this optional via main plugin class
             binding.mapView.gestures.addOnMapLongClickListener { point ->
                 findRoute(point)
                 true
