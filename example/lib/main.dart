@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_mapbox_turn_by_turn/flutter_mapbox_turn_by_turn.dart';
 
 void main() {
