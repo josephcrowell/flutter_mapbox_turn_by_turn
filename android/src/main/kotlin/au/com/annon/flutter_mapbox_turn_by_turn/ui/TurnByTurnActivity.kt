@@ -81,6 +81,8 @@ import io.flutter.plugin.common.BinaryMessenger
 
 import au.com.annon.flutter_mapbox_turn_by_turn.FlutterMapboxTurnByTurnPlugin
 import com.mapbox.maps.Style
+import com.mapbox.maps.plugin.scalebar.scalebar
+import com.mapbox.navigation.ui.maps.camera.state.NavigationCameraStateChangedObserver
 
 import java.util.*
 
@@ -372,6 +374,17 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
         )
     }
 
+    private val navigationCameraStateChangedObserver = NavigationCameraStateChangedObserver { navigationCameraState ->
+        // shows/hide the recenter button depending on the camera state
+        when (navigationCameraState) {
+            NavigationCameraState.TRANSITION_TO_FOLLOWING,
+            NavigationCameraState.FOLLOWING -> binding.recenter.visibility = View.INVISIBLE
+            NavigationCameraState.TRANSITION_TO_OVERVIEW,
+            NavigationCameraState.OVERVIEW,
+            NavigationCameraState.IDLE -> binding.recenter.visibility = View.VISIBLE
+        }
+    }
+
     /**
      * Gets notified whenever the tracked routes change.
      *
@@ -456,16 +469,9 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
         binding.mapView.camera.addCameraAnimationsLifecycleListener(
             NavigationBasicGesturesHandler(navigationCamera)
         )
-        navigationCamera.registerNavigationCameraStateChangeObserver { navigationCameraState ->
-            // shows/hide the recenter button depending on the camera state
-            when (navigationCameraState) {
-                NavigationCameraState.TRANSITION_TO_FOLLOWING,
-                NavigationCameraState.FOLLOWING -> binding.recenter.visibility = View.INVISIBLE
-                NavigationCameraState.TRANSITION_TO_OVERVIEW,
-                NavigationCameraState.OVERVIEW,
-                NavigationCameraState.IDLE -> binding.recenter.visibility = View.VISIBLE
-            }
-        }
+        navigationCamera.registerNavigationCameraStateChangeObserver(
+            navigationCameraStateChangedObserver
+        )
 
         // set the padding values depending on screen orientation and visible view layout
         if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -547,11 +553,10 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
         routeArrowView = MapboxRouteArrowView(routeArrowOptions)
 
         // TODO: Implement these options in main plugin class
-        val styleUri: String
-        if(lightValue <= darkThreshold) {
-            styleUri = FlutterMapboxTurnByTurnPlugin.mapStyleUrlNight ?: Style.MAPBOX_STREETS
+        val styleUri: String = if(lightValue <= darkThreshold) {
+            FlutterMapboxTurnByTurnPlugin.mapStyleUrlNight ?: Style.MAPBOX_STREETS
         } else {
-            styleUri = FlutterMapboxTurnByTurnPlugin.mapStyleUrlDay ?: Style.MAPBOX_STREETS
+            FlutterMapboxTurnByTurnPlugin.mapStyleUrlDay ?: Style.MAPBOX_STREETS
         }
 
         // load map style
@@ -644,6 +649,7 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
         mapboxNavigation.unregisterLocationObserver(locationObserver)
         mapboxNavigation.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
         mapboxNavigation.unregisterRouteProgressObserver(replayProgressObserver)
+        navigationCamera.unregisterNavigationCameraStateChangeObserver(navigationCameraStateChangedObserver)
 
         MapboxNavigationProvider.destroy()
         mapboxReplayer.finish()
@@ -652,6 +658,8 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
         routeLineView.cancel()
         speechApi.cancel()
         voiceInstructionsPlayer.shutdown()
+        binding.mapView.scalebar.cleanup()
+        binding.mapView.camera.cleanup()
     }
 
     private fun findRoute(destination: Point) {
