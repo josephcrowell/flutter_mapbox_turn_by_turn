@@ -63,7 +63,13 @@ class _ExampleAppState extends State<ExampleApp> {
         body: Visibility(
           visible: _hasPermission,
           child: Center(
-            child: MapView(),
+            child: MapView(
+              mapStyleUrlDay:
+                  'mapbox://styles/computerlinkau/cktnmg1zb0f6717mqtx5gb5c5',
+              mapStyleUrlNight:
+                  'mapbox://styles/computerlinkau/ckqbt6y4k0akg17o6p90cz79d',
+              navigateOnLongClick: true,
+            ),
           ),
           replacement: Padding(
             padding: const EdgeInsetsDirectional.only(

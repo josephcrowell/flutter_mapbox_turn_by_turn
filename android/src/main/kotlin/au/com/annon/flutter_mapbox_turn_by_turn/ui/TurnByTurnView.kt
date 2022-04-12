@@ -15,7 +15,7 @@ internal class TurnByTurnView(
         id: Int,
         creationParams: Map<String?, Any?>?,
     )
-    : PlatformView, TurnByTurnActivity(context, binding, messenger) {
+    : PlatformView, TurnByTurnActivity(context, binding, messenger, creationParams) {
     private val id: Int = id
 
     override fun onFlutterViewAttached(flutterView: View) {

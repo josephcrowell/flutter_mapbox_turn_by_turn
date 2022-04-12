@@ -104,11 +104,19 @@ import java.util.*
  * - You can use buttons to mute/unmute voice instructions, recenter the camera, or show the route overview.
  */
 
-open class TurnByTurnActivity(private val context: Context, open val binding: TurnByTurnActivityBinding, open val messenger: BinaryMessenger)
+open class TurnByTurnActivity(
+        private val context: Context,
+        open val binding: TurnByTurnActivityBinding,
+        open val messenger: BinaryMessenger,
+        creationParams: Map<String?, Any?>?,
+    )
     : AppCompatActivity(), SensorEventListener {
 
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
+    private val mapStyleUrlDay: String? = creationParams?.get("mapStyleUrlDay") as? String
+    private val mapStyleUrlNight: String? = creationParams?.get("mapStyleUrlNight") as? String
+    private val navigateOnLongClick: Boolean? = creationParams?.get("navigateOnLongClick") as? Boolean
 
     private companion object {
         private const val BUTTON_ANIMATION_DURATION = 1500L
@@ -552,11 +560,10 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
             .build()
         routeArrowView = MapboxRouteArrowView(routeArrowOptions)
 
-        // TODO: Implement these options in main plugin class
         val styleUri: String = if(lightValue <= darkThreshold) {
-            FlutterMapboxTurnByTurnPlugin.mapStyleUrlNight ?: Style.MAPBOX_STREETS
+            mapStyleUrlNight ?: Style.MAPBOX_STREETS
         } else {
-            FlutterMapboxTurnByTurnPlugin.mapStyleUrlDay ?: Style.MAPBOX_STREETS
+            mapStyleUrlDay ?: Style.MAPBOX_STREETS
         }
 
         // load map style
@@ -564,10 +571,11 @@ open class TurnByTurnActivity(private val context: Context, open val binding: Tu
             styleUri
         ) {
             // add long click listener that search for a route to the clicked destination
-            // TODO: Make this optional via main plugin class
-            binding.mapView.gestures.addOnMapLongClickListener { point ->
-                findRoute(point)
-                true
+            if (navigateOnLongClick == true) {
+                binding.mapView.gestures.addOnMapLongClickListener { point ->
+                    findRoute(point)
+                    true
+                }
             }
         }
 

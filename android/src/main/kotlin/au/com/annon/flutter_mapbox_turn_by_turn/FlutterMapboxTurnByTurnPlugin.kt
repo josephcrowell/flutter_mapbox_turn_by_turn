@@ -34,9 +34,6 @@ class FlutterMapboxTurnByTurnPlugin
     private var pendingPermissionResult: Result? = null
     private const val VIEW_NAME = "MapView"
     var eventSink:EventChannel.EventSink? = null
-
-    open val mapStyleUrlDay: String? = null
-    open val mapStyleUrlNight: String? = null
   }
 
   override fun onAttachedToEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {

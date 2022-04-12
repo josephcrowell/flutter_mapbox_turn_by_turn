@@ -11,7 +11,12 @@ int sdkVersion = 0;
 
 // The widget that show the mapbox MapView
 class MapView extends StatelessWidget {
-  MapView({Key? key}) : super(key: key) {
+  MapView({
+    Key? key,
+    this.mapStyleUrlDay,
+    this.mapStyleUrlNight,
+    this.navigateOnLongClick,
+  }) : super(key: key) {
     getSdkVersion();
   }
 
@@ -26,13 +31,21 @@ class MapView extends StatelessWidget {
     }
   }
 
+  final String? mapStyleUrlDay;
+  final String? mapStyleUrlNight;
+  final bool? navigateOnLongClick;
+
   @override
   Widget build(BuildContext context) {
     // This is used in the platform side to register the view.
     const String viewType = 'MapView';
 
     // Pass parameters to the platform side.
-    final Map<String, dynamic> creationParams = <String, dynamic>{};
+    final Map<String, dynamic> creationParams = <String, dynamic>{
+      "mapStyleUrlDay": mapStyleUrlDay,
+      "mapStyleUrlNight": mapStyleUrlNight,
+      "navigateOnLongClick": navigateOnLongClick,
+    };
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
