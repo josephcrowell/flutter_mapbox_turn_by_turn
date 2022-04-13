@@ -114,9 +114,22 @@ open class TurnByTurnActivity(
 
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
+    private val zoom: Double? = creationParams?.get("zoom") as? Double
+    private val pitch = creationParams?.get("pitch") as? Double
     private val mapStyleUrlDay: String? = creationParams?.get("mapStyleUrlDay") as? String
     private val mapStyleUrlNight: String? = creationParams?.get("mapStyleUrlNight") as? String
     private val navigateOnLongClick: Boolean? = creationParams?.get("navigateOnLongClick") as? Boolean
+    private val routeCasingColor: String = creationParams?.get("routeCasingColor") as String
+    private val routeDefaultColor: String = creationParams?.get("routeDefaultColor") as String
+    private val restrictedRoadColor: String = creationParams?.get("restrictedRoadColor") as String
+    private val routeLineTraveledColor: String = creationParams?.get("routeLineTraveledColor") as String
+    private val routeLineTraveledCasingColor: String = creationParams?.get("routeLineTraveledCasingColor") as String
+    private val routeClosureColor: String = creationParams?.get("routeClosureColor") as String
+    private val routeLowCongestionColor: String = creationParams?.get("routeLowCongestionColor") as String
+    private val routeModerateCongestionColor: String = creationParams?.get("routeModerateCongestionColor") as String
+    private val routeHeavyCongestionColor: String = creationParams?.get("routeHeavyCongestionColor") as String
+    private val routeSevereCongestionColor: String = creationParams?.get("routeSevereCongestionColor") as String
+    private val routeUnknownCongestionColor: String = creationParams?.get("routeUnknownCongestionColor") as String
 
     private companion object {
         private const val BUTTON_ANIMATION_DURATION = 1500L
@@ -493,6 +506,14 @@ open class TurnByTurnActivity(
             viewportDataSource.followingPadding = followingPadding
         }
 
+        if(zoom != null) {
+            viewportDataSource.followingZoomPropertyOverride(zoom)
+        }
+
+        if(pitch != null) {
+            viewportDataSource.followingPitchPropertyOverride(pitch)
+        }
+
         // make sure to use the same DistanceFormatterOptions across different features
         val distanceFormatterOptions = mapboxNavigation.navigationOptions.distanceFormatterOptions
 
@@ -535,13 +556,19 @@ open class TurnByTurnActivity(
         // the route line below road labels layer on the map
         // the value of this option will depend on the style that you are using
         // and under which layer the route line should be placed on the map layers stack
-        // TODO: Implement these colors as options in main plugin class
+        Log.d("TurnByTurnActivity", "Route Casing Color: $routeCasingColor");
         val customColorResources = RouteLineColorResources.Builder()
-            .routeCasingColor(Color.parseColor("#33ff00"))
-            .routeDefaultColor(Color.parseColor("#33ff00"))
-            .routeLowCongestionColor(Color.parseColor("#33ff00"))
-            .routeModerateCongestionColor(Color.parseColor("#33ff00"))
-            .routeUnknownCongestionColor(Color.parseColor("#33ff00"))
+            .routeCasingColor(Color.parseColor(routeCasingColor))
+            .routeDefaultColor(Color.parseColor(routeDefaultColor))
+            .restrictedRoadColor(Color.parseColor(restrictedRoadColor))
+            .routeLineTraveledColor(Color.parseColor(routeLineTraveledColor))
+            .routeLineTraveledCasingColor(Color.parseColor(routeLineTraveledCasingColor))
+            .routeClosureColor(Color.parseColor(routeClosureColor))
+            .routeLowCongestionColor(Color.parseColor(routeLowCongestionColor))
+            .routeModerateCongestionColor(Color.parseColor(routeModerateCongestionColor))
+            .routeHeavyCongestionColor(Color.parseColor(routeHeavyCongestionColor))
+            .routeSevereCongestionColor(Color.parseColor(routeSevereCongestionColor))
+            .routeUnknownCongestionColor(Color.parseColor(routeUnknownCongestionColor))
             .build()
 
         val routeLineResources = RouteLineResources.Builder()

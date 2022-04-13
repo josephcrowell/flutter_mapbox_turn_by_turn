@@ -64,11 +64,17 @@ class _ExampleAppState extends State<ExampleApp> {
           visible: _hasPermission,
           child: Center(
             child: MapView(
+              zoom: 20,
+              pitch: 75,
               mapStyleUrlDay:
                   'mapbox://styles/computerlinkau/cktnmg1zb0f6717mqtx5gb5c5',
               mapStyleUrlNight:
                   'mapbox://styles/computerlinkau/ckqbt6y4k0akg17o6p90cz79d',
               navigateOnLongClick: true,
+              routeDefaultColor: const Color(0xFF00FF0D),
+              routeCasingColor: const Color(0xFF00FF0D),
+              routeLowCongestionColor: const Color(0xFF00FF0D),
+              routeUnknownCongestionColor: const Color(0xFF00FF0D),
             ),
           ),
           replacement: Padding(
