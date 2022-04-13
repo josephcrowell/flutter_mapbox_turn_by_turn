@@ -116,9 +116,10 @@ open class TurnByTurnActivity(
     private var lightValue = 1.1f
     private val zoom: Double? = creationParams?.get("zoom") as? Double
     private val pitch = creationParams?.get("pitch") as? Double
+    private val disableGestures: Boolean? = creationParams?.get("disableGestures") as? Boolean
+    private val navigateOnLongClick: Boolean? = creationParams?.get("navigateOnLongClick") as? Boolean
     private val mapStyleUrlDay: String? = creationParams?.get("mapStyleUrlDay") as? String
     private val mapStyleUrlNight: String? = creationParams?.get("mapStyleUrlNight") as? String
-    private val navigateOnLongClick: Boolean? = creationParams?.get("navigateOnLongClick") as? Boolean
     private val routeCasingColor: String = creationParams?.get("routeCasingColor") as String
     private val routeDefaultColor: String = creationParams?.get("routeDefaultColor") as String
     private val restrictedRoadColor: String = creationParams?.get("restrictedRoadColor") as String
@@ -464,8 +465,18 @@ open class TurnByTurnActivity(
 
         accessToken = PluginUtilities.getResourceFromContext(context, "mapbox_access_token")
         binding.mapView.scalebar.enabled = false
-        mapboxMap = binding.mapView.getMapboxMap()
 
+        if(disableGestures == true) {
+            binding.mapView.gestures.doubleTapToZoomInEnabled = false
+            binding.mapView.gestures.quickZoomEnabled = false
+            binding.mapView.gestures.quickZoomEnabled = false
+            binding.mapView.gestures.pinchToZoomEnabled = false
+            binding.mapView.gestures.pitchEnabled = false
+            binding.mapView.gestures.rotateEnabled = false
+            binding.mapView.gestures.scrollEnabled = false
+        }
+
+        mapboxMap = binding.mapView.getMapboxMap()
 
         // initialize Mapbox Navigation
         mapboxNavigation = if (MapboxNavigationProvider.isCreated()) {
@@ -679,6 +690,7 @@ open class TurnByTurnActivity(
 
     fun onStopActivity() {
         Log.d("TurnByTurnActivity","onStop called")
+        clearRouteAndStopNavigation()
 
         // unregister event listeners to prevent leaks or unnecessary resource consumption
         mapboxNavigation.unregisterRoutesObserver(routesObserver)
@@ -695,7 +707,6 @@ open class TurnByTurnActivity(
         routeLineView.cancel()
         speechApi.cancel()
         voiceInstructionsPlayer.shutdown()
-        binding.mapView.camera.cleanup()
     }
 
     private fun findRoute(destination: Point) {
