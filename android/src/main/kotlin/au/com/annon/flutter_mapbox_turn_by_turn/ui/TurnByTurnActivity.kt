@@ -463,7 +463,9 @@ open class TurnByTurnActivity(
         Log.d("TurnByTurnActivity","Activity initialize started")
 
         accessToken = PluginUtilities.getResourceFromContext(context, "mapbox_access_token")
+        binding.mapView.scalebar.enabled = false
         mapboxMap = binding.mapView.getMapboxMap()
+
 
         // initialize Mapbox Navigation
         mapboxNavigation = if (MapboxNavigationProvider.isCreated()) {
@@ -693,7 +695,6 @@ open class TurnByTurnActivity(
         routeLineView.cancel()
         speechApi.cancel()
         voiceInstructionsPlayer.shutdown()
-        binding.mapView.scalebar.cleanup()
         binding.mapView.camera.cleanup()
     }
 
