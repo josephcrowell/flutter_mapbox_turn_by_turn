@@ -15,8 +15,9 @@ class MapView extends StatelessWidget {
     Key? key,
     this.zoom,
     this.pitch,
-    this.disableGestures,
+    this.disableGesturesWhenNavigating,
     this.navigateOnLongClick,
+    this.showStopButton,
     this.mapStyleUrlDay,
     this.mapStyleUrlNight,
     this.routeCasingColor,
@@ -47,8 +48,9 @@ class MapView extends StatelessWidget {
 
   final double? zoom;
   final double? pitch;
-  final bool? disableGestures;
+  final bool? disableGesturesWhenNavigating;
   final bool? navigateOnLongClick;
+  final bool? showStopButton;
   final String? mapStyleUrlDay;
   final String? mapStyleUrlNight;
   final Color? routeCasingColor;
@@ -137,8 +139,9 @@ class MapView extends StatelessWidget {
     final Map<String, dynamic> creationParams = <String, dynamic>{
       "zoom": zoom,
       "pitch": pitch,
-      "disableGestures": disableGestures,
+      "disableGesturesWhenNavigating": disableGesturesWhenNavigating ?? true,
       "navigateOnLongClick": navigateOnLongClick,
+      "showStopButton": showStopButton,
       "mapStyleUrlDay": mapStyleUrlDay,
       "mapStyleUrlNight": mapStyleUrlNight,
       "routeCasingColor": routeCasingColorString,

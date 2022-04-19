@@ -117,8 +117,9 @@ open class TurnByTurnActivity(
     private var lightValue = 1.1f
     private val zoom: Double? = creationParams?.get("zoom") as? Double
     private val pitch = creationParams?.get("pitch") as? Double
-    private val disableGestures: Boolean? = creationParams?.get("disableGestures") as? Boolean
+    private val disableGesturesWhenNavigating: Boolean? = creationParams?.get("disableGesturesWhenNavigating") as? Boolean
     private val navigateOnLongClick: Boolean? = creationParams?.get("navigateOnLongClick") as? Boolean
+    private val showStopButton: Boolean? = creationParams?.get("showStopButton") as? Boolean
     private val mapStyleUrlDay: String? = creationParams?.get("mapStyleUrlDay") as? String
     private val mapStyleUrlNight: String? = creationParams?.get("mapStyleUrlNight") as? String
     private val routeCasingColor: String = creationParams?.get("routeCasingColor") as String
@@ -402,7 +403,7 @@ open class TurnByTurnActivity(
         // shows/hide the recenter button depending on the camera state
         when (navigationCameraState) {
             NavigationCameraState.TRANSITION_TO_FOLLOWING,
-            NavigationCameraState.FOLLOWING -> binding.recenter.visibility = View.INVISIBLE
+            NavigationCameraState.FOLLOWING -> binding.recenter.visibility = View.GONE
             NavigationCameraState.TRANSITION_TO_OVERVIEW,
             NavigationCameraState.OVERVIEW,
             NavigationCameraState.IDLE -> binding.recenter.visibility = View.VISIBLE
@@ -467,16 +468,6 @@ open class TurnByTurnActivity(
 
         accessToken = PluginUtilities.getResourceFromContext(context, "mapbox_access_token")
         binding.mapView.scalebar.enabled = false
-
-        if(disableGestures == true) {
-            binding.mapView.gestures.doubleTapToZoomInEnabled = false
-            binding.mapView.gestures.quickZoomEnabled = false
-            binding.mapView.gestures.quickZoomEnabled = false
-            binding.mapView.gestures.pinchToZoomEnabled = false
-            binding.mapView.gestures.pitchEnabled = false
-            binding.mapView.gestures.rotateEnabled = false
-            binding.mapView.gestures.scrollEnabled = false
-        }
 
         mapboxMap = binding.mapView.getMapboxMap()
 
@@ -622,9 +613,12 @@ open class TurnByTurnActivity(
         }
 
         // initialize view interactions
-        /*binding.stop.setOnClickListener {
-            clearRouteAndStopNavigation()
-        }*/
+        if(showStopButton == true) {
+            binding.stop.visibility = View.VISIBLE
+            binding.stop.setOnClickListener {
+                clearRouteAndStopNavigation()
+            }
+        }
         binding.recenter.setOnClickListener {
             navigationCamera.requestNavigationCameraToFollowing()
             binding.routeOverview.showTextAndExtend(BUTTON_ANIMATION_DURATION)
@@ -753,8 +747,17 @@ open class TurnByTurnActivity(
 
     private fun setRouteAndStartNavigation(routes: List<DirectionsRoute>) {
         // Don't let the screen turn off while navigating
-
         activity!!.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+        if(disableGesturesWhenNavigating == true) {
+            binding.mapView.gestures.doubleTapToZoomInEnabled = false
+            binding.mapView.gestures.quickZoomEnabled = false
+            binding.mapView.gestures.quickZoomEnabled = false
+            binding.mapView.gestures.pinchToZoomEnabled = false
+            binding.mapView.gestures.pitchEnabled = false
+            binding.mapView.gestures.rotateEnabled = false
+            binding.mapView.gestures.scrollEnabled = false
+        }
 
         // set routes, where the first route in the list is the primary route that
         // will be used for active guidance
@@ -765,7 +768,6 @@ open class TurnByTurnActivity(
 
         // show UI elements
         binding.soundButton.visibility = View.VISIBLE
-        binding.routeOverview.visibility = View.VISIBLE
         binding.tripProgressCard.visibility = View.VISIBLE
 
         // move the camera to following when new route is available
@@ -780,10 +782,21 @@ open class TurnByTurnActivity(
         mapboxReplayer.stop()
 
         // hide UI elements
-        binding.soundButton.visibility = View.INVISIBLE
-        binding.maneuverView.visibility = View.INVISIBLE
-        binding.routeOverview.visibility = View.INVISIBLE
-        binding.tripProgressCard.visibility = View.INVISIBLE
+        binding.soundButton.visibility = View.GONE
+        binding.maneuverView.visibility = View.GONE
+        binding.tripProgressCard.visibility = View.GONE
+
+        if(disableGesturesWhenNavigating == true) {
+            binding.mapView.gestures.doubleTapToZoomInEnabled = true
+            binding.mapView.gestures.quickZoomEnabled = true
+            binding.mapView.gestures.quickZoomEnabled = true
+            binding.mapView.gestures.pinchToZoomEnabled = true
+            binding.mapView.gestures.pitchEnabled = true
+            binding.mapView.gestures.rotateEnabled = true
+            binding.mapView.gestures.scrollEnabled = true
+        }
+
+        navigationCamera.requestNavigationCameraToOverview()
 
         // enable the screen to turn off again when navigation stops
         activity!!.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

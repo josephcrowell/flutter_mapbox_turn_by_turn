@@ -71,6 +71,7 @@ class _ExampleAppState extends State<ExampleApp> {
               mapStyleUrlNight:
                   'mapbox://styles/computerlinkau/ckqbt6y4k0akg17o6p90cz79d',
               navigateOnLongClick: true,
+              showStopButton: true,
               routeDefaultColor: const Color(0xFF00FF0D),
               routeCasingColor: const Color(0xFF00FF0D),
               routeLowCongestionColor: const Color(0xFF00FF0D),
