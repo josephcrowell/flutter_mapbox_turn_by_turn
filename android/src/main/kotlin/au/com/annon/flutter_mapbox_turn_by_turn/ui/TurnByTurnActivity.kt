@@ -12,6 +12,7 @@ import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -750,6 +751,9 @@ open class TurnByTurnActivity(
     }
 
     private fun setRouteAndStartNavigation(routes: List<DirectionsRoute>) {
+        // Don't let the screen turn off while navigating
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
         // set routes, where the first route in the list is the primary route that
         // will be used for active guidance
         mapboxNavigation.setRoutes(routes)
@@ -778,6 +782,9 @@ open class TurnByTurnActivity(
         binding.maneuverView.visibility = View.INVISIBLE
         binding.routeOverview.visibility = View.INVISIBLE
         binding.tripProgressCard.visibility = View.INVISIBLE
+
+        // enable the screen to turn off again when navigation stops
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     private fun startSimulation(route: DirectionsRoute) {
