@@ -8,6 +8,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
+import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnActivity
 import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnViewFactory
 import io.flutter.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -55,6 +56,7 @@ class FlutterMapboxTurnByTurnPlugin
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
     Log.d("FlutterMapboxTurnByTurnPlugin","Activity Attached")
     activity = binding.activity
+    TurnByTurnActivity.activity = binding.activity
     context = binding.activity.applicationContext
     binding.addRequestPermissionsResultListener(this)
 
@@ -67,6 +69,7 @@ class FlutterMapboxTurnByTurnPlugin
   override fun onDetachedFromActivity() {
     activity!!.finish()
     activity = null
+    TurnByTurnActivity.activity = null
     pendingPermissionResult = null
   }
 

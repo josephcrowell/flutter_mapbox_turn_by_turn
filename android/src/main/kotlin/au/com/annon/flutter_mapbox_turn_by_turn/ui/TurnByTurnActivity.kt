@@ -1,6 +1,7 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
@@ -112,7 +113,6 @@ open class TurnByTurnActivity(
         creationParams: Map<String?, Any?>?,
     )
     : AppCompatActivity(), SensorEventListener {
-
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
     private val zoom: Double? = creationParams?.get("zoom") as? Double
@@ -133,7 +133,8 @@ open class TurnByTurnActivity(
     private val routeSevereCongestionColor: String = creationParams?.get("routeSevereCongestionColor") as String
     private val routeUnknownCongestionColor: String = creationParams?.get("routeUnknownCongestionColor") as String
 
-    private companion object {
+    companion object {
+        open var activity: Activity? = null
         private const val BUTTON_ANIMATION_DURATION = 1500L
     }
 
@@ -752,7 +753,8 @@ open class TurnByTurnActivity(
 
     private fun setRouteAndStartNavigation(routes: List<DirectionsRoute>) {
         // Don't let the screen turn off while navigating
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+        activity!!.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         // set routes, where the first route in the list is the primary route that
         // will be used for active guidance
@@ -784,7 +786,7 @@ open class TurnByTurnActivity(
         binding.tripProgressCard.visibility = View.INVISIBLE
 
         // enable the screen to turn off again when navigation stops
-        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        activity!!.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     private fun startSimulation(route: DirectionsRoute) {
