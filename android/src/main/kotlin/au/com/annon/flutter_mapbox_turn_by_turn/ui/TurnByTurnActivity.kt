@@ -82,6 +82,7 @@ import com.mapbox.navigation.ui.voice.model.SpeechVolume
 import io.flutter.plugin.common.BinaryMessenger
 
 import au.com.annon.flutter_mapbox_turn_by_turn.FlutterMapboxTurnByTurnPlugin
+import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.maps.Style
 import com.mapbox.maps.plugin.scalebar.scalebar
 import com.mapbox.navigation.ui.maps.camera.state.NavigationCameraStateChangedObserver
@@ -115,11 +116,20 @@ open class TurnByTurnActivity(
     : AppCompatActivity(), SensorEventListener {
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
+    private var distanceRemaining: Float? = null
+    private var durationRemaining: Double? = null
+
+    // flutter creation parameters
     private val zoom: Double? = creationParams?.get("zoom") as? Double
     private val pitch = creationParams?.get("pitch") as? Double
     private val disableGesturesWhenNavigating: Boolean? = creationParams?.get("disableGesturesWhenNavigating") as? Boolean
     private val navigateOnLongClick: Boolean? = creationParams?.get("navigateOnLongClick") as? Boolean
     private val showStopButton: Boolean? = creationParams?.get("showStopButton") as? Boolean
+    private val routeProfile: String = creationParams?.get("routeProfile") as String
+    private val language: String = creationParams?.get("language") as String
+    private val measurementUnits: String = creationParams?.get("measurementUnits") as String
+    private val showAlternativeRoutes: Boolean = creationParams?.get("showAlternativeRoutes") as Boolean
+    private val allowUTurnsAtWaypoints: Boolean = creationParams?.get("allowUTurnsAtWaypoints") as Boolean
     private val mapStyleUrlDay: String? = creationParams?.get("mapStyleUrlDay") as? String
     private val mapStyleUrlNight: String? = creationParams?.get("mapStyleUrlNight") as? String
     private val routeCasingColor: String = creationParams?.get("routeCasingColor") as String
@@ -133,6 +143,7 @@ open class TurnByTurnActivity(
     private val routeHeavyCongestionColor: String = creationParams?.get("routeHeavyCongestionColor") as String
     private val routeSevereCongestionColor: String = creationParams?.get("routeSevereCongestionColor") as String
     private val routeUnknownCongestionColor: String = creationParams?.get("routeUnknownCongestionColor") as String
+
 
     companion object {
         open var activity: Activity? = null
@@ -550,12 +561,12 @@ open class TurnByTurnActivity(
         speechApi = MapboxSpeechApi(
             context,
             accessToken,
-            Locale.UK.language
+            language
         )
         voiceInstructionsPlayer = MapboxVoiceInstructionsPlayer(
             context,
             accessToken,
-            Locale.UK.language
+            language
         )
 
         // initialize route line, the withRouteLineBelowLayerId is specified to place
@@ -606,7 +617,7 @@ open class TurnByTurnActivity(
             // add long click listener that search for a route to the clicked destination
             if (navigateOnLongClick == true) {
                 binding.mapView.gestures.addOnMapLongClickListener { point ->
-                    findRoute(point)
+                    findRoutes(listOf(point))
                     true
                 }
             }
@@ -705,11 +716,13 @@ open class TurnByTurnActivity(
         voiceInstructionsPlayer.shutdown()
     }
 
-    private fun findRoute(destination: Point) {
+    open fun findRoutes(destinations: List<Point>) {
         val originLocation = navigationLocationProvider.lastLocation
         val originPoint = originLocation?.let {
             Point.fromLngLat(it.longitude, it.latitude)
         } ?: return
+
+        val combinedDestinations: List<Point> = listOf(originPoint) + destinations
 
         // execute a route request
         // it's recommended to use the
@@ -720,7 +733,12 @@ open class TurnByTurnActivity(
             RouteOptions.builder()
                 .applyDefaultNavigationOptions()
                 .applyLanguageAndVoiceUnitOptions(context)
-                .coordinatesList(listOf(originPoint, destination))
+                .coordinatesList(combinedDestinations)
+                .profile(routeProfile)
+                .language(language)
+                .voiceUnits(measurementUnits)
+                .alternatives(showAlternativeRoutes)
+                .continueStraight(!allowUTurnsAtWaypoints)
                 .layersList(listOf(mapboxNavigation.getZLevel(), null))
                 .build(),
             object : RouterCallback {

@@ -9,6 +9,103 @@ import 'package:device_info_plus/device_info_plus.dart';
 
 int sdkVersion = 0;
 
+class Language {
+  /// Arabic
+  static const String arabic = "ar";
+
+  /// Chinese
+  static const String chinese = "zh";
+
+  /// Simplified Chinese
+  static const String chineseSimplified = "zh-CN";
+
+  /// Taiwanese
+  static const String chineseTaiwan = "zh-TW";
+
+  /// Danish
+  static const String danish = "da";
+
+  /// Dutch
+  static const String dutch = "de";
+
+  /// English
+  static const String english = "en";
+
+  /// English with Canadian accent
+  static const String englishCanada = "en-CA";
+
+  /// English with British accent
+  static const String englishUK = "en-GB";
+
+  /// English with US accent
+  static const String englishUS = "en-US";
+
+  /// French
+  static const String french = "fr";
+
+  /// Canadian French
+  static const String frenchCanada = "fr-CA";
+
+  /// German
+  static const String german = "de-DE";
+
+  /// Hebrew
+  static const String hebrew = "he";
+
+  /// Hungarian
+  static const String hungarian = "hu";
+
+  /// Italian
+  static const String italian = "it";
+
+  /// Japanese
+  static const String japanese = "ja";
+
+  /// Korean
+  static const String korean = "ko";
+
+  /// Portuguese
+  static const String portuguese = "pt-PT";
+
+  /// Brazilian Portuguese
+  static const String portugueseBrazil = "pt-BR";
+
+  /// Russian
+  static const String russian = "ru";
+
+  /// Spanish
+  static const String spanish = "es-ES";
+
+  /// Spanish with Mexican accent
+  static const String spanishMexico = "es";
+
+  /// Swedish
+  static const String swedish = "sv";
+}
+
+class RouteProfile {
+  /// For pedestrian and hiking routing. This profile shows the shortest path by using sidewalks and trails.
+  static const String walking = "walking";
+
+  /// For bicycle routing. This profile shows routes that are short and safe for cyclist, avoiding highways and preferring streets with bike lanes.
+  static const String cycling = "cycling";
+
+  /// For car and motorcycle routing. This profile shows the fastest routes by preferring high-speed roads like highways.
+  static const String driving = "driving";
+
+  /// For car and motorcycle routing. This profile factors in current and historic traffic conditions to avoid slowdowns.
+  static const String drivingTraffic = "driving-traffic";
+}
+
+/// Metric or Imperial units
+class MeasurementUnits {
+  /// Use metric units of measurement.
+  static const String metric = "metric";
+
+  /// Use imperial units of measurement.
+  static const String imperial = "imperial";
+}
+
 // The widget that show the mapbox MapView
 class MapView extends StatelessWidget {
   MapView({
@@ -18,6 +115,11 @@ class MapView extends StatelessWidget {
     this.disableGesturesWhenNavigating,
     this.navigateOnLongClick,
     this.showStopButton,
+    this.routeProfile,
+    this.language,
+    this.measurementUnits,
+    this.showAlternativeRoutes,
+    this.allowUTurnsAtWaypoints,
     this.mapStyleUrlDay,
     this.mapStyleUrlNight,
     this.routeCasingColor,
@@ -51,6 +153,11 @@ class MapView extends StatelessWidget {
   final bool? disableGesturesWhenNavigating;
   final bool? navigateOnLongClick;
   final bool? showStopButton;
+  final String? routeProfile;
+  final String? language;
+  final String? measurementUnits;
+  final bool? showAlternativeRoutes;
+  final bool? allowUTurnsAtWaypoints;
   final String? mapStyleUrlDay;
   final String? mapStyleUrlNight;
   final Color? routeCasingColor;
@@ -142,6 +249,11 @@ class MapView extends StatelessWidget {
       "disableGesturesWhenNavigating": disableGesturesWhenNavigating ?? true,
       "navigateOnLongClick": navigateOnLongClick,
       "showStopButton": showStopButton,
+      "routeProfile": routeProfile ?? RouteProfile.drivingTraffic,
+      "language": language ?? Language.englishUS,
+      "measurementUnits": measurementUnits ?? MeasurementUnits.metric,
+      "showAlternativeRoutes": showAlternativeRoutes ?? false,
+      "allowUTurnsAtWaypoints": allowUTurnsAtWaypoints ?? false,
       "mapStyleUrlDay": mapStyleUrlDay,
       "mapStyleUrlNight": mapStyleUrlNight,
       "routeCasingColor": routeCasingColorString,

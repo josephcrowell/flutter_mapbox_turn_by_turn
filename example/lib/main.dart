@@ -76,6 +76,7 @@ class _ExampleAppState extends State<ExampleApp> {
               routeCasingColor: const Color(0xFF00FF0D),
               routeLowCongestionColor: const Color(0xFF00FF0D),
               routeUnknownCongestionColor: const Color(0xFF00FF0D),
+              language: Language.englishUK,
             ),
           ),
           replacement: Padding(
