@@ -10,6 +10,7 @@ import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
 import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnActivity
 import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnViewFactory
+import com.mapbox.geojson.Point
 import io.flutter.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -89,6 +90,9 @@ class FlutterMapboxTurnByTurnPlugin
       "hasPermission" -> {
         hasPermission(result)
       }
+      "startNavigation" -> {
+        startNavigation(call, result)
+      }
       else -> {
         result.notImplemented()
       }
@@ -141,5 +145,24 @@ class FlutterMapboxTurnByTurnPlugin
       activity!!, arrayOf<String>(Manifest.permission.ACCESS_FINE_LOCATION),
       LOCATION_REQUEST_CODE
     )
+  }
+
+  private fun startNavigation(@NonNull call: MethodCall, @NonNull result: Result) {
+    val arguments = call.arguments as? Map<String, Any>
+
+    var destinations: List<Point> = listOf()
+
+    val points = arguments?.get("destinations") as HashMap<Int, Any>
+    for (item in points)
+    {
+      val point = item.value as HashMap<*, *>
+      val latitude = point["Latitude"] as Double
+      val longitude = point["Longitude"] as Double
+      destinations = destinations + Point.fromLngLat(longitude, latitude)
+    }
+
+    if(destinations.isNotEmpty()) run {
+      (TurnByTurnActivity.activity as? TurnByTurnActivity)?.findRoutes(destinations)
+    }
   }
 }

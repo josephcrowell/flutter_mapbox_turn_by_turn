@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:flutter_mapbox_turn_by_turn/src/models/point.dart';
 
 class FlutterMapboxTurnByTurn {
   static const MethodChannel _channel =
@@ -12,7 +12,9 @@ class FlutterMapboxTurnByTurn {
     return result ?? false;
   }
 
-  /*static Future<void> startNavigation({required List<LatLng> waypoints}) async {
-    await _channel.invokeMethod('startNavigation', {'waypoints': waypoints});
-  }*/
+  static Future<void> startNavigation(
+      {required List<Point> destinations}) async {
+    await _channel
+        .invokeMethod('startNavigation', {'destinations': destinations});
+  }
 }
