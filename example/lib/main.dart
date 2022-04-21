@@ -1,6 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
+import 'package:flutter_font_icons/flutter_font_icons.dart';
 
 import 'package:flutter_mapbox_turn_by_turn/flutter_mapbox_turn_by_turn.dart';
 
@@ -17,6 +19,20 @@ class ExampleApp extends StatefulWidget {
 
 class _ExampleAppState extends State<ExampleApp> {
   late bool _hasPermission = false;
+  final MapView _mapView = MapView(
+    zoom: 20,
+    pitch: 75,
+    mapStyleUrlDay: 'mapbox://styles/computerlinkau/cktnmg1zb0f6717mqtx5gb5c5',
+    mapStyleUrlNight:
+        'mapbox://styles/computerlinkau/ckqbt6y4k0akg17o6p90cz79d',
+    navigateOnLongClick: true,
+    showStopButton: true,
+    routeDefaultColor: const Color(0xFF00FF0D),
+    routeCasingColor: const Color(0xFF00FF0D),
+    routeLowCongestionColor: const Color(0xFF00FF0D),
+    routeUnknownCongestionColor: const Color(0xFF00FF0D),
+    language: Language.englishUK,
+  );
 
   @override
   void initState() {
@@ -57,27 +73,28 @@ class _ExampleAppState extends State<ExampleApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Flutter Mapbox Turn By Turn Example'),
+          title: const Text('Turn By Turn Example'),
+          actions: <Widget>[
+            IconButton(
+              onPressed: () {
+                _mapView.startNavigation(
+                  waypoints: <Point>[
+                    Point(
+                        name: "Sydney Opera House",
+                        latitude: -33.85659,
+                        longitude: 151.21528),
+                  ],
+                );
+              },
+              icon: const Icon(FontAwesome.map_pin),
+            ),
+          ],
         ),
         backgroundColor: Colors.black,
         body: Visibility(
           visible: _hasPermission,
           child: Center(
-            child: MapView(
-              zoom: 20,
-              pitch: 75,
-              mapStyleUrlDay:
-                  'mapbox://styles/computerlinkau/cktnmg1zb0f6717mqtx5gb5c5',
-              mapStyleUrlNight:
-                  'mapbox://styles/computerlinkau/ckqbt6y4k0akg17o6p90cz79d',
-              navigateOnLongClick: true,
-              showStopButton: true,
-              routeDefaultColor: const Color(0xFF00FF0D),
-              routeCasingColor: const Color(0xFF00FF0D),
-              routeLowCongestionColor: const Color(0xFF00FF0D),
-              routeUnknownCongestionColor: const Color(0xFF00FF0D),
-              language: Language.englishUK,
-            ),
+            child: _mapView,
           ),
           replacement: Padding(
             padding: const EdgeInsetsDirectional.only(

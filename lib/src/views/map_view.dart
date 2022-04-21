@@ -1,3 +1,5 @@
+import 'package:device_info_plus/device_info_plus.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -5,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
 
-import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter_mapbox_turn_by_turn/src/models/point.dart';
 
 int sdkVersion = 0;
 
@@ -108,6 +110,11 @@ class MeasurementUnits {
 
 // The widget that show the mapbox MapView
 class MapView extends StatelessWidget {
+  final MethodChannel _methodChannel =
+      const MethodChannel('flutter_mapbox_navigation/map_view/method');
+  final EventChannel _eventChannel =
+      const EventChannel('flutter_mapbox_navigation/map_view/events');
+
   MapView({
     Key? key,
     this.zoom,
@@ -135,6 +142,7 @@ class MapView extends StatelessWidget {
     this.routeUnknownCongestionColor,
   }) : super(key: key) {
     getSdkVersion();
+    _methodChannel.setMethodCallHandler(_handleMethod);
   }
 
   getSdkVersion() async {
@@ -317,5 +325,42 @@ class MapView extends StatelessWidget {
       default:
         throw UnsupportedError('Unsupported platform view');
     }
+  }
+
+  /// Generic Handler for Messages sent from the Platform
+  Future<dynamic> _handleMethod(MethodCall call) async {
+    switch (call.method) {
+      case 'sendFromNative':
+        String? text = call.arguments as String?;
+        return Future.value("Text from native: $text");
+    }
+  }
+
+  /// Starts the Navigation
+  Future<bool?> startNavigation({required List<Point> waypoints}) async {
+    assert(waypoints.isNotEmpty);
+    List<Map<String, Object?>> pointList = [];
+
+    for (int i = 0; i < waypoints.length; i++) {
+      var waypoint = waypoints[i];
+      assert(waypoint.name != null);
+      assert(waypoint.latitude != null);
+      assert(waypoint.longitude != null);
+
+      final pointMap = <String, dynamic>{
+        "Order": i,
+        "Name": waypoint.name,
+        "Latitude": waypoint.latitude,
+        "Longitude": waypoint.longitude,
+      };
+      pointList.add(pointMap);
+    }
+    var i = 0;
+    var waypointMap = {for (var e in pointList) i++: e};
+
+    var args = <String, dynamic>{};
+    args["waypoints"] = waypointMap;
+    //_routeEventSubscription = _streamRouteEvent.listen(_onProgressData);
+    return _methodChannel.invokeMethod('startNavigation', args);
   }
 }

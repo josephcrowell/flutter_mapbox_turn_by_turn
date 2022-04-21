@@ -23,10 +23,9 @@ import java.util.*
 
 /** FlutterMapboxTurnByTurnPlugin */
 class FlutterMapboxTurnByTurnPlugin
-  : FlutterPlugin, PluginRegistry.RequestPermissionsResultListener, ActivityAware, MethodCallHandler, EventChannel.StreamHandler {
+  : FlutterPlugin, PluginRegistry.RequestPermissionsResultListener, ActivityAware, MethodCallHandler {
   private var activity: Activity? = null
   private lateinit var methodChannel : MethodChannel
-  private lateinit var eventChannel: EventChannel
   private lateinit var context: Context
   private var platformViewRegistry: PlatformViewRegistry? = null
   private var binaryMessenger: BinaryMessenger? = null
@@ -35,7 +34,6 @@ class FlutterMapboxTurnByTurnPlugin
     private var LOCATION_REQUEST_CODE: Int = 367
     private var pendingPermissionResult: Result? = null
     private const val VIEW_NAME = "MapView"
-    var eventSink:EventChannel.EventSink? = null
   }
 
   override fun onAttachedToEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
@@ -43,15 +41,12 @@ class FlutterMapboxTurnByTurnPlugin
     binaryMessenger = binding.binaryMessenger
     platformViewRegistry = binding.platformViewRegistry
     methodChannel = MethodChannel(binaryMessenger, "flutter_mapbox_turn_by_turn/method")
-    eventChannel = EventChannel(binaryMessenger, "flutter_mapbox_navigation/events")
     methodChannel.setMethodCallHandler(this)
-    eventChannel.setStreamHandler(this)
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
     activity = null
     methodChannel.setMethodCallHandler(null)
-    eventChannel.setStreamHandler(null)
   }
 
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
@@ -90,21 +85,10 @@ class FlutterMapboxTurnByTurnPlugin
       "hasPermission" -> {
         hasPermission(result)
       }
-      "startNavigation" -> {
-        startNavigation(call, result)
-      }
       else -> {
         result.notImplemented()
       }
     }
-  }
-
-  override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
-    eventSink = events
-  }
-
-  override fun onCancel(arguments: Any?) {
-    eventSink = null
   }
 
   override fun onRequestPermissionsResult( requestCode: Int,
@@ -145,24 +129,5 @@ class FlutterMapboxTurnByTurnPlugin
       activity!!, arrayOf<String>(Manifest.permission.ACCESS_FINE_LOCATION),
       LOCATION_REQUEST_CODE
     )
-  }
-
-  private fun startNavigation(@NonNull call: MethodCall, @NonNull result: Result) {
-    val arguments = call.arguments as? Map<String, Any>
-
-    var destinations: List<Point> = listOf()
-
-    val points = arguments?.get("destinations") as HashMap<Int, Any>
-    for (item in points)
-    {
-      val point = item.value as HashMap<*, *>
-      val latitude = point["Latitude"] as Double
-      val longitude = point["Longitude"] as Double
-      destinations = destinations + Point.fromLngLat(longitude, latitude)
-    }
-
-    if(destinations.isNotEmpty()) run {
-      (TurnByTurnActivity.activity as? TurnByTurnActivity)?.findRoutes(destinations)
-    }
   }
 }

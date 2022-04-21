@@ -1,6 +1,5 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
@@ -10,18 +9,16 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.location.Location
-import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
 import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
-import com.mapbox.api.directions.v5.models.Bearing
 import com.mapbox.api.directions.v5.models.DirectionsRoute
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Expected
@@ -79,13 +76,13 @@ import com.mapbox.navigation.ui.voice.model.SpeechAnnouncement
 import com.mapbox.navigation.ui.voice.model.SpeechError
 import com.mapbox.navigation.ui.voice.model.SpeechValue
 import com.mapbox.navigation.ui.voice.model.SpeechVolume
-import io.flutter.plugin.common.BinaryMessenger
 
-import au.com.annon.flutter_mapbox_turn_by_turn.FlutterMapboxTurnByTurnPlugin
-import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.maps.Style
 import com.mapbox.maps.plugin.scalebar.scalebar
 import com.mapbox.navigation.ui.maps.camera.state.NavigationCameraStateChangedObserver
+import io.flutter.plugin.common.EventChannel
+import io.flutter.plugin.common.MethodCall
+import io.flutter.plugin.common.MethodChannel
 
 import java.util.*
 
@@ -110,10 +107,13 @@ import java.util.*
 open class TurnByTurnActivity(
         private val context: Context,
         open val binding: TurnByTurnActivityBinding,
-        open val messenger: BinaryMessenger,
         creationParams: Map<String?, Any?>?,
     )
-    : AppCompatActivity(), SensorEventListener {
+    : AppCompatActivity(), SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
+    open var methodChannel: MethodChannel? = null
+    open var eventChannel: EventChannel? = null
+    private var eventSink:EventChannel.EventSink? = null
+
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
     private var distanceRemaining: Float? = null
@@ -474,6 +474,11 @@ open class TurnByTurnActivity(
         }
     }
 
+    open fun initFlutterChannelHandlers() {
+        methodChannel?.setMethodCallHandler(this)
+        eventChannel?.setStreamHandler(this)
+    }
+
     open fun initializeActivity() {
         Log.d("TurnByTurnActivity","Activity initialize started")
 
@@ -716,7 +721,44 @@ open class TurnByTurnActivity(
         voiceInstructionsPlayer.shutdown()
     }
 
-    open fun findRoutes(destinations: List<Point>) {
+    //Flutter stream listener delegate methods
+    override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+        eventSink = events
+    }
+
+    override fun onCancel(arguments: Any?) {
+        eventSink = null
+    }
+
+    override fun onMethodCall(methodCall: MethodCall, result: MethodChannel.Result) {
+        when (methodCall.method) {
+            "startNavigation" -> {
+                startNavigation(methodCall, result)
+            }
+            else -> result.notImplemented()
+        }
+    }
+
+    private fun startNavigation(@NonNull call: MethodCall, @NonNull result: MethodChannel.Result) {
+        val arguments = call.arguments as? Map<String, Any>
+
+        var waypoints: List<Point> = listOf()
+
+        val points = arguments?.get("waypoints") as HashMap<Int, Any>
+        for (item in points)
+        {
+            val point = item.value as HashMap<*, *>
+            val latitude = point["Latitude"] as Double
+            val longitude = point["Longitude"] as Double
+            waypoints = waypoints + Point.fromLngLat(longitude, latitude)
+        }
+
+        if(waypoints.isNotEmpty()) run {
+            findRoutes(waypoints)
+        }
+    }
+
+    private fun findRoutes(destinations: List<Point>) {
         val originLocation = navigationLocationProvider.lastLocation
         val originPoint = originLocation?.let {
             Point.fromLngLat(it.longitude, it.latitude)
