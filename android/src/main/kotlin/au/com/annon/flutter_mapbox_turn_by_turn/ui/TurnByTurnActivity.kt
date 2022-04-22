@@ -735,6 +735,9 @@ open class TurnByTurnActivity(
             "startNavigation" -> {
                 startNavigation(methodCall, result)
             }
+            "stopNavigation" -> {
+                clearRouteAndStopNavigation()
+            }
             else -> result.notImplemented()
         }
     }

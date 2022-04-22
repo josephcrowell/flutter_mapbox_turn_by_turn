@@ -363,4 +363,8 @@ class MapView extends StatelessWidget {
     //_routeEventSubscription = _streamRouteEvent.listen(_onProgressData);
     return _methodChannel.invokeMethod('startNavigation', args);
   }
+
+  Future<bool?> stopNavigation() async {
+    return _methodChannel.invokeMethod('stopNavigation');
+  }
 }
