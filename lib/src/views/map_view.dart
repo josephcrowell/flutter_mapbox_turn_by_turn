@@ -111,9 +111,9 @@ class MeasurementUnits {
 // The widget that show the mapbox MapView
 class MapView extends StatelessWidget {
   final MethodChannel _methodChannel =
-      const MethodChannel('flutter_mapbox_navigation/map_view/method');
+      const MethodChannel('flutter_mapbox_turn_by_turn/map_view/method');
   final EventChannel _eventChannel =
-      const EventChannel('flutter_mapbox_navigation/map_view/events');
+      const EventChannel('flutter_mapbox_turn_by_turn/map_view/events');
 
   MapView({
     Key? key,

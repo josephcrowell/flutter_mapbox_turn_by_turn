@@ -35,8 +35,8 @@ internal class TurnByTurnView(
     }
 
     override fun initFlutterChannelHandlers() {
-        methodChannel = MethodChannel(messenger, "flutter_mapbox_navigation/map_view/method")
-        eventChannel = EventChannel(messenger, "flutter_mapbox_navigation/map_view/events")
+        methodChannel = MethodChannel(messenger, "flutter_mapbox_turn_by_turn/map_view/method")
+        eventChannel = EventChannel(messenger, "flutter_mapbox_turn_by_turn/map_view/events")
         super.initFlutterChannelHandlers()
     }
 }
