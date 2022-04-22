@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
 
-import 'package:flutter_mapbox_turn_by_turn/src/models/point.dart';
+import 'package:flutter_mapbox_turn_by_turn/src/models/destination.dart';
 
 int sdkVersion = 0;
 
@@ -337,7 +337,7 @@ class MapView extends StatelessWidget {
   }
 
   /// Starts the Navigation
-  Future<bool?> startNavigation({required List<Point> waypoints}) async {
+  Future<bool?> startNavigation({required List<Destination> waypoints}) async {
     assert(waypoints.isNotEmpty);
     List<Map<String, Object?>> pointList = [];
 

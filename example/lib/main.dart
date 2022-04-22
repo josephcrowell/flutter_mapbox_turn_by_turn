@@ -78,15 +78,15 @@ class _ExampleAppState extends State<ExampleApp> {
             IconButton(
               onPressed: () {
                 _mapView.startNavigation(
-                  waypoints: <Point>[
-                    Point(
+                  waypoints: <Destination>[
+                    Destination(
                         name: "Sydney Opera House",
                         latitude: -33.85659,
                         longitude: 151.21528),
                   ],
                 );
               },
-              icon: const Icon(FontAwesome.map_pin),
+              icon: const Icon(FontAwesome.map_o),
             ),
           ],
         ),
