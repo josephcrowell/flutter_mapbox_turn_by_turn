@@ -80,9 +80,10 @@ class _ExampleAppState extends State<ExampleApp> {
                 _mapView.startNavigation(
                   waypoints: <Destination>[
                     Destination(
-                        name: "Sydney Opera House",
-                        latitude: -33.85659,
-                        longitude: 151.21528),
+                      name: "Sydney Opera House",
+                      latitude: -33.85659,
+                      longitude: 151.21528,
+                    ),
                   ],
                 );
               },
