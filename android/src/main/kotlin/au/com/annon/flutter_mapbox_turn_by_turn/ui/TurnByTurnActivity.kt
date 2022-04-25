@@ -118,6 +118,7 @@ open class TurnByTurnActivity(
     private var lightValue = 1.1f
     private var distanceRemaining: Float? = null
     private var durationRemaining: Double? = null
+    private var navigationStarted: Boolean = false
 
     // flutter creation parameters
     private val zoom: Double? = creationParams?.get("zoom") as? Double
@@ -578,7 +579,6 @@ open class TurnByTurnActivity(
         // the route line below road labels layer on the map
         // the value of this option will depend on the style that you are using
         // and under which layer the route line should be placed on the map layers stack
-        Log.d("TurnByTurnActivity", "Route Casing Color: $routeCasingColor");
         val customColorResources = RouteLineColorResources.Builder()
             .routeCasingColor(Color.parseColor(routeCasingColor))
             .routeDefaultColor(Color.parseColor(routeDefaultColor))
@@ -702,7 +702,9 @@ open class TurnByTurnActivity(
 
     fun onStopActivity() {
         Log.d("TurnByTurnActivity","onStop called")
-        clearRouteAndStopNavigation()
+        if(navigationStarted) {
+            clearRouteAndStopNavigation()
+        }
 
         // unregister event listeners to prevent leaks or unnecessary resource consumption
         mapboxNavigation.unregisterRoutesObserver(routesObserver)
@@ -835,9 +837,11 @@ open class TurnByTurnActivity(
 
         // move the camera to following when new route is available
         navigationCamera.requestNavigationCameraToFollowing()
+        navigationStarted = true
     }
 
     private fun clearRouteAndStopNavigation() {
+        navigationStarted = false
         // clear
         mapboxNavigation.setRoutes(listOf())
 
