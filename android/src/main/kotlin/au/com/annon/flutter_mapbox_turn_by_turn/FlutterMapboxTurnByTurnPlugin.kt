@@ -37,7 +37,7 @@ class FlutterMapboxTurnByTurnPlugin
   }
 
   override fun onAttachedToEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-    Log.d("FlutterMapboxTurnByTurnPlugin","Engine Attached")
+    Log.d("FlutterMapboxTurnByTurnPlugin","Engine attached")
     binaryMessenger = binding.binaryMessenger
     platformViewRegistry = binding.platformViewRegistry
     methodChannel = MethodChannel(binaryMessenger, "flutter_mapbox_turn_by_turn/method")
@@ -45,12 +45,13 @@ class FlutterMapboxTurnByTurnPlugin
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+    Log.d("FlutterMapboxTurnByTurnPlugin","Engine detached")
     activity = null
     methodChannel.setMethodCallHandler(null)
   }
 
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-    Log.d("FlutterMapboxTurnByTurnPlugin","Activity Attached")
+    Log.d("FlutterMapboxTurnByTurnPlugin","Activity attached")
     activity = binding.activity
     TurnByTurnActivity.activity = binding.activity
     context = binding.activity.applicationContext
@@ -63,6 +64,7 @@ class FlutterMapboxTurnByTurnPlugin
   }
 
   override fun onDetachedFromActivity() {
+    Log.d("FlutterMapboxTurnByTurnPlugin","Activity detached")
     activity!!.finish()
     activity = null
     TurnByTurnActivity.activity = null
@@ -70,11 +72,13 @@ class FlutterMapboxTurnByTurnPlugin
   }
 
   override fun onDetachedFromActivityForConfigChanges() {
+    Log.d("FlutterMapboxTurnByTurnPlugin","Activity detached for config changes")
     activity = null
     pendingPermissionResult = null
   }
 
   override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+    Log.d("FlutterMapboxTurnByTurnPlugin","Activity reattached for config changes")
     activity = binding.activity
     binding.addRequestPermissionsResultListener(this)
   }
