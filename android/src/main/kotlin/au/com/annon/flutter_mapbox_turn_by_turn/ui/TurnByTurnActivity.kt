@@ -14,7 +14,6 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.NonNull
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
@@ -108,12 +107,42 @@ import java.util.*
  * - You can use buttons to mute/unmute voice instructions, recenter the camera, or show the route overview.
  */
 
-open class TurnByTurnActivity(
-        private val context: Context,
-        open val binding: TurnByTurnActivityBinding,
+open class TurnByTurnActivity : SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
+
+    constructor(
+        mContext: Context,
+        mBinding: TurnByTurnActivityBinding,
         creationParams: Map<String?, Any?>?,
-    )
-    : AppCompatActivity(), SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
+    ) {
+        context = mContext
+        binding = mBinding
+
+        zoom = creationParams?.get("zoom") as? Double
+        pitch = creationParams?.get("pitch") as? Double
+        disableGesturesWhenNavigating = creationParams?.get("disableGesturesWhenNavigating") as? Boolean
+        navigateOnLongClick = creationParams?.get("navigateOnLongClick") as? Boolean
+        showStopButton = creationParams?.get("showStopButton") as? Boolean
+        routeProfile = creationParams?.get("routeProfile") as String
+        language = creationParams["language"] as String
+        measurementUnits = creationParams["measurementUnits"] as String
+        showAlternativeRoutes = creationParams["showAlternativeRoutes"] as Boolean
+        allowUTurnsAtWaypoints = creationParams["allowUTurnsAtWaypoints"] as Boolean
+        mapStyleUrlDay = creationParams["mapStyleUrlDay"] as? String
+        mapStyleUrlNight = creationParams["mapStyleUrlNight"] as? String
+        routeCasingColor = creationParams["routeCasingColor"] as String
+        routeDefaultColor = creationParams["routeDefaultColor"] as String
+        restrictedRoadColor = creationParams["restrictedRoadColor"] as String
+        routeLineTraveledColor = creationParams["routeLineTraveledColor"] as String
+        routeLineTraveledCasingColor = creationParams["routeLineTraveledCasingColor"] as String
+        routeClosureColor = creationParams["routeClosureColor"] as String
+        routeLowCongestionColor = creationParams["routeLowCongestionColor"] as String
+        routeModerateCongestionColor = creationParams["routeModerateCongestionColor"] as String
+        routeHeavyCongestionColor = creationParams["routeHeavyCongestionColor"] as String
+        routeSevereCongestionColor = creationParams["routeSevereCongestionColor"] as String
+        routeUnknownCongestionColor = creationParams["routeUnknownCongestionColor"] as String
+    }
+
+
     open var methodChannel: MethodChannel? = null
     open var eventChannel: EventChannel? = null
     private var eventSink:EventChannel.EventSink? = null
@@ -125,33 +154,35 @@ open class TurnByTurnActivity(
     private var navigationStarted: Boolean = false
 
     // flutter creation parameters
-    private val zoom: Double? = creationParams?.get("zoom") as? Double
-    private val pitch = creationParams?.get("pitch") as? Double
-    private val disableGesturesWhenNavigating: Boolean? = creationParams?.get("disableGesturesWhenNavigating") as? Boolean
-    private val navigateOnLongClick: Boolean? = creationParams?.get("navigateOnLongClick") as? Boolean
-    private val showStopButton: Boolean? = creationParams?.get("showStopButton") as? Boolean
-    private val routeProfile: String = creationParams?.get("routeProfile") as String
-    private val language: String = creationParams?.get("language") as String
-    private val measurementUnits: String = creationParams?.get("measurementUnits") as String
-    private val showAlternativeRoutes: Boolean = creationParams?.get("showAlternativeRoutes") as Boolean
-    private val allowUTurnsAtWaypoints: Boolean = creationParams?.get("allowUTurnsAtWaypoints") as Boolean
-    private val mapStyleUrlDay: String? = creationParams?.get("mapStyleUrlDay") as? String
-    private val mapStyleUrlNight: String? = creationParams?.get("mapStyleUrlNight") as? String
-    private val routeCasingColor: String = creationParams?.get("routeCasingColor") as String
-    private val routeDefaultColor: String = creationParams?.get("routeDefaultColor") as String
-    private val restrictedRoadColor: String = creationParams?.get("restrictedRoadColor") as String
-    private val routeLineTraveledColor: String = creationParams?.get("routeLineTraveledColor") as String
-    private val routeLineTraveledCasingColor: String = creationParams?.get("routeLineTraveledCasingColor") as String
-    private val routeClosureColor: String = creationParams?.get("routeClosureColor") as String
-    private val routeLowCongestionColor: String = creationParams?.get("routeLowCongestionColor") as String
-    private val routeModerateCongestionColor: String = creationParams?.get("routeModerateCongestionColor") as String
-    private val routeHeavyCongestionColor: String = creationParams?.get("routeHeavyCongestionColor") as String
-    private val routeSevereCongestionColor: String = creationParams?.get("routeSevereCongestionColor") as String
-    private val routeUnknownCongestionColor: String = creationParams?.get("routeUnknownCongestionColor") as String
+    private val zoom: Double?
+    private val pitch: Double?
+    private val disableGesturesWhenNavigating: Boolean?
+    private val navigateOnLongClick: Boolean?
+    private val showStopButton: Boolean?
+    private val routeProfile: String
+    private val language: String
+    private val measurementUnits: String
+    private val showAlternativeRoutes: Boolean
+    private val allowUTurnsAtWaypoints: Boolean
+    private val mapStyleUrlDay: String?
+    private val mapStyleUrlNight: String?
+    private val routeCasingColor: String
+    private val routeDefaultColor: String
+    private val restrictedRoadColor: String
+    private val routeLineTraveledColor: String
+    private val routeLineTraveledCasingColor: String
+    private val routeClosureColor: String
+    private val routeLowCongestionColor: String
+    private val routeModerateCongestionColor: String
+    private val routeHeavyCongestionColor: String
+    private val routeSevereCongestionColor: String
+    private val routeUnknownCongestionColor: String
 
 
     companion object {
         var activity: Activity? = null
+        private lateinit var context: Context
+        private lateinit var binding: TurnByTurnActivityBinding
         private const val BUTTON_ANIMATION_DURATION = 1500L
     }
 
@@ -408,7 +439,7 @@ open class TurnByTurnActivity(
         maneuvers.fold(
             { error ->
                 Toast.makeText(
-                    this@TurnByTurnActivity,
+                    context,
                     error.errorMessage,
                     Toast.LENGTH_SHORT
                 ).show()
@@ -495,6 +526,10 @@ open class TurnByTurnActivity(
         if (p0.sensor.type == Sensor.TYPE_LIGHT) {
             lightValue = value
         }
+    }
+
+    open fun binding(): TurnByTurnActivityBinding {
+        return binding
     }
 
     open fun initFlutterChannelHandlers() {
@@ -697,7 +732,7 @@ open class TurnByTurnActivity(
     }
 
     private fun onStartActivity() {
-        Log.d("TurnByTurnActivity","onStart called")
+        Log.d("TurnByTurnActivity","onStartActivity called")
 
         // register event listeners
         mapboxNavigation.registerRoutesObserver(routesObserver)
@@ -723,7 +758,7 @@ open class TurnByTurnActivity(
     }
 
     fun onStopActivity() {
-        Log.d("TurnByTurnActivity","onStop called")
+        Log.d("TurnByTurnActivity","onStopActivity called")
         if(navigationStarted) {
             clearRouteAndStopNavigation()
         }
@@ -735,7 +770,9 @@ open class TurnByTurnActivity(
         mapboxNavigation.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
         mapboxNavigation.unregisterRouteProgressObserver(replayProgressObserver)
         navigationCamera.unregisterNavigationCameraStateChangeObserver(navigationCameraStateChangedObserver)
+    }
 
+    fun onDestroy() {
         MapboxNavigationProvider.destroy()
         mapboxReplayer.finish()
         maneuverApi.cancel()

@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.Log
 
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
+import com.mapbox.navigation.core.MapboxNavigationProvider.destroy
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
@@ -23,11 +24,11 @@ internal class TurnByTurnView(
     private val messenger: BinaryMessenger = messenger
 
     override fun getView(): View {
-        return binding.root
+        return binding().root
     }
 
     override fun dispose() {
-        onStopActivity()
+        destroy()
         Log.d("TurnByTurnView", "View disposed")
     }
 
@@ -43,6 +44,7 @@ internal class TurnByTurnView(
     }
 
     override fun onFlutterViewDetached() {
+        onStopActivity()
         super.onFlutterViewDetached()
         Log.d("TurnByTurnView", "View detached")
     }
