@@ -79,6 +79,10 @@ import com.mapbox.navigation.ui.voice.model.SpeechVolume
 
 import com.mapbox.maps.Style
 import com.mapbox.maps.plugin.scalebar.scalebar
+import com.mapbox.navigation.ui.maneuver.api.RoadShieldCallback
+import com.mapbox.navigation.ui.maneuver.model.Maneuver
+import com.mapbox.navigation.ui.maneuver.model.RoadShield
+import com.mapbox.navigation.ui.maneuver.model.RoadShieldError
 import com.mapbox.navigation.ui.maps.camera.state.NavigationCameraStateChangedObserver
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
@@ -147,7 +151,7 @@ open class TurnByTurnActivity(
 
 
     companion object {
-        open var activity: Activity? = null
+        var activity: Activity? = null
         private const val BUTTON_ANIMATION_DURATION = 1500L
     }
 
@@ -374,6 +378,16 @@ open class TurnByTurnActivity(
         }
     }
 
+    private val roadShieldCallback = object : RoadShieldCallback {
+        override fun onRoadShields(
+            maneuvers: List<Maneuver>,
+            shields: Map<String, RoadShield?>,
+            errors: Map<String, RoadShieldError>
+        ) {
+            binding.maneuverView.renderManeuverShields(shields)
+        }
+    }
+
     /**
      * Gets notified with progress along the currently active route.
      */
@@ -402,6 +416,14 @@ open class TurnByTurnActivity(
             {
                 binding.maneuverView.visibility = View.VISIBLE
                 binding.maneuverView.renderManeuvers(maneuvers)
+                maneuvers.fold(
+                    { error ->
+                        // hamdle errors
+                    },
+                    { maneuverList ->
+                        maneuverApi.getRoadShields(maneuverList, roadShieldCallback)
+                    }
+                )
             }
         )
 
