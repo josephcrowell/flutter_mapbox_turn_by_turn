@@ -2,6 +2,7 @@ package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
 import android.view.View
 import android.content.Context
+import android.util.Log
 
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
 import io.flutter.plugin.common.BinaryMessenger
@@ -27,11 +28,23 @@ internal class TurnByTurnView(
 
     override fun dispose() {
         onStopActivity()
+        Log.d("TurnByTurnView", "View disposed")
     }
 
     init {
         initFlutterChannelHandlers()
         initializeActivity()
+        Log.d("TurnByTurnView", "View initialised")
+    }
+
+    override fun onFlutterViewAttached(flutterView: View) {
+        super.onFlutterViewAttached(flutterView)
+        Log.d("TurnByTurnView", "View attached")
+    }
+
+    override fun onFlutterViewDetached() {
+        super.onFlutterViewDetached()
+        Log.d("TurnByTurnView", "View detached")
     }
 
     override fun initFlutterChannelHandlers() {
