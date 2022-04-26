@@ -19,7 +19,9 @@
             android:id="@+id/tripProgressCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:alpha=".8"
+            android:layout_margin="0dp"
+            android:alpha=".6"
+            android:padding="0dp"
             android:visibility="gone"
             app:cardElevation="8dp"
             app:cardUseCompatPadding="false"
@@ -42,8 +44,10 @@
                     android:id="@+id/tripProgressView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_margin="0dp"
+                    android:padding="0dp"
                     app:tripProgressTextColor="#FFFFFF"
-                    app:tripProgressViewBackgroundColor="#202020">
+                    app:tripProgressViewBackgroundColor="#1A000000">
 
                 </com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView>
 
@@ -54,14 +58,14 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_margin="4dp"
-            android:alpha=".8"
+            android:alpha=".6"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:maneuverViewBackgroundColor="#1C1C1C"
-            app:subManeuverViewBackgroundColor="#1C1C1C"
-            app:upcomingManeuverViewBackgroundColor="#1C1C1C" />
+            app:maneuverViewBackgroundColor="#1A000000"
+            app:subManeuverViewBackgroundColor="#1A000000"
+            app:upcomingManeuverViewBackgroundColor="#1A000000" />
 
         <com.mapbox.navigation.ui.voice.view.MapboxSoundButton
             android:id="@+id/soundButton"
@@ -69,7 +73,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
-            android:alpha=".8"
+            android:alpha=".6"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/maneuverView" />
@@ -80,7 +84,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
-            android:alpha=".8"
+            android:alpha=".6"
             android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/soundButton" />
@@ -91,7 +95,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
-            android:alpha=".8"
+            android:alpha=".6"
             android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/routeOverview" />
