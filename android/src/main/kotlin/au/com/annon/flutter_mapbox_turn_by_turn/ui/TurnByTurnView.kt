@@ -5,7 +5,6 @@ import android.content.Context
 import android.util.Log
 
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
-import com.mapbox.navigation.core.MapboxNavigationProvider.destroy
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
@@ -27,13 +26,8 @@ internal class TurnByTurnView(
         return binding().root
     }
 
-    override fun dispose() {
-        destroy()
-        Log.d("TurnByTurnView", "View disposed")
-    }
-
     init {
-        initFlutterChannelHandlers()
+        initializeFlutterChannelHandlers()
         initializeActivity()
         Log.d("TurnByTurnView", "View initialised")
     }
@@ -44,14 +38,19 @@ internal class TurnByTurnView(
     }
 
     override fun onFlutterViewDetached() {
-        onStopActivity()
+        detachActivity()
         super.onFlutterViewDetached()
         Log.d("TurnByTurnView", "View detached")
     }
 
-    override fun initFlutterChannelHandlers() {
+    override fun dispose() {
+        destroy()
+        Log.d("TurnByTurnView", "View disposed")
+    }
+
+    override fun initializeFlutterChannelHandlers() {
         methodChannel = MethodChannel(messenger, "flutter_mapbox_turn_by_turn/map_view/method")
         eventChannel = EventChannel(messenger, "flutter_mapbox_turn_by_turn/map_view/events")
-        super.initFlutterChannelHandlers()
+        super.initializeFlutterChannelHandlers()
     }
 }

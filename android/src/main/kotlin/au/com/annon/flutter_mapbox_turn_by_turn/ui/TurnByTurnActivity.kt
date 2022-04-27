@@ -532,7 +532,7 @@ open class TurnByTurnActivity : SensorEventListener, MethodChannel.MethodCallHan
         return binding
     }
 
-    open fun initFlutterChannelHandlers() {
+    open fun initializeFlutterChannelHandlers() {
         methodChannel?.setMethodCallHandler(this)
         eventChannel?.setStreamHandler(this)
     }
@@ -757,7 +757,7 @@ open class TurnByTurnActivity : SensorEventListener, MethodChannel.MethodCallHan
         }
     }
 
-    fun onStopActivity() {
+    fun detachActivity() {
         Log.d("TurnByTurnActivity","onStopActivity called")
         if(navigationStarted) {
             clearRouteAndStopNavigation()
@@ -772,7 +772,7 @@ open class TurnByTurnActivity : SensorEventListener, MethodChannel.MethodCallHan
         navigationCamera.unregisterNavigationCameraStateChangeObserver(navigationCameraStateChangedObserver)
     }
 
-    fun onDestroy() {
+    fun destroy() {
         MapboxNavigationProvider.destroy()
         mapboxReplayer.finish()
         maneuverApi.cancel()
