@@ -1,6 +1,6 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
-import android.app.Activity
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
@@ -11,13 +11,17 @@ import android.hardware.SensorEventListener
 import android.location.Location
 import android.util.Log
 import android.view.View
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.NonNull
 import androidx.core.content.ContextCompat
+
+import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxProgressChangeEvent
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
+import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxTurnByTurnEvents
 import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
+import com.mapbox.api.directions.v5.DirectionsCriteria
+
 import com.mapbox.api.directions.v5.models.DirectionsRoute
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Expected
@@ -29,21 +33,17 @@ import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.mapbox.maps.plugin.scalebar.scalebar
+import com.mapbox.maps.Style
 import com.mapbox.navigation.base.TimeFormat
 import com.mapbox.navigation.base.extensions.applyDefaultNavigationOptions
 import com.mapbox.navigation.base.extensions.applyLanguageAndVoiceUnitOptions
 import com.mapbox.navigation.base.options.NavigationOptions
-import com.mapbox.navigation.base.route.RouterCallback
-import com.mapbox.navigation.base.route.RouterFailure
-import com.mapbox.navigation.base.route.RouterOrigin
+import com.mapbox.navigation.base.route.*
 import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.navigation.core.MapboxNavigationProvider
 import com.mapbox.navigation.core.directions.session.RoutesObserver
 import com.mapbox.navigation.core.formatter.MapboxDistanceFormatter
-import com.mapbox.navigation.core.replay.MapboxReplayer
-import com.mapbox.navigation.core.replay.ReplayLocationEngine
-import com.mapbox.navigation.core.replay.route.ReplayProgressObserver
-import com.mapbox.navigation.core.replay.route.ReplayRouteMapper
 import com.mapbox.navigation.core.trip.session.LocationMatcherResult
 import com.mapbox.navigation.core.trip.session.LocationObserver
 import com.mapbox.navigation.core.trip.session.RouteProgressObserver
@@ -55,6 +55,7 @@ import com.mapbox.navigation.ui.maps.camera.NavigationCamera
 import com.mapbox.navigation.ui.maps.camera.data.MapboxNavigationViewportDataSource
 import com.mapbox.navigation.ui.maps.camera.lifecycle.NavigationBasicGesturesHandler
 import com.mapbox.navigation.ui.maps.camera.state.NavigationCameraState
+import com.mapbox.navigation.ui.maps.camera.state.NavigationCameraStateChangedObserver
 import com.mapbox.navigation.ui.maps.camera.transition.NavigationCameraTransitionOptions
 import com.mapbox.navigation.ui.maps.location.NavigationLocationProvider
 import com.mapbox.navigation.ui.maps.route.arrow.api.MapboxRouteArrowApi
@@ -62,10 +63,7 @@ import com.mapbox.navigation.ui.maps.route.arrow.api.MapboxRouteArrowView
 import com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowOptions
 import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineApi
 import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineView
-import com.mapbox.navigation.ui.maps.route.line.model.MapboxRouteLineOptions
-import com.mapbox.navigation.ui.maps.route.line.model.RouteLine
-import com.mapbox.navigation.ui.maps.route.line.model.RouteLineColorResources
-import com.mapbox.navigation.ui.maps.route.line.model.RouteLineResources
+import com.mapbox.navigation.ui.maps.route.line.model.*
 import com.mapbox.navigation.ui.tripprogress.api.MapboxTripProgressApi
 import com.mapbox.navigation.ui.tripprogress.model.*
 import com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView
@@ -76,13 +74,7 @@ import com.mapbox.navigation.ui.voice.model.SpeechError
 import com.mapbox.navigation.ui.voice.model.SpeechValue
 import com.mapbox.navigation.ui.voice.model.SpeechVolume
 
-import com.mapbox.maps.Style
-import com.mapbox.maps.plugin.scalebar.scalebar
-import com.mapbox.navigation.ui.maneuver.api.RoadShieldCallback
-import com.mapbox.navigation.ui.maneuver.model.Maneuver
-import com.mapbox.navigation.ui.maneuver.model.RoadShield
-import com.mapbox.navigation.ui.maneuver.model.RoadShieldError
-import com.mapbox.navigation.ui.maps.camera.state.NavigationCameraStateChangedObserver
+import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -107,14 +99,14 @@ import java.util.*
  * - You can use buttons to mute/unmute voice instructions, recenter the camera, or show the route overview.
  */
 
-open class TurnByTurnActivity : SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
+open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
 
     constructor(
         mContext: Context,
         mBinding: TurnByTurnActivityBinding,
         creationParams: Map<String?, Any?>?,
     ) {
-        context = mContext
+        super.attachBaseContext(mContext)
         binding = mBinding
 
         zoom = creationParams?.get("zoom") as? Double
@@ -528,7 +520,7 @@ open class TurnByTurnActivity : SensorEventListener, MethodChannel.MethodCallHan
         }
     }
 
-    open fun binding(): TurnByTurnActivityBinding {
+    open fun getBinding(): TurnByTurnActivityBinding {
         return binding
     }
 
@@ -538,7 +530,7 @@ open class TurnByTurnActivity : SensorEventListener, MethodChannel.MethodCallHan
     }
 
     open fun initializeActivity() {
-        Log.d("TurnByTurnActivity","Activity initialize started")
+        Log.d("TurnByTurnActivity","Activity initializing")
 
         accessToken = PluginUtilities.getResourceFromContext(context, "mapbox_access_token")
         binding.mapView.scalebar.enabled = false
@@ -722,43 +714,26 @@ open class TurnByTurnActivity : SensorEventListener, MethodChannel.MethodCallHan
         }
 
         // register observers and check routes
-        onStartActivity()
+        startActivity()
 
         // start the trip session to being receiving location updates in free drive
         // and later when a route is set also receiving route progress updates
         mapboxNavigation.startTripSession()
 
-        Log.d("TurnByTurnActivity","Activity initialize finished")
+        Log.d("TurnByTurnActivity","Activity initialized")
     }
 
-    private fun onStartActivity() {
-        Log.d("TurnByTurnActivity","onStartActivity called")
-
+    private fun startActivity() {
         // register event listeners
         mapboxNavigation.registerRoutesObserver(routesObserver)
         mapboxNavigation.registerRouteProgressObserver(routeProgressObserver)
         mapboxNavigation.registerLocationObserver(locationObserver)
         mapboxNavigation.registerVoiceInstructionsObserver(voiceInstructionsObserver)
-        mapboxNavigation.registerRouteProgressObserver(replayProgressObserver)
 
-        if (mapboxNavigation.getRoutes().isEmpty()) {
-            // if simulation is enabled (ReplayLocationEngine set to NavigationOptions)
-            // but we're not simulating yet,
-            // push a single location sample to establish origin
-            mapboxReplayer.pushEvents(
-                listOf(
-                    ReplayRouteMapper.mapToUpdateLocation(
-                        eventTimestamp = 0.0,
-                        point = Point.fromLngLat(-122.39726512303575, 37.785128345296805)
-                    )
-                )
-            )
-            mapboxReplayer.playFirstLocation()
-        }
+        Log.d("TurnByTurnActivity","Activity started")
     }
 
     fun detachActivity() {
-        Log.d("TurnByTurnActivity","onStopActivity called")
         if(navigationStarted) {
             clearRouteAndStopNavigation()
         }
@@ -768,18 +743,21 @@ open class TurnByTurnActivity : SensorEventListener, MethodChannel.MethodCallHan
         mapboxNavigation.unregisterRouteProgressObserver(routeProgressObserver)
         mapboxNavigation.unregisterLocationObserver(locationObserver)
         mapboxNavigation.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
-        mapboxNavigation.unregisterRouteProgressObserver(replayProgressObserver)
         navigationCamera.unregisterNavigationCameraStateChangeObserver(navigationCameraStateChangedObserver)
+
+        Log.d("TurnByTurnActivity","Activity detached")
     }
 
+    @SuppressLint("Lifecycle")
     fun destroy() {
         MapboxNavigationProvider.destroy()
-        mapboxReplayer.finish()
         maneuverApi.cancel()
         routeLineApi.cancel()
         routeLineView.cancel()
         speechApi.cancel()
         voiceInstructionsPlayer.shutdown()
+
+        Log.d("TurnByTurnActivity","Activity destroyed")
     }
 
     //Flutter stream listener delegate methods
@@ -871,7 +849,7 @@ open class TurnByTurnActivity : SensorEventListener, MethodChannel.MethodCallHan
 
     private fun setRouteAndStartNavigation(routes: List<DirectionsRoute>) {
         // Don't let the screen turn off while navigating
-        activity!!.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        binding.mapView.keepScreenOn = true
 
         if(disableGesturesWhenNavigating == true) {
             binding.mapView.gestures.doubleTapToZoomInEnabled = false
@@ -925,17 +903,6 @@ open class TurnByTurnActivity : SensorEventListener, MethodChannel.MethodCallHan
         navigationCamera.requestNavigationCameraToOverview()
 
         // enable the screen to turn off again when navigation stops
-        activity!!.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    }
-
-    private fun startSimulation(route: DirectionsRoute) {
-        mapboxReplayer.run {
-            stop()
-            clearEvents()
-            val replayEvents = ReplayRouteMapper().mapDirectionsRouteGeometry(route)
-            pushEvents(replayEvents)
-            seekTo(replayEvents.first())
-            play()
-        }
+        binding.mapView.keepScreenOn = false
     }
 }

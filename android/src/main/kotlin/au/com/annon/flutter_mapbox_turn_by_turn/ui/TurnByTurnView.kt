@@ -23,7 +23,7 @@ internal class TurnByTurnView(
     private val messenger: BinaryMessenger = messenger
 
     override fun getView(): View {
-        return binding().root
+        return getBinding().root
     }
 
     init {
