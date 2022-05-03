@@ -114,9 +114,11 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         disableGesturesWhenNavigating = creationParams?.get("disableGesturesWhenNavigating") as? Boolean
         navigateOnLongClick = creationParams?.get("navigateOnLongClick") as? Boolean
         showStopButton = creationParams?.get("showStopButton") as? Boolean
-        routeProfile = creationParams?.get("routeProfile") as String
+        showSpeedIndicator = creationParams?.get("showSpeedIndicator") as Boolean
+        routeProfile = creationParams["routeProfile"] as String
         language = creationParams["language"] as String
         measurementUnits = creationParams["measurementUnits"] as String
+        speedThreshold = creationParams["speedThreshold"] as Int
         showAlternativeRoutes = creationParams["showAlternativeRoutes"] as Boolean
         allowUTurnsAtWaypoints = creationParams["allowUTurnsAtWaypoints"] as Boolean
         mapStyleUrlDay = creationParams["mapStyleUrlDay"] as? String
@@ -153,7 +155,6 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
     private val showStopButton: Boolean?
     private val routeProfile: String
     private val language: String
-    private val measurementUnits: String
     private val showAlternativeRoutes: Boolean
     private val allowUTurnsAtWaypoints: Boolean
     private val mapStyleUrlDay: String?
@@ -170,28 +171,15 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
     private val routeSevereCongestionColor: String
     private val routeUnknownCongestionColor: String
 
-
     companion object {
-        var activity: Activity? = null
-        private lateinit var context: Context
         private lateinit var binding: TurnByTurnActivityBinding
         private const val BUTTON_ANIMATION_DURATION = 1500L
+        var eventSink:EventChannel.EventSink? = null
+
+        private var measurementUnits: String = "metric"
+        private var speedThreshold: Int = 5
+        private var showSpeedIndicator: Boolean = true
     }
-
-    /**
-     * Debug tool used to play, pause and seek route progress events that can be used to produce mocked location updates along the route.
-     */
-    private val mapboxReplayer = MapboxReplayer()
-
-    /**
-     * Debug tool that mocks location updates with an input from the [mapboxReplayer].
-     */
-    private val replayLocationEngine = ReplayLocationEngine(mapboxReplayer)
-
-    /**
-     * Debug observer that makes sure the replayer has always an up-to-date information to generate mock updates.
-     */
-    private val replayProgressObserver = ReplayProgressObserver(mapboxReplayer)
 
     /**
      * Mapbox Maps access token.
@@ -383,6 +371,80 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                 location = enhancedLocation,
                 keyPoints = locationMatcherResult.keyPoints,
             )
+
+            if(showSpeedIndicator == true) {
+                var speedLimit = locationMatcherResult.speedLimit?.speedKmph
+                if(speedLimit != null) {
+                    if(measurementUnits == DirectionsCriteria.METRIC) {
+                        // speed in Kph
+                        var speed = (enhancedLocation.speed * 3.6).toInt()
+                        var mSpeedLimit = speedLimit + speedThreshold
+
+                        // We should be showing metric speed
+                        runOnUiThread {
+                            binding.speedView.text = "$speed\nkph"
+                            if (speed > mSpeedLimit) {
+                                binding.speedView.background = ContextCompat.getDrawable(
+                                    context,
+                                    R.drawable.speed_limit_speeding
+                                )
+                            } else {
+                                binding.speedView.background = ContextCompat.getDrawable(
+                                    context,
+                                    R.drawable.speed_limit_normal
+                                )
+                            }
+                        }
+                    } else {
+                        // We should be showing imperial speed
+                        var speed = (enhancedLocation.speed * 3.6 / 1.609).toInt()
+                        speedLimit = (speedLimit.toFloat() / 1.609).toInt()
+                        var mSpeedLimit = speedLimit + speedThreshold
+
+                        // We should be showing metric speed
+                        runOnUiThread {
+                            binding.speedView.text = "$speed\nmph"
+                            if (speed > mSpeedLimit) {
+                                binding.speedView.background = ContextCompat.getDrawable(
+                                    context,
+                                    R.drawable.speed_limit_speeding
+                                )
+                            } else {
+                                binding.speedView.background = ContextCompat.getDrawable(
+                                    context,
+                                    R.drawable.speed_limit_normal
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    if(measurementUnits == DirectionsCriteria.METRIC) {
+                        // speed in Kph
+                        var speed = (enhancedLocation.speed * 3.6).toInt()
+
+                        // We should be showing metric speed
+                        runOnUiThread {
+                            binding.speedView.text = "$speed\nkph"
+                            binding.speedView.background = ContextCompat.getDrawable(
+                                context,
+                                R.drawable.speed_limit_normal
+                            )
+                        }
+                    } else {
+                        // We should be showing imperial speed
+                        var speed = (enhancedLocation.speed * 3.6 / 1.609).toInt()
+
+                        // We should be showing metric speed
+                        runOnUiThread {
+                            binding.speedView.text = "$speed\nmph"
+                            binding.speedView.background = ContextCompat.getDrawable(
+                                context,
+                                R.drawable.speed_limit_normal
+                            )
+                        }
+                    }
+                }
+            }
 
             // update camera position to account for new location
             viewportDataSource.onLocationChanged(enhancedLocation)

@@ -122,9 +122,11 @@ class MapView extends StatelessWidget {
     this.disableGesturesWhenNavigating,
     this.navigateOnLongClick,
     this.showStopButton,
+    this.showSpeedIndicator,
     this.routeProfile,
     this.language,
     this.measurementUnits,
+    this.speedThreshold,
     this.showAlternativeRoutes,
     this.allowUTurnsAtWaypoints,
     this.mapStyleUrlDay,
@@ -161,9 +163,11 @@ class MapView extends StatelessWidget {
   final bool? disableGesturesWhenNavigating;
   final bool? navigateOnLongClick;
   final bool? showStopButton;
+  final bool? showSpeedIndicator;
   final String? routeProfile;
   final String? language;
   final String? measurementUnits;
+  final int? speedThreshold;
   final bool? showAlternativeRoutes;
   final bool? allowUTurnsAtWaypoints;
   final String? mapStyleUrlDay;
@@ -257,9 +261,11 @@ class MapView extends StatelessWidget {
       "disableGesturesWhenNavigating": disableGesturesWhenNavigating ?? true,
       "navigateOnLongClick": navigateOnLongClick,
       "showStopButton": showStopButton,
+      "showSpeedIndicator": showSpeedIndicator ?? true,
       "routeProfile": routeProfile ?? RouteProfile.drivingTraffic,
       "language": language ?? Language.englishUS,
       "measurementUnits": measurementUnits ?? MeasurementUnits.metric,
+      "speedThreshold": speedThreshold ?? 5,
       "showAlternativeRoutes": showAlternativeRoutes ?? false,
       "allowUTurnsAtWaypoints": allowUTurnsAtWaypoints ?? false,
       "mapStyleUrlDay": mapStyleUrlDay,
