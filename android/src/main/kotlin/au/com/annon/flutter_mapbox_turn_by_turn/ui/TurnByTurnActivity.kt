@@ -463,16 +463,6 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
     }
 
-    private val roadShieldCallback = object : RoadShieldCallback {
-        override fun onRoadShields(
-            maneuvers: List<Maneuver>,
-            shields: Map<String, RoadShield?>,
-            errors: Map<String, RoadShieldError>
-        ) {
-            binding.maneuverView.renderManeuverShields(shields)
-        }
-    }
-
     /**
      * Gets notified with progress along the currently active route.
      */
@@ -501,14 +491,6 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             {
                 binding.maneuverView.visibility = View.VISIBLE
                 binding.maneuverView.renderManeuvers(maneuvers)
-                maneuvers.fold(
-                    { error ->
-                        // hamdle errors
-                    },
-                    { maneuverList ->
-                        maneuverApi.getRoadShields(maneuverList, roadShieldCallback)
-                    }
-                )
             }
         )
 
