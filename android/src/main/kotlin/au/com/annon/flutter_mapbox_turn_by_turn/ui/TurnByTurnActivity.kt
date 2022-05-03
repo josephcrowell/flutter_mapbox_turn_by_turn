@@ -870,6 +870,8 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         val combinedDestinations: List<Point> = listOf(originPoint) + destinations
 
+        val annotations: List<String> = listOf(DirectionsCriteria.ANNOTATION_MAXSPEED)
+
         // execute a route request
         // it's recommended to use the
         // applyDefaultNavigationOptions and applyLanguageAndVoiceUnitOptions
@@ -877,6 +879,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         // to allow for support of all of the Navigation SDK features
         mapboxNavigation.requestRoutes(
             RouteOptions.builder()
+                .annotationsList(annotations)
                 .applyDefaultNavigationOptions()
                 .applyLanguageAndVoiceUnitOptions(context)
                 .coordinatesList(combinedDestinations)
