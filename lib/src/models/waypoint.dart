@@ -1,9 +1,9 @@
 ///A Geo-coordinate Point used for navigation.
-class Destination {
+class Waypoint {
   String? name;
   double? latitude;
   double? longitude;
-  Destination(
+  Waypoint(
       {required this.name, required this.latitude, required this.longitude});
 
   @override
@@ -11,7 +11,7 @@ class Destination {
     return 'Point{latitude: $latitude, longitude: $longitude}';
   }
 
-  Destination.fromJson(Map<String, dynamic> json) {
+  Waypoint.fromJson(Map<String, dynamic> json) {
     name = json["name"];
     latitude = json["latitude"] as double?;
     longitude = json["longitude"] as double?;

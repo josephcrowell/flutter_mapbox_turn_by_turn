@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:device_info_plus/device_info_plus.dart';
 
 import 'package:flutter/foundation.dart';
@@ -6,8 +9,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_progress_change_event.dart';
 
-import 'package:flutter_mapbox_turn_by_turn/src/models/destination.dart';
+import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_turn_by_turn_event.dart';
+import 'package:flutter_mapbox_turn_by_turn/src/models/waypoint.dart';
+import 'package:logger/logger.dart';
 
 int sdkVersion = 0;
 
@@ -108,6 +114,8 @@ class MeasurementUnits {
   static const String imperial = "imperial";
 }
 
+Stream<MapboxTurnByTurnEvent>? _onMapboxTurnByTurnEvent;
+
 // The widget that show the mapbox MapView
 class MapView extends StatelessWidget {
   final MethodChannel _methodChannel =
@@ -117,6 +125,7 @@ class MapView extends StatelessWidget {
 
   MapView({
     Key? key,
+    this.eventNotifier,
     this.zoom,
     this.pitch,
     this.disableGesturesWhenNavigating,
@@ -146,6 +155,10 @@ class MapView extends StatelessWidget {
     getSdkVersion();
     _methodChannel.setMethodCallHandler(_handleMethod);
   }
+
+  final ValueSetter<MapboxTurnByTurnEvent>? eventNotifier;
+  late final StreamSubscription<MapboxTurnByTurnEvent>?
+      _mapboxTurnByTurnEventSubscription;
 
   getSdkVersion() async {
     if (defaultTargetPlatform == TargetPlatform.android) {
@@ -183,6 +196,7 @@ class MapView extends StatelessWidget {
   final Color? routeHeavyCongestionColor;
   final Color? routeSevereCongestionColor;
   final Color? routeUnknownCongestionColor;
+  var logger = Logger();
 
   @override
   Widget build(BuildContext context) {
@@ -286,7 +300,7 @@ class MapView extends StatelessWidget {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         if (sdkVersion < 29) {
-          debugPrint("Android SDK is less than 29. Using virtual display.");
+          logger.d("Android SDK is less than 29. Using virtual display.");
           return AndroidView(
             viewType: viewType,
             layoutDirection: TextDirection.ltr,
@@ -295,7 +309,7 @@ class MapView extends StatelessWidget {
           );
         }
 
-        debugPrint("Android SDK is greater than 28. Using hybrid composition.");
+        logger.d("Android SDK is greater than 28. Using hybrid composition.");
         return PlatformViewLink(
           viewType: viewType,
           surfaceFactory:
@@ -343,34 +357,66 @@ class MapView extends StatelessWidget {
   }
 
   /// Starts the Navigation
-  Future<bool?> startNavigation({required List<Destination> waypoints}) async {
+  Future<bool?> startNavigation({required List<Waypoint> waypoints}) async {
     assert(waypoints.isNotEmpty);
-    List<Map<String, Object?>> pointList = [];
+    List<Map<String, Object?>> waypointList = [];
 
     for (int i = 0; i < waypoints.length; i++) {
       var waypoint = waypoints[i];
-      assert(waypoint.name != null);
-      assert(waypoint.latitude != null);
-      assert(waypoint.longitude != null);
 
       final pointMap = <String, dynamic>{
-        "Order": i,
-        "Name": waypoint.name,
-        "Latitude": waypoint.latitude,
-        "Longitude": waypoint.longitude,
+        "order": i,
+        "name": waypoint.name,
+        "latitude": waypoint.latitude,
+        "longitude": waypoint.longitude,
       };
-      pointList.add(pointMap);
+      waypointList.add(pointMap);
     }
     var i = 0;
-    var waypointMap = {for (var e in pointList) i++: e};
+    var waypointMap = {for (var e in waypointList) i++: e};
 
     var args = <String, dynamic>{};
     args["waypoints"] = waypointMap;
-    //_routeEventSubscription = _streamRouteEvent.listen(_onProgressData);
+    if (eventNotifier != null) {
+      logger.d('Event Notifier is initialized');
+      _mapboxTurnByTurnEventSubscription = _eventStream!.listen(_onEventData);
+    } else {
+      logger.d('Event Notifier is not initialized');
+    }
     return _methodChannel.invokeMethod('startNavigation', args);
   }
 
   Future<bool?> stopNavigation() async {
     return _methodChannel.invokeMethod('stopNavigation');
+  }
+
+  void _onEventData(MapboxTurnByTurnEvent event) {
+    if (eventNotifier != null) {
+      eventNotifier!(event);
+    }
+
+    if (event.eventType == MapboxEventType.onArrival) {
+      _mapboxTurnByTurnEventSubscription?.cancel();
+    }
+  }
+
+  Stream<MapboxTurnByTurnEvent>? get _eventStream {
+    _onMapboxTurnByTurnEvent ??= _eventChannel
+        .receiveBroadcastStream()
+        .map((dynamic event) => _parseRouteEvent(event));
+    return _onMapboxTurnByTurnEvent;
+  }
+
+  MapboxTurnByTurnEvent _parseRouteEvent(String jsonString) {
+    MapboxTurnByTurnEvent event;
+    var map = json.decode(jsonString);
+    var progressEvent = MapboxProgressChangeEvent.fromJson(map);
+    if (progressEvent.isProgressChangeEvent!) {
+      event = MapboxTurnByTurnEvent(
+          eventType: MapboxEventType.progressChange, data: progressEvent);
+    } else {
+      event = MapboxTurnByTurnEvent.fromJson(map);
+    }
+    return event;
   }
 }
