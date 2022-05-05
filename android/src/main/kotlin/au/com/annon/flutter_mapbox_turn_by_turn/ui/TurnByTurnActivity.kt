@@ -14,14 +14,14 @@ import android.view.View
 import android.widget.Toast
 import androidx.annotation.NonNull
 import androidx.core.content.ContextCompat
-
-import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxProgressChangeEvent
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
+import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEventType
+import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxLocationChangeEvent
+import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxProgressChangeEvent
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxTurnByTurnEvents
 import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
 import com.mapbox.api.directions.v5.DirectionsCriteria
-
 import com.mapbox.api.directions.v5.models.DirectionsRoute
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Expected
@@ -29,12 +29,12 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.MapView
 import com.mapbox.maps.MapboxMap
+import com.mapbox.maps.Style
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.plugin.scalebar.scalebar
-import com.mapbox.maps.Style
 import com.mapbox.navigation.base.TimeFormat
 import com.mapbox.navigation.base.extensions.applyDefaultNavigationOptions
 import com.mapbox.navigation.base.extensions.applyLanguageAndVoiceUnitOptions
@@ -73,13 +73,13 @@ import com.mapbox.navigation.ui.voice.model.SpeechAnnouncement
 import com.mapbox.navigation.ui.voice.model.SpeechError
 import com.mapbox.navigation.ui.voice.model.SpeechValue
 import com.mapbox.navigation.ui.voice.model.SpeechVolume
-
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-
+import java.lang.reflect.Field
 import java.util.*
+
 
 /**
  * Before running the plugin make sure you have put your access_token in the correct place
@@ -136,10 +136,8 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         routeUnknownCongestionColor = creationParams["routeUnknownCongestionColor"] as String
     }
 
-
     open var methodChannel: MethodChannel? = null
     open var eventChannel: EventChannel? = null
-    private var eventSink:EventChannel.EventSink? = null
 
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
@@ -293,6 +291,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             }
         }
 
+
     /**
      * Extracts message that should be communicated to the driver about the upcoming maneuver.
      * When possible, downloads a synthesized audio file that can be played back to the driver.
@@ -372,7 +371,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                 keyPoints = locationMatcherResult.keyPoints,
             )
 
-            if(showSpeedIndicator == true) {
+            if(showSpeedIndicator) {
                 var speedLimit = locationMatcherResult.speedLimit?.speedKmph
                 if(speedLimit != null) {
                     if(measurementUnits == DirectionsCriteria.METRIC) {
@@ -449,6 +448,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             // update camera position to account for new location
             viewportDataSource.onLocationChanged(enhancedLocation)
             viewportDataSource.evaluate()
+            MapboxTurnByTurnEvents.sendEvent(MapboxLocationChangeEvent(enhancedLocation))
 
             // if this is the first location update the activity has received,
             // it's best to immediately move the camera to the current user location
@@ -494,6 +494,19 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             }
         )
 
+        if(navigationStarted) {
+            try {
+                distanceRemaining = routeProgress.distanceRemaining
+                durationRemaining = routeProgress.durationRemaining
+
+                val progressEvent = MapboxProgressChangeEvent(routeProgress)
+                MapboxTurnByTurnEvents.sendEvent(progressEvent)
+
+            } catch (e: java.lang.Exception) {
+
+            }
+        }
+
         // update bottom trip progress summary
         binding.tripProgressView.render(
             tripProgressApi.getTripProgress(routeProgress)
@@ -520,12 +533,14 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
      * - driver got off route and a reroute was executed
      */
     private val routesObserver = RoutesObserver { routeUpdateResult ->
-        if (routeUpdateResult.routes.isNotEmpty()) {
+        if (routeUpdateResult.navigationRoutes.toDirectionsRoutes().isNotEmpty()) {
             // generate route geometries asynchronously and render them
-            val routeLines = routeUpdateResult.routes.map { RouteLine(it, null) }
+            val routeLines = routeUpdateResult.navigationRoutes.toDirectionsRoutes()
+                .map { RouteLine(it, null) }
 
-            routeLineApi.setRoutes(
+            routeLineApi.setNavigationRouteLines(
                 routeLines
+                    .toNavigationRouteLines()
             ) { value ->
                 mapboxMap.getStyle()?.apply {
                     routeLineView.renderRouteDrawData(this, value)
@@ -533,8 +548,11 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             }
 
             // update the camera position to account for the new route
-            viewportDataSource.onRouteChanged(routeUpdateResult.routes.first())
+            viewportDataSource.onRouteChanged(
+                routeUpdateResult.navigationRoutes.toDirectionsRoutes().first().toNavigationRoute())
             viewportDataSource.evaluate()
+
+            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.REROUTE_ALONG, routeUpdateResult.reason)
         } else {
             // remove the route line and route arrow from the map
             val style = mapboxMap.getStyle()
@@ -715,7 +733,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             // add long click listener that search for a route to the clicked destination
             if (navigateOnLongClick == true) {
                 binding.mapView.gestures.addOnMapLongClickListener { point ->
-                    findRoutes(listOf(point))
+                    findRoutes(listOf(point),listOf(""))
                     true
                 }
             }
@@ -816,7 +834,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
     override fun onMethodCall(methodCall: MethodCall, result: MethodChannel.Result) {
         when (methodCall.method) {
             "startNavigation" -> {
-                startNavigation(methodCall, result)
+                startNavigation(methodCall)
             }
             "stopNavigation" -> {
                 clearRouteAndStopNavigation()
@@ -825,32 +843,43 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
     }
 
-    private fun startNavigation(@NonNull call: MethodCall, @NonNull result: MethodChannel.Result) {
-        val arguments = call.arguments as? Map<String, Any>
+    private fun startNavigation(@NonNull call: MethodCall) {
+        val arguments = call.arguments as? Map<*, *>
 
-        var waypoints: List<Point> = listOf()
+        var waypointList: List<Point> = listOf()
+        var waypointNamesList: List<String> = listOf()
 
-        val points = arguments?.get("waypoints") as HashMap<Int, Any>
-        for (item in points)
+        val waypointMapList = arguments?.get("waypoints") as HashMap<*, *>
+        for (item in waypointMapList)
         {
-            val point = item.value as HashMap<*, *>
-            val latitude = point["Latitude"] as Double
-            val longitude = point["Longitude"] as Double
-            waypoints = waypoints + Point.fromLngLat(longitude, latitude)
+            val waypoint = item.value as HashMap<*, *>
+            val name = waypoint["name"] as String
+            val latitude = waypoint["latitude"] as Double
+            val longitude = waypoint["longitude"] as Double
+            waypointNamesList = waypointNamesList + name
+            waypointList = waypointList + Point.fromLngLat(longitude, latitude)
         }
 
-        if(waypoints.isNotEmpty()) run {
-            findRoutes(waypoints)
+        if(waypointList.isNotEmpty() && waypointNamesList.isNotEmpty()) run {
+            findRoutes(waypointList, waypointNamesList)
         }
     }
 
-    private fun findRoutes(destinations: List<Point>) {
+    private fun findRoutes(waypoints: List<Point>, waypointNames: List<String>) {
+        if (!PluginUtilities.isNetworkAvailable(context)) {
+            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILD_FAILED, "No Internet Connection")
+            return
+        }
+
+        MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILDING)
+
         val originLocation = navigationLocationProvider.lastLocation
         val originPoint = originLocation?.let {
             Point.fromLngLat(it.longitude, it.latitude)
         } ?: return
 
-        val combinedDestinations: List<Point> = listOf(originPoint) + destinations
+        val combinedWaypoints: List<Point> = listOf(originPoint) + waypoints
+        val combinedWaypointNames: List<String> = listOf("") + waypointNames
 
         val annotations: List<String> = listOf(DirectionsCriteria.ANNOTATION_MAXSPEED)
 
@@ -864,7 +893,8 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                 .annotationsList(annotations)
                 .applyDefaultNavigationOptions()
                 .applyLanguageAndVoiceUnitOptions(context)
-                .coordinatesList(combinedDestinations)
+                .coordinatesList(combinedWaypoints)
+                .waypointNamesList(combinedWaypointNames)
                 .profile(routeProfile)
                 .language(language)
                 .voiceUnits(measurementUnits)
@@ -872,9 +902,9 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                 .continueStraight(!allowUTurnsAtWaypoints)
                 .layersList(listOf(mapboxNavigation.getZLevel(), null))
                 .build(),
-            object : RouterCallback {
+            object : NavigationRouterCallback {
                 override fun onRoutesReady(
-                    routes: List<DirectionsRoute>,
+                    routes: List<NavigationRoute>,
                     routerOrigin: RouterOrigin
                 ) {
                     setRouteAndStartNavigation(routes)
@@ -884,17 +914,26 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                     reasons: List<RouterFailure>,
                     routeOptions: RouteOptions
                 ) {
-                    // no impl
+                    var message = "an error occurred while building the route. Errors: "
+                    for (reason in reasons){
+                        message += reason.message
+                    }
+                    MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILD_FAILED, message)
                 }
 
                 override fun onCanceled(routeOptions: RouteOptions, routerOrigin: RouterOrigin) {
-                    // no impl
+                    MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILD_CANCELLED)
                 }
             }
         )
     }
 
-    private fun setRouteAndStartNavigation(routes: List<DirectionsRoute>) {
+    private fun setRouteAndStartNavigation(routes: List<NavigationRoute>) {
+        if (routes.isEmpty()){
+            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILD_NO_ROUTES_FOUND)
+            return
+        }
+
         // Don't let the screen turn off while navigating
         binding.mapView.keepScreenOn = true
 
@@ -908,12 +947,11 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             binding.mapView.gestures.scrollEnabled = false
         }
 
+        MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILT)
+
         // set routes, where the first route in the list is the primary route that
         // will be used for active guidance
-        mapboxNavigation.setRoutes(routes)
-
-        // start location simulation along the primary route
-        startSimulation(routes.first())
+        mapboxNavigation.setNavigationRoutes(routes)
 
         // show UI elements
         binding.soundButton.visibility = View.VISIBLE
@@ -922,15 +960,13 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         // move the camera to following when new route is available
         navigationCamera.requestNavigationCameraToFollowing()
         navigationStarted = true
+        MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_RUNNING)
     }
 
     private fun clearRouteAndStopNavigation() {
         navigationStarted = false
         // clear
-        mapboxNavigation.setRoutes(listOf())
-
-        // stop simulation
-        mapboxReplayer.stop()
+        mapboxNavigation.setNavigationRoutes(listOf<DirectionsRoute>().toNavigationRoutes())
 
         // hide UI elements
         binding.soundButton.visibility = View.GONE
@@ -951,5 +987,6 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         // enable the screen to turn off again when navigation stops
         binding.mapView.keepScreenOn = false
+        MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_CANCELLED)
     }
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_font_icons/flutter_font_icons.dart';
 
 import 'package:flutter_mapbox_turn_by_turn/flutter_mapbox_turn_by_turn.dart';
+import 'package:logger/logger.dart';
 
 void main() {
   runApp(const ExampleApp());
@@ -19,29 +20,39 @@ class ExampleApp extends StatefulWidget {
 
 class _ExampleAppState extends State<ExampleApp> {
   late bool _hasPermission = false;
-  final MapView _mapView = MapView(
-    zoom: 20,
-    pitch: 75,
-    mapStyleUrlDay: 'mapbox://styles/computerlinkau/cktnmg1zb0f6717mqtx5gb5c5',
-    mapStyleUrlNight:
-        'mapbox://styles/computerlinkau/ckqbt6y4k0akg17o6p90cz79d',
-    navigateOnLongClick: true,
-    showStopButton: true,
-    routeDefaultColor: const Color(0xFF00FF0D),
-    routeCasingColor: const Color(0xFF00FF0D),
-    routeLowCongestionColor: const Color(0xFF00FF0D),
-    routeUnknownCongestionColor: const Color(0xFF00FF0D),
-    language: Language.englishUK,
-  );
+  bool _isMultipleStop = false;
+  bool _routeBuilt = false;
+  bool _isNavigating = false;
+  String _instruction = "";
+  var logger = Logger();
+
+  late final MapView _mapView;
 
   @override
   void initState() {
     super.initState();
-    initMapState();
+    initPermissionState();
+
+    _mapView = MapView(
+      eventNotifier: _onMapboxEvent,
+      zoom: 20,
+      pitch: 75,
+      mapStyleUrlDay:
+          'mapbox://styles/computerlinkau/cktnmg1zb0f6717mqtx5gb5c5',
+      mapStyleUrlNight:
+          'mapbox://styles/computerlinkau/ckqbt6y4k0akg17o6p90cz79d',
+      navigateOnLongClick: true,
+      showStopButton: true,
+      routeDefaultColor: const Color(0xFF00FF0D),
+      routeCasingColor: const Color(0xFF00FF0D),
+      routeLowCongestionColor: const Color(0xFF00FF0D),
+      routeUnknownCongestionColor: const Color(0xFF00FF0D),
+      language: Language.englishUK,
+    );
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initMapState() async {
+  Future<void> initPermissionState() async {
     bool hasPermission;
 
     // If the widget was removed from the tree while the asynchronous platform
@@ -78,9 +89,9 @@ class _ExampleAppState extends State<ExampleApp> {
             IconButton(
               onPressed: () {
                 _mapView.startNavigation(
-                  waypoints: <Destination>[
-                    Destination(
-                      name: "Sydney Opera House",
+                  waypoints: <Waypoint>[
+                    Waypoint(
+                      name: "Sydney Operahouse",
                       latitude: -33.85659,
                       longitude: 151.21528,
                     ),
@@ -133,5 +144,59 @@ class _ExampleAppState extends State<ExampleApp> {
         ),
       ),
     );
+  }
+
+  /// Optional event handler if you want to listen to certain events such as
+  /// navigation instruction or location changes
+  void _onMapboxEvent(e) async {
+    switch (e.eventType) {
+      case MapboxEventType.progressChange:
+        var progressChangeEvent = e.data as MapboxProgressChangeEvent;
+        if (progressChangeEvent.currentStepInstruction != null) {
+          _instruction = progressChangeEvent.currentStepInstruction!;
+        }
+        logger.d('_onMapboxEvent: Progress changed');
+        break;
+      case MapboxEventType.locationChange:
+        logger.d('_onMapboxEvent: Location changed');
+        break;
+      case MapboxEventType.routeBuilding:
+      case MapboxEventType.routeBuilt:
+        logger.d('_onMapboxEvent: Route built');
+        setState(() {
+          _routeBuilt = true;
+        });
+        break;
+      case MapboxEventType.routeBuildFailed:
+        setState(() {
+          _routeBuilt = false;
+        });
+        break;
+      case MapboxEventType.navigationRunning:
+        setState(() {
+          _isNavigating = true;
+        });
+        break;
+      case MapboxEventType.onArrival:
+        if (!_isMultipleStop) {
+          await Future.delayed(
+            const Duration(
+              seconds: 3,
+            ),
+          );
+          await _mapView.stopNavigation();
+        } else {}
+        break;
+      case MapboxEventType.navigationFinished:
+      case MapboxEventType.navigationCancelled:
+        setState(() {
+          _routeBuilt = false;
+          _isNavigating = false;
+        });
+        break;
+      default:
+        break;
+    }
+    setState(() {});
   }
 }

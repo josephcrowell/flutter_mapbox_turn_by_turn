@@ -100,8 +100,8 @@ class PluginUtilities {
                     else -> false
                 }
             } else {
-                val nwInfo = connectivityManager.activeNetworkInfo ?: return false
-                return nwInfo.isConnected
+                // Plugin no longer supports SDK less than 23 so don't handle the condition
+                return false
             }
         }
     }
