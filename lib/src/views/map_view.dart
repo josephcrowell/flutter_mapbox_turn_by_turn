@@ -196,7 +196,7 @@ class MapView extends StatelessWidget {
   final Color? routeHeavyCongestionColor;
   final Color? routeSevereCongestionColor;
   final Color? routeUnknownCongestionColor;
-  var logger = Logger();
+  final logger = Logger();
 
   @override
   Widget build(BuildContext context) {
