@@ -13,7 +13,6 @@ import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_progress_change_ev
 
 import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_turn_by_turn_event.dart';
 import 'package:flutter_mapbox_turn_by_turn/src/models/waypoint.dart';
-import 'package:logger/logger.dart';
 
 int sdkVersion = 0;
 
@@ -196,7 +195,6 @@ class MapView extends StatelessWidget {
   final Color? routeHeavyCongestionColor;
   final Color? routeSevereCongestionColor;
   final Color? routeUnknownCongestionColor;
-  final logger = Logger();
 
   @override
   Widget build(BuildContext context) {
@@ -300,7 +298,7 @@ class MapView extends StatelessWidget {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         if (sdkVersion < 29) {
-          logger.d("Android SDK is less than 29. Using virtual display.");
+          debugPrint("Android SDK is less than 29. Using virtual display.");
           return AndroidView(
             viewType: viewType,
             layoutDirection: TextDirection.ltr,
@@ -309,7 +307,7 @@ class MapView extends StatelessWidget {
           );
         }
 
-        logger.d("Android SDK is greater than 28. Using hybrid composition.");
+        debugPrint("Android SDK is greater than 28. Using hybrid composition.");
         return PlatformViewLink(
           viewType: viewType,
           surfaceFactory:
@@ -378,10 +376,10 @@ class MapView extends StatelessWidget {
     var args = <String, dynamic>{};
     args["waypoints"] = waypointMap;
     if (eventNotifier != null) {
-      logger.d('Event Notifier is initialized');
+      debugPrint('Event Notifier is initialized');
       _mapboxTurnByTurnEventSubscription = _eventStream!.listen(_onEventData);
     } else {
-      logger.d('Event Notifier is not initialized');
+      debugPrint('Event Notifier is not initialized');
     }
     return _methodChannel.invokeMethod('startNavigation', args);
   }

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_font_icons/flutter_font_icons.dart';
 
 import 'package:flutter_mapbox_turn_by_turn/flutter_mapbox_turn_by_turn.dart';
-import 'package:logger/logger.dart';
 
 void main() {
   runApp(const ExampleApp());
@@ -24,7 +23,6 @@ class _ExampleAppState extends State<ExampleApp> {
   bool _routeBuilt = false;
   bool _isNavigating = false;
   String _instruction = "";
-  var logger = Logger();
 
   late final MapView _mapView;
 
@@ -155,14 +153,14 @@ class _ExampleAppState extends State<ExampleApp> {
         if (progressChangeEvent.currentStepInstruction != null) {
           _instruction = progressChangeEvent.currentStepInstruction!;
         }
-        logger.d('_onMapboxEvent: Progress changed');
+        debugPrint('_onMapboxEvent: Progress changed');
         break;
       case MapboxEventType.locationChange:
-        logger.d('_onMapboxEvent: Location changed');
+        debugPrint('_onMapboxEvent: Location changed');
         break;
       case MapboxEventType.routeBuilding:
       case MapboxEventType.routeBuilt:
-        logger.d('_onMapboxEvent: Route built');
+        debugPrint('_onMapboxEvent: Route built');
         setState(() {
           _routeBuilt = true;
         });
