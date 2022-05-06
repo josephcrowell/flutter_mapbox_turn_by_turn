@@ -180,16 +180,20 @@ class _ExampleAppState extends State<ExampleApp> {
           _isNavigating = true;
         });
         break;
-      case MapboxEventType.onArrival:
-        log.d('Arrived at destination');
-        if (!_isMultipleStop) {
-          await Future.delayed(
-            const Duration(
-              seconds: 3,
-            ),
-          );
-          await _mapView.stopNavigation();
-        } else {}
+      case MapboxEventType.waypointArrival:
+        log.d("Waypoint reached");
+        break;
+      case MapboxEventType.nextRouteLegStart:
+        log.d("Starting next leg");
+        break;
+      case MapboxEventType.finalDestinationArrival:
+        log.d('Arrived at final destination');
+        await Future.delayed(
+          const Duration(
+            seconds: 3,
+          ),
+        );
+        await _mapView.stopNavigation();
         break;
       case MapboxEventType.navigationFinished:
       case MapboxEventType.navigationCancelled:

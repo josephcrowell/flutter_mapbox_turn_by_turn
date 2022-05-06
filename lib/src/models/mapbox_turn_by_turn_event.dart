@@ -21,7 +21,9 @@ enum MapboxEventType {
   fasterRouteFound,
   speechAnnouncement,
   bannerInstruction,
-  onArrival,
+  waypointArrival,
+  nextRouteLegStart,
+  finalDestinationArrival,
   failedToReroute,
   rerouteAlong,
 }
