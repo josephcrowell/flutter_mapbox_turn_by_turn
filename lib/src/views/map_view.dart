@@ -393,10 +393,6 @@ class MapView extends StatelessWidget {
     if (eventNotifier != null) {
       eventNotifier!(event);
     }
-
-    if (event.eventType == MapboxEventType.onArrival) {
-      _mapboxTurnByTurnEventSubscription?.cancel();
-    }
   }
 
   Stream<MapboxTurnByTurnEvent>? get _eventStream {
