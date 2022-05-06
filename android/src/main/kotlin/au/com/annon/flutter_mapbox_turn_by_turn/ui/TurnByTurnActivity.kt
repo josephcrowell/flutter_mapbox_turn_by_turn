@@ -40,8 +40,11 @@ import com.mapbox.navigation.base.extensions.applyDefaultNavigationOptions
 import com.mapbox.navigation.base.extensions.applyLanguageAndVoiceUnitOptions
 import com.mapbox.navigation.base.options.NavigationOptions
 import com.mapbox.navigation.base.route.*
+import com.mapbox.navigation.base.trip.model.RouteLegProgress
+import com.mapbox.navigation.base.trip.model.RouteProgress
 import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.navigation.core.MapboxNavigationProvider
+import com.mapbox.navigation.core.arrival.ArrivalObserver
 import com.mapbox.navigation.core.directions.session.RoutesObserver
 import com.mapbox.navigation.core.formatter.MapboxDistanceFormatter
 import com.mapbox.navigation.core.trip.session.LocationMatcherResult
@@ -77,7 +80,6 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import java.lang.reflect.Field
 import java.util.*
 
 
@@ -92,9 +94,7 @@ import java.util.*
  * </resources>
  *
  * How to use this plugin:
- * - The guidance will start to the selected destination while simulating location updates.
- * You can disable simulation by commenting out the [replayLocationEngine] setter in [NavigationOptions].
- * Then, the device's real location will be used.
+ * - The guidance will start to the selected destination starting at the device's real location.
  * - At any point in time you can finish guidance or select a new destination.
  * - You can use buttons to mute/unmute voice instructions, recenter the camera, or show the route overview.
  */
@@ -376,12 +376,12 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                 if(speedLimit != null) {
                     if(measurementUnits == DirectionsCriteria.METRIC) {
                         // speed in Kph
-                        var speed = (enhancedLocation.speed * 3.6).toInt()
-                        var mSpeedLimit = speedLimit + speedThreshold
+                        val speed = (enhancedLocation.speed * 3.6).toInt()
+                        val mSpeedLimit = speedLimit + speedThreshold
 
                         // We should be showing metric speed
                         runOnUiThread {
-                            binding.speedView.text = "$speed\nkph"
+                            "$speed\nkph".also { binding.speedView.text = it }
                             if (speed > mSpeedLimit) {
                                 binding.speedView.background = ContextCompat.getDrawable(
                                     context,
@@ -396,13 +396,13 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                         }
                     } else {
                         // We should be showing imperial speed
-                        var speed = (enhancedLocation.speed * 3.6 / 1.609).toInt()
+                        val speed = (enhancedLocation.speed * 3.6 / 1.609).toInt()
                         speedLimit = (speedLimit.toFloat() / 1.609).toInt()
-                        var mSpeedLimit = speedLimit + speedThreshold
+                        val mSpeedLimit = speedLimit + speedThreshold
 
                         // We should be showing metric speed
                         runOnUiThread {
-                            binding.speedView.text = "$speed\nmph"
+                            "$speed\nmph".also { binding.speedView.text = it }
                             if (speed > mSpeedLimit) {
                                 binding.speedView.background = ContextCompat.getDrawable(
                                     context,
@@ -419,11 +419,11 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                 } else {
                     if(measurementUnits == DirectionsCriteria.METRIC) {
                         // speed in Kph
-                        var speed = (enhancedLocation.speed * 3.6).toInt()
+                        val speed = (enhancedLocation.speed * 3.6).toInt()
 
                         // We should be showing metric speed
                         runOnUiThread {
-                            binding.speedView.text = "$speed\nkph"
+                            "$speed\nkph".also { binding.speedView.text = it }
                             binding.speedView.background = ContextCompat.getDrawable(
                                 context,
                                 R.drawable.speed_limit_normal
@@ -431,11 +431,11 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                         }
                     } else {
                         // We should be showing imperial speed
-                        var speed = (enhancedLocation.speed * 3.6 / 1.609).toInt()
+                        val speed = (enhancedLocation.speed * 3.6 / 1.609).toInt()
 
                         // We should be showing metric speed
                         runOnUiThread {
-                            binding.speedView.text = "$speed\nmph"
+                            "$speed\nmph".also { binding.speedView.text = it }
                             binding.speedView.background = ContextCompat.getDrawable(
                                 context,
                                 R.drawable.speed_limit_normal
@@ -569,6 +569,21 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             // remove the route reference from camera position evaluations
             viewportDataSource.clearRouteData()
             viewportDataSource.evaluate()
+        }
+    }
+
+    private val arrivalObserver = object: ArrivalObserver {
+
+        override fun onWaypointArrival(routeProgress: RouteProgress) {
+            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.WAYPOINT_ARRIVAL)
+        }
+
+        override fun onNextRouteLegStart(routeLegProgress: RouteLegProgress) {
+            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NEXT_ROUTE_LEG_START)
+        }
+
+        override fun onFinalDestinationArrival(routeProgress: RouteProgress) {
+            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.FINAL_DESTINATION_ARRIVAL)
         }
     }
 
@@ -782,6 +797,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         // and later when a route is set also receiving route progress updates
         mapboxNavigation.startTripSession()
 
+        methodChannel?.invokeMethod("initializeEventNotifier", null)
         Log.d("TurnByTurnActivity","Activity initialized")
     }
 
@@ -791,6 +807,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         mapboxNavigation.registerRouteProgressObserver(routeProgressObserver)
         mapboxNavigation.registerLocationObserver(locationObserver)
         mapboxNavigation.registerVoiceInstructionsObserver(voiceInstructionsObserver)
+        mapboxNavigation.registerArrivalObserver(arrivalObserver)
 
         Log.d("TurnByTurnActivity","Activity started")
     }
@@ -805,6 +822,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         mapboxNavigation.unregisterRouteProgressObserver(routeProgressObserver)
         mapboxNavigation.unregisterLocationObserver(locationObserver)
         mapboxNavigation.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
+        mapboxNavigation.unregisterArrivalObserver(arrivalObserver)
         navigationCamera.unregisterNavigationCameraStateChangeObserver(navigationCameraStateChangedObserver)
 
         Log.d("TurnByTurnActivity","Activity detached")

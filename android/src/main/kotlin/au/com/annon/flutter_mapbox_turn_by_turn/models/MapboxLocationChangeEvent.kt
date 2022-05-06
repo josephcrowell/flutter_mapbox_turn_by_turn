@@ -3,6 +3,7 @@ package au.com.annon.flutter_mapbox_turn_by_turn.models
 import android.location.Location
 
 class MapboxLocationChangeEvent(location: Location) {
+    private val isLocationChangeEvent = true
     private var latitude: Double? = null
     private var longitude: Double? = null
 

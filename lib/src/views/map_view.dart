@@ -13,6 +13,7 @@ import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_progress_change_ev
 
 import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_turn_by_turn_event.dart';
 import 'package:flutter_mapbox_turn_by_turn/src/models/waypoint.dart';
+import 'package:flutter_mapbox_turn_by_turn/src/utilities.dart';
 
 int sdkVersion = 0;
 
@@ -348,9 +349,15 @@ class MapView extends StatelessWidget {
   /// Generic Handler for Messages sent from the Platform
   Future<dynamic> _handleMethod(MethodCall call) async {
     switch (call.method) {
-      case 'sendFromNative':
-        String? text = call.arguments as String?;
-        return Future.value("Text from native: $text");
+      case 'initializeEventNotifier':
+        if (eventNotifier != null) {
+          _mapboxTurnByTurnEventSubscription =
+              _eventStream!.listen(_onEventData);
+          log.d('Event Notifier is initialized');
+        } else {
+          log.d('Event Notifier is not initialized because it is null');
+        }
+        break;
     }
   }
 
@@ -375,12 +382,6 @@ class MapView extends StatelessWidget {
 
     var args = <String, dynamic>{};
     args["waypoints"] = waypointMap;
-    if (eventNotifier != null) {
-      debugPrint('Event Notifier is initialized');
-      _mapboxTurnByTurnEventSubscription = _eventStream!.listen(_onEventData);
-    } else {
-      debugPrint('Event Notifier is not initialized');
-    }
     return _methodChannel.invokeMethod('startNavigation', args);
   }
 

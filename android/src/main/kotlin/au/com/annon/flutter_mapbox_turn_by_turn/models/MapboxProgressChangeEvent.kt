@@ -3,6 +3,7 @@ package au.com.annon.flutter_mapbox_turn_by_turn.models
 import com.mapbox.navigation.base.trip.model.RouteProgress
 
 class MapboxProgressChangeEvent(progress: RouteProgress) {
+    private val isProgressChangeEvent = true
     private var currentLegDistanceRemaining: Float? = null
     private var currentLegDistanceTraveled: Float? = null
     private var currentStepInstruction: String? = null

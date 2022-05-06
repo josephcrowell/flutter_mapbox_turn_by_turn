@@ -20,7 +20,9 @@ enum class MapboxEventType(val value: String) {
     FASTER_ROUTE_FOUND("fasterRouteFound"),
     SPEECH_ANNOUNCEMENT("speechAnnouncement"),
     BANNER_INSTRUCTION("bannerInstruction"),
-    ON_ARRIVAL("onArrival"),
+    WAYPOINT_ARRIVAL("waypointArrival"),
+    NEXT_ROUTE_LEG_START("nextRouteLegStart"),
+    FINAL_DESTINATION_ARRIVAL("finalDestinationArrival"),
     FAILED_TO_REROUTE("failedToReroute"),
     REROUTE_ALONG("rerouteAlong"),
 }

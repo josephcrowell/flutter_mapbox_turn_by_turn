@@ -1,13 +1,11 @@
 import 'package:flutter_mapbox_turn_by_turn/src/models/waypoint.dart';
-
-bool isNullOrZero(dynamic val) {
-  return val == 0.0 || val == null;
-}
+import 'package:flutter_mapbox_turn_by_turn/src/utilities.dart';
 
 ///This class contains all progress information at any given time during a navigation session.
 ///This progress includes information for the current route, leg and step the user is traversing along.
 ///With every new valid location update, a new route progress will be generated using the latest information.
 class MapboxProgressChangeEvent {
+  bool? isProgressChangeEvent;
   double? distance;
   double? duration;
   double? distanceTraveled;
@@ -19,9 +17,9 @@ class MapboxProgressChangeEvent {
   List<RouteLeg>? remainingLegs;
   int? legIndex;
   int? stepIndex;
-  bool? isProgressChangeEvent;
 
   MapboxProgressChangeEvent({
+    this.isProgressChangeEvent,
     this.distance,
     this.duration,
     this.distanceTraveled,
@@ -33,11 +31,10 @@ class MapboxProgressChangeEvent {
     this.remainingLegs,
     this.legIndex,
     this.stepIndex,
-    this.isProgressChangeEvent,
   });
 
   MapboxProgressChangeEvent.fromJson(Map<String, dynamic> json) {
-    isProgressChangeEvent = json['arrived'] != null;
+    isProgressChangeEvent = json['isProgressChangeEvent'] == true;
     distance = isNullOrZero(json['distance']) ? 0.0 : json["distance"] + .0;
     duration = isNullOrZero(json['duration']) ? 0.0 : json["duration"] + .0;
     distanceTraveled = isNullOrZero(json['distanceTraveled'])

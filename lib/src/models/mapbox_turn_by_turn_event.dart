@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/scheduler.dart';
 
 import 'mapbox_progress_change_event.dart';
+import 'mapbox_location_change_event.dart';
 
 enum MapboxEventType {
   progressChange,
@@ -47,6 +48,9 @@ class MapboxTurnByTurnEvent {
     switch (eventType) {
       case MapboxEventType.progressChange:
         data = MapboxProgressChangeEvent.fromJson(dataJson);
+        break;
+      case MapboxEventType.locationChange:
+        data = MapboxLocationChangeEvent.fromJson(dataJson);
         break;
       default:
         data = jsonEncode(json['data']);

@@ -152,20 +152,25 @@ class _ExampleAppState extends State<ExampleApp> {
         var progressChangeEvent = e.data as MapboxProgressChangeEvent;
         if (progressChangeEvent.currentStepInstruction != null) {
           _instruction = progressChangeEvent.currentStepInstruction!;
+          log.d(
+            'Progress changed: $_instruction',
+          );
         }
-        debugPrint('_onMapboxEvent: Progress changed');
         break;
       case MapboxEventType.locationChange:
-        debugPrint('_onMapboxEvent: Location changed');
+        var locationChangeEvent = e.data as MapboxLocationChangeEvent;
+        log.d(
+          'Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
+        );
         break;
-      case MapboxEventType.routeBuilding:
       case MapboxEventType.routeBuilt:
-        debugPrint('_onMapboxEvent: Route built');
+        log.d('Route built');
         setState(() {
           _routeBuilt = true;
         });
         break;
       case MapboxEventType.routeBuildFailed:
+        log.e('Route build failed');
         setState(() {
           _routeBuilt = false;
         });
@@ -176,6 +181,7 @@ class _ExampleAppState extends State<ExampleApp> {
         });
         break;
       case MapboxEventType.onArrival:
+        log.d('Arrived at destination');
         if (!_isMultipleStop) {
           await Future.delayed(
             const Duration(
@@ -187,6 +193,7 @@ class _ExampleAppState extends State<ExampleApp> {
         break;
       case MapboxEventType.navigationFinished:
       case MapboxEventType.navigationCancelled:
+        log.d('Navigation stopped');
         setState(() {
           _routeBuilt = false;
           _isNavigating = false;
