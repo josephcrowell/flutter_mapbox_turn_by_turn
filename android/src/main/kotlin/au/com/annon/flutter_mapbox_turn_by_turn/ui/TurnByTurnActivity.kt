@@ -38,6 +38,8 @@ import com.mapbox.maps.plugin.scalebar.scalebar
 import com.mapbox.navigation.base.TimeFormat
 import com.mapbox.navigation.base.extensions.applyDefaultNavigationOptions
 import com.mapbox.navigation.base.extensions.applyLanguageAndVoiceUnitOptions
+import com.mapbox.navigation.base.formatter.DistanceFormatterOptions
+import com.mapbox.navigation.base.formatter.UnitType
 import com.mapbox.navigation.base.options.NavigationOptions
 import com.mapbox.navigation.base.route.*
 import com.mapbox.navigation.base.trip.model.RouteLegProgress
@@ -614,6 +616,15 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         mapboxMap = binding.mapView.getMapboxMap()
 
+        var unitType: UnitType = UnitType.METRIC
+        if(measurementUnits == "imperial") {
+            unitType = UnitType.IMPERIAL
+        }
+
+        val distanceFormatterOptions = DistanceFormatterOptions.Builder(context)
+            .unitType(unitType)
+            .build()
+
         // initialize Mapbox Navigation
         mapboxNavigation = if (MapboxNavigationProvider.isCreated()) {
             MapboxNavigationProvider.retrieve()
@@ -621,8 +632,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             MapboxNavigationProvider.create(
                 NavigationOptions.Builder(context)
                     .accessToken(accessToken)
-                    // comment out the location engine setting block to disable simulation
-                    //.locationEngine(replayLocationEngine)
+                    .distanceFormatterOptions(distanceFormatterOptions)
                     .build()
             )
         }
@@ -662,9 +672,6 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         if(pitch != null) {
             viewportDataSource.followingPitchPropertyOverride(pitch)
         }
-
-        // make sure to use the same DistanceFormatterOptions across different features
-        val distanceFormatterOptions = mapboxNavigation.navigationOptions.distanceFormatterOptions
 
         // initialize maneuver api that feeds the data to the top banner maneuver view
         maneuverApi = MapboxManeuverApi(
