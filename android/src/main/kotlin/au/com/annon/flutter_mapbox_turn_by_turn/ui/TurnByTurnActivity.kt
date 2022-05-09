@@ -617,7 +617,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         mapboxMap = binding.mapView.getMapboxMap()
 
         var unitType: UnitType = UnitType.METRIC
-        if(measurementUnits == "imperial") {
+        if(measurementUnits == DirectionsCriteria.IMPERIAL) {
             unitType = UnitType.IMPERIAL
         }
 
