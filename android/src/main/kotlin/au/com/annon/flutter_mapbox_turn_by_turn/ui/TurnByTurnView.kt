@@ -4,7 +4,6 @@ import android.view.View
 import android.content.Context
 import android.util.Log
 
-import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
@@ -13,12 +12,11 @@ import io.flutter.plugin.platform.PlatformView
 
 internal class TurnByTurnView(
     context: Context,
-    binding: TurnByTurnActivityBinding?,
     private var messenger: BinaryMessenger?,
     private val id: Int,
     creationParams: Map<String?, Any?>?,
     )
-    : PlatformView, TurnByTurnActivity(context, binding!!, creationParams) {
+    : PlatformView, TurnByTurnActivity(context, creationParams) {
 
     override fun getView(): View {
         return getBinding().root
@@ -47,7 +45,6 @@ internal class TurnByTurnView(
         eventSink = null
         eventChannel = null
         messenger = null
-        binding = null
         Log.d("TurnByTurnView", "View disposed")
     }
 

@@ -1,7 +1,9 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Color
@@ -13,6 +15,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.annotation.NonNull
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
@@ -58,6 +61,7 @@ import com.mapbox.navigation.ui.maneuver.api.MapboxManeuverApi
 import com.mapbox.navigation.ui.maneuver.view.MapboxManeuverView
 import com.mapbox.navigation.ui.maps.camera.NavigationCamera
 import com.mapbox.navigation.ui.maps.camera.data.MapboxNavigationViewportDataSource
+import com.mapbox.navigation.ui.maps.camera.data.ViewportDataSourceUpdateObserver
 import com.mapbox.navigation.ui.maps.camera.lifecycle.NavigationBasicGesturesHandler
 import com.mapbox.navigation.ui.maps.camera.state.NavigationCameraState
 import com.mapbox.navigation.ui.maps.camera.state.NavigationCameraStateChangedObserver
@@ -105,11 +109,10 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
     constructor(
         mContext: Context,
-        mBinding: TurnByTurnActivityBinding,
         creationParams: Map<String?, Any?>?,
     ) {
         super.attachBaseContext(mContext)
-        binding = mBinding
+        binding = TurnByTurnActivityBinding.inflate(this.activity.layoutInflater)
 
         zoom = creationParams?.get("zoom") as? Double
         pitch = creationParams?.get("pitch") as? Double
@@ -589,6 +592,8 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
     }
 
+    private val viewportDataSourceUpdateObserver = ViewportDataSourceUpdateObserver {}
+
     override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
 
     override fun onSensorChanged(p0: SensorEvent?) {
@@ -639,6 +644,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         // initialize Navigation Camera
         viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap)
+        viewportDataSource!!.registerUpdateObserver(viewportDataSourceUpdateObserver)
         navigationCamera = NavigationCamera(
             mapboxMap,
             binding!!.mapView.camera,
@@ -802,6 +808,16 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         // start the trip session to being receiving location updates in free drive
         // and later when a route is set also receiving route progress updates
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
         mapboxNavigation.startTripSession()
 
         methodChannel?.invokeMethod("initializeEventNotifier", null)
@@ -825,14 +841,17 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
 
         // unregister event listeners to prevent leaks or unnecessary resource consumption
+        mapboxNavigation.stopTripSession()
         mapboxNavigation.unregisterRoutesObserver(routesObserver)
         mapboxNavigation.unregisterRouteProgressObserver(routeProgressObserver)
         mapboxNavigation.unregisterLocationObserver(locationObserver)
         mapboxNavigation.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
         mapboxNavigation.unregisterArrivalObserver(arrivalObserver)
+
         navigationCamera!!.unregisterNavigationCameraStateChangeObserver(navigationCameraStateChangedObserver)
         navigationCamera = null
         navigationLocationProvider = null
+        viewportDataSource!!.unregisterUpdateObserver(viewportDataSourceUpdateObserver)
         viewportDataSource = null
 
         Log.d("TurnByTurnActivity","Activity detached")
@@ -846,6 +865,8 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         routeLineView.cancel()
         speechApi.cancel()
         voiceInstructionsPlayer.shutdown()
+        mapboxNavigation.onDestroy()
+        binding = null
 
         Log.d("TurnByTurnActivity","Activity destroyed")
     }

@@ -5,12 +5,9 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
-import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnActivity
 import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnViewFactory
-import com.mapbox.geojson.Point
 import io.flutter.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -19,7 +16,6 @@ import io.flutter.plugin.common.*
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.platform.PlatformViewRegistry
-import java.util.*
 
 /** FlutterMapboxTurnByTurnPlugin */
 class FlutterMapboxTurnByTurnPlugin
