@@ -122,7 +122,7 @@ class FlutterMapboxTurnByTurnPlugin
 
   private fun askForPermission() {
     ActivityCompat.requestPermissions(
-      activity!!, arrayOf<String>(Manifest.permission.ACCESS_FINE_LOCATION),
+      activity!!, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
       LOCATION_REQUEST_CODE
     )
   }
