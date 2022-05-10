@@ -76,7 +76,6 @@ class FlutterMapboxTurnByTurnPlugin
     binding.addRequestPermissionsResultListener(this)
   }
 
-  @androidx.annotation.RequiresApi(Build.VERSION_CODES.DONUT)
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
     when (call.method) {
       "hasPermission" -> {
