@@ -12,15 +12,13 @@ import io.flutter.plugin.platform.PlatformView
 
 
 internal class TurnByTurnView(
-        context: Context,
-        binding: TurnByTurnActivityBinding,
-        messenger: BinaryMessenger,
-        id: Int,
-        creationParams: Map<String?, Any?>?,
+    context: Context,
+    binding: TurnByTurnActivityBinding?,
+    private var messenger: BinaryMessenger?,
+    private val id: Int,
+    creationParams: Map<String?, Any?>?,
     )
-    : PlatformView, TurnByTurnActivity(context, binding, creationParams) {
-    private val id: Int = id
-    private val messenger: BinaryMessenger = messenger
+    : PlatformView, TurnByTurnActivity(context, binding!!, creationParams) {
 
     override fun getView(): View {
         return getBinding().root
@@ -45,6 +43,11 @@ internal class TurnByTurnView(
 
     override fun dispose() {
         destroy()
+        methodChannel = null
+        eventSink = null
+        eventChannel = null
+        messenger = null
+        binding = null
         Log.d("TurnByTurnView", "View disposed")
     }
 
