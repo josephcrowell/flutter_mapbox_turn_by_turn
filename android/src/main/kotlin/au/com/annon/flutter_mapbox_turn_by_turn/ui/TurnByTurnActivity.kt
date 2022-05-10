@@ -109,10 +109,11 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
     constructor(
         mContext: Context,
+        mBinding: TurnByTurnActivityBinding,
         creationParams: Map<String?, Any?>?,
     ) {
         super.attachBaseContext(mContext)
-        binding = TurnByTurnActivityBinding.inflate(this.activity.layoutInflater)
+        binding = mBinding
 
         zoom = creationParams?.get("zoom") as? Double
         pitch = creationParams?.get("pitch") as? Double
