@@ -142,6 +142,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         routeUnknownCongestionColor = creationParams["routeUnknownCongestionColor"] as String
     }
 
+    var binding: TurnByTurnActivityBinding? = null
     open var methodChannel: MethodChannel? = null
     open var eventChannel: EventChannel? = null
 
@@ -176,7 +177,6 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
     private val routeUnknownCongestionColor: String
 
     companion object {
-        var binding: TurnByTurnActivityBinding? = null
         private const val BUTTON_ANIMATION_DURATION = 1500L
         var eventSink:EventChannel.EventSink? = null
 
@@ -194,7 +194,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
      * Mapbox Maps entry point obtained from the [MapView].
      * You need to get a new reference to this object whenever the [MapView] is recreated.
      */
-    private lateinit var mapboxMap: MapboxMap
+    private var mapboxMap: MapboxMap? = null
 
     /**
      * Mapbox Navigation entry point. There should only be one instance of this object for the app.
@@ -478,7 +478,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         viewportDataSource!!.evaluate()
 
         // draw the upcoming maneuver arrow on the map
-        val style = mapboxMap.getStyle()
+        val style = mapboxMap!!.getStyle()
         if (style != null) {
             val maneuverArrowResult = routeArrowApi.addUpcomingManeuverArrow(routeProgress)
             routeArrowView.renderManeuverUpdate(style, maneuverArrowResult)
@@ -548,7 +548,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                 routeLines
                     .toNavigationRouteLines()
             ) { value ->
-                mapboxMap.getStyle()?.apply {
+                mapboxMap!!.getStyle()?.apply {
                     routeLineView.renderRouteDrawData(this, value)
                 }
             }
@@ -561,7 +561,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             MapboxTurnByTurnEvents.sendEvent(MapboxEventType.REROUTE_ALONG, routeUpdateResult.reason)
         } else {
             // remove the route line and route arrow from the map
-            val style = mapboxMap.getStyle()
+            val style = mapboxMap!!.getStyle()
             if (style != null) {
                 routeLineApi.clearRouteLine { value ->
                     routeLineView.renderClearRouteLineValue(
@@ -605,10 +605,6 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
     }
 
-    open fun getBinding(): TurnByTurnActivityBinding {
-        return binding!!
-    }
-
     open fun initializeFlutterChannelHandlers() {
         methodChannel?.setMethodCallHandler(this)
         eventChannel?.setStreamHandler(this)
@@ -644,10 +640,10 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
 
         // initialize Navigation Camera
-        viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap)
+        viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap!!)
         viewportDataSource!!.registerUpdateObserver(viewportDataSourceUpdateObserver)
         navigationCamera = NavigationCamera(
-            mapboxMap,
+            mapboxMap!!,
             binding!!.mapView.camera,
             viewportDataSource!!,
         )
@@ -756,7 +752,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
 
         // load map style
-        mapboxMap.loadStyleUri(
+        mapboxMap!!.loadStyleUri(
             styleUri
         ) {
             // add long click listener that search for a route to the clicked destination
@@ -860,13 +856,15 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
     @SuppressLint("Lifecycle")
     fun destroy() {
+        mapboxNavigation.onDestroy()
         MapboxNavigationProvider.destroy()
+        binding!!.mapView.onDestroy()
         maneuverApi.cancel()
         routeLineApi.cancel()
         routeLineView.cancel()
         speechApi.cancel()
         voiceInstructionsPlayer.shutdown()
-        mapboxNavigation.onDestroy()
+        mapboxMap = null
         binding = null
 
         Log.d("TurnByTurnActivity","Activity destroyed")

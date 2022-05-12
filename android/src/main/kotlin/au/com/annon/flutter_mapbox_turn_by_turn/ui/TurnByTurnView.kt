@@ -21,7 +21,7 @@ internal class TurnByTurnView(
     : PlatformView, TurnByTurnActivity(context, binding!!, creationParams) {
 
     override fun getView(): View {
-        return getBinding().root
+        return binding!!.root
     }
 
     init {
