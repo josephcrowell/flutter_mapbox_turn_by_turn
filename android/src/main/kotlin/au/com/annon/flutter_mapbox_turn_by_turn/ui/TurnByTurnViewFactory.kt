@@ -10,7 +10,7 @@ import io.flutter.plugin.platform.PlatformViewFactory
 
 @Suppress("UNCHECKED_CAST")
 class TurnByTurnViewFactory(
-        private val applicationContext: Context,
+        private val baseContext: Context,
         private val messenger: BinaryMessenger,
         private val activity: Activity
     )
@@ -18,6 +18,6 @@ class TurnByTurnViewFactory(
     override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
         val binding = TurnByTurnActivityBinding.inflate(activity.layoutInflater)
         val creationParams = args as Map<String?, Any?>?
-        return TurnByTurnView(applicationContext, binding, messenger, viewId, creationParams)
+        return TurnByTurnView(baseContext, binding, messenger, viewId, creationParams)
     }
 }

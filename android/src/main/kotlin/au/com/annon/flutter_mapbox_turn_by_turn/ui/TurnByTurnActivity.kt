@@ -856,16 +856,20 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
     @SuppressLint("Lifecycle")
     fun destroy() {
-        mapboxNavigation.onDestroy()
-        MapboxNavigationProvider.destroy()
-        binding!!.mapView.onDestroy()
         maneuverApi.cancel()
         routeLineApi.cancel()
         routeLineView.cancel()
         speechApi.cancel()
         voiceInstructionsPlayer.shutdown()
+
+        mapboxNavigation.onDestroy()
+        MapboxNavigationProvider.destroy()
+        binding!!.mapView.onDestroy()
+
         mapboxMap = null
         binding = null
+
+        finish()
 
         Log.d("TurnByTurnActivity","Activity destroyed")
     }
