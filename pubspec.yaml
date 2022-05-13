@@ -1,6 +1,6 @@
 name: flutter_mapbox_turn_by_turn
 description: Turn By Turn Navigation for Your Flutter Application
-version: 0.0.1
+version: 0.1.0
 homepage: https://github.com/AnnonAU/flutter_mapbox_turn_by_turn
 
 environment:
