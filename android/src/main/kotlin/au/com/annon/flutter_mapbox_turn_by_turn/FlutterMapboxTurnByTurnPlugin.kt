@@ -35,7 +35,7 @@ class FlutterMapboxTurnByTurnPlugin
     Log.d("FlutterMapboxTurnByTurnPlugin","Engine attached")
     binaryMessenger = binding.binaryMessenger
     platformViewRegistry = binding.platformViewRegistry
-    methodChannel = MethodChannel(binaryMessenger, "flutter_mapbox_turn_by_turn/method")
+    methodChannel = MethodChannel(binaryMessenger!!, "flutter_mapbox_turn_by_turn/method")
     methodChannel.setMethodCallHandler(this)
   }
 
@@ -87,13 +87,16 @@ class FlutterMapboxTurnByTurnPlugin
     }
   }
 
-  override fun onRequestPermissionsResult( requestCode: Int,
-                                           permissions: Array<out String>?,
-                                           grantResults: IntArray?): Boolean {
+
+  override fun onRequestPermissionsResult(
+    requestCode: Int,
+    permissions: Array<out String>,
+    grantResults: IntArray
+  ): Boolean {
 
     if (requestCode == LOCATION_REQUEST_CODE) {
       if (pendingPermissionResult != null) {
-        if (grantResults!!.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           pendingPermissionResult!!.success(true)
         } else {
           pendingPermissionResult!!.error("-2", "Permission denied", null)
