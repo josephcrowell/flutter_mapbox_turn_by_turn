@@ -19,7 +19,6 @@ class ExampleApp extends StatefulWidget {
 
 class _ExampleAppState extends State<ExampleApp> {
   late bool _hasPermission = false;
-  bool _isMultipleStop = false;
   bool _routeBuilt = false;
   bool _isNavigating = false;
   String _instruction = "";
