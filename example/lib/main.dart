@@ -102,9 +102,6 @@ class _ExampleAppState extends State<ExampleApp> {
         backgroundColor: Colors.black,
         body: Visibility(
           visible: _hasPermission,
-          child: Center(
-            child: _mapView,
-          ),
           replacement: Padding(
             padding: const EdgeInsetsDirectional.only(
               start: 5,
@@ -137,6 +134,9 @@ class _ExampleAppState extends State<ExampleApp> {
                 ],
               ),
             ),
+          ),
+          child: Center(
+            child: _mapView,
           ),
         ),
       ),
