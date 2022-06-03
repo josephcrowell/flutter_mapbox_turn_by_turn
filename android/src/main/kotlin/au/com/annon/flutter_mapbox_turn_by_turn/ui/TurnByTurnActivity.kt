@@ -25,7 +25,6 @@ import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxProgressChangeEvent
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxTurnByTurnEvents
 import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
 import com.mapbox.api.directions.v5.DirectionsCriteria
-import com.mapbox.api.directions.v5.models.DirectionsRoute
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Expected
 import com.mapbox.geojson.Point
@@ -555,7 +554,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
             // update the camera position to account for the new route
             viewportDataSource!!.onRouteChanged(
-                routeUpdateResult.navigationRoutes.toDirectionsRoutes().first().toNavigationRoute())
+                routeUpdateResult.navigationRoutes.first())
             viewportDataSource!!.evaluate()
 
             MapboxTurnByTurnEvents.sendEvent(MapboxEventType.REROUTE_ALONG, routeUpdateResult.reason)
@@ -1018,7 +1017,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
     private fun clearRouteAndStopNavigation() {
         navigationStarted = false
         // clear
-        mapboxNavigation.setNavigationRoutes(listOf<DirectionsRoute>().toNavigationRoutes())
+        mapboxNavigation.setNavigationRoutes(listOf())
 
         // hide UI elements
         binding!!.soundButton.visibility = View.GONE
