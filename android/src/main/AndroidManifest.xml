@@ -11,8 +11,7 @@
         <activity
             android:exported="true"
             android:name=".ui.TurnByTurnActivity"
-            tools:ignore="Instantiatable"
-            android:hardwareAccelerated="true" />
+            tools:ignore="Instantiatable" />
 
       <!-- Don't delete the meta-data below.
                This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
