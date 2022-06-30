@@ -28,10 +28,7 @@ import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Expected
 import com.mapbox.geojson.Point
-import com.mapbox.maps.EdgeInsets
-import com.mapbox.maps.MapView
-import com.mapbox.maps.MapboxMap
-import com.mapbox.maps.Style
+import com.mapbox.maps.*
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.gestures.gestures
@@ -658,12 +655,9 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         // set the padding values depending on screen orientation and visible view layout
         if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             viewportDataSource!!.overviewPadding = landscapeOverviewPadding
-        } else {
-            viewportDataSource!!.overviewPadding = overviewPadding
-        }
-        if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             viewportDataSource!!.followingPadding = landscapeFollowingPadding
         } else {
+            viewportDataSource!!.overviewPadding = overviewPadding
             viewportDataSource!!.followingPadding = followingPadding
         }
 
