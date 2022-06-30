@@ -15,8 +15,6 @@ import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_turn_by_turn_event
 import 'package:flutter_mapbox_turn_by_turn/src/models/waypoint.dart';
 import 'package:flutter_mapbox_turn_by_turn/src/utilities.dart';
 
-int sdkVersion = 0;
-
 class Language {
   /// Arabic
   static const String arabic = "ar";
@@ -152,24 +150,12 @@ class MapView extends StatelessWidget {
     this.routeSevereCongestionColor,
     this.routeUnknownCongestionColor,
   }) : super(key: key) {
-    getSdkVersion();
     _methodChannel.setMethodCallHandler(_handleMethod);
   }
 
   final ValueSetter<MapboxTurnByTurnEvent>? eventNotifier;
   late final StreamSubscription<MapboxTurnByTurnEvent>?
       _mapboxTurnByTurnEventSubscription;
-
-  getSdkVersion() async {
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-
-      sdkVersion = androidInfo.version.sdkInt!;
-    } else {
-      sdkVersion = -1;
-    }
-  }
 
   final double? zoom;
   final double? pitch;
@@ -298,17 +284,6 @@ class MapView extends StatelessWidget {
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        if (sdkVersion < 29) {
-          debugPrint("Android SDK is less than 29. Using virtual display.");
-          return AndroidView(
-            viewType: viewType,
-            layoutDirection: TextDirection.ltr,
-            creationParams: creationParams,
-            creationParamsCodec: const StandardMessageCodec(),
-          );
-        }
-
-        debugPrint("Android SDK is greater than 28. Using hybrid composition.");
         return PlatformViewLink(
           viewType: viewType,
           surfaceFactory:
