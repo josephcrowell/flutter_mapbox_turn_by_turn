@@ -48,12 +48,12 @@ class FlutterMapboxTurnByTurnPlugin
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
     Log.d("FlutterMapboxTurnByTurnPlugin","Activity attached")
     activity = binding.activity
-    context = binding.activity.baseContext
     binding.addRequestPermissionsResultListener(this)
 
     if(platformViewRegistry != null && binaryMessenger != null && activity != null) {
       Log.d("FlutterMapboxTurnByTurnPlugin","Registering view factory")
-      platformViewRegistry?.registerViewFactory(VIEW_NAME, TurnByTurnViewFactory(context, binaryMessenger!!, activity!!))
+      platformViewRegistry?.registerViewFactory(VIEW_NAME, TurnByTurnViewFactory(binaryMessenger!!, activity!!))
+      context = binding.activity.baseContext
     }
   }
 
