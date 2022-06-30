@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_font_icons/flutter_font_icons.dart';
 
 import 'package:flutter_mapbox_turn_by_turn/flutter_mapbox_turn_by_turn.dart';
+import 'package:latlong2/latlong.dart';
+
+import 'components/orientation_button.dart';
 
 void main() {
   runApp(const ExampleApp());
@@ -21,9 +24,12 @@ class _ExampleAppState extends State<ExampleApp> {
   late bool _hasPermission = false;
   bool _routeBuilt = false;
   bool _isNavigating = false;
+  static LatLng? _pastLocation;
+  static LatLng? _currentLocation;
   String _instruction = "";
 
   late final MapView _mapView;
+  late final OrientationButton _orientationButton;
 
   @override
   void initState() {
@@ -46,6 +52,8 @@ class _ExampleAppState extends State<ExampleApp> {
       routeUnknownCongestionColor: const Color(0xFF00FF0D),
       language: Language.englishUK,
     );
+
+    _orientationButton = OrientationButton();
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -83,6 +91,10 @@ class _ExampleAppState extends State<ExampleApp> {
         appBar: AppBar(
           title: const Text('Turn By Turn Example'),
           actions: <Widget>[
+            Visibility(
+              visible: _hasPermission,
+              child: _orientationButton,
+            ),
             IconButton(
               onPressed: () {
                 _mapView.startNavigation(
@@ -158,9 +170,34 @@ class _ExampleAppState extends State<ExampleApp> {
         break;
       case MapboxEventType.locationChange:
         var locationChangeEvent = e.data as MapboxLocationChangeEvent;
-        log.d(
-          'Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
+
+        _currentLocation = LatLng(
+          locationChangeEvent.latitude!,
+          locationChangeEvent.longitude!,
         );
+
+        if (_pastLocation == null) {
+          log.d(
+            'Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
+          );
+
+          _pastLocation = _currentLocation;
+        } else {
+          const Distance distance = Distance();
+
+          if (distance(
+                _pastLocation!,
+                _currentLocation!,
+              ) >
+              4) {
+            log.d(
+              'Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
+            );
+
+            _pastLocation = _currentLocation;
+          }
+        }
+        break;
         break;
       case MapboxEventType.routeBuilt:
         log.d('Route built');
