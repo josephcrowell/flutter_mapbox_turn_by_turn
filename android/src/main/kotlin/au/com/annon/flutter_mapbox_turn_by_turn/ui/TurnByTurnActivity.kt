@@ -113,7 +113,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         zoom = creationParams?.get("zoom") as? Double
         pitch = creationParams?.get("pitch") as? Double
-        disableGesturesWhenNavigating = creationParams?.get("disableGesturesWhenNavigating") as? Boolean
+        disableGesturesWhenFollowing = creationParams?.get("disableGesturesWhenFollowing") as? Boolean
         navigateOnLongClick = creationParams?.get("navigateOnLongClick") as? Boolean
         showStopButton = creationParams?.get("showStopButton") as? Boolean
         showSpeedIndicator = creationParams?.get("showSpeedIndicator") as Boolean
@@ -151,7 +151,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
     // flutter creation parameters
     private val zoom: Double?
     private val pitch: Double?
-    private val disableGesturesWhenNavigating: Boolean?
+    private var disableGesturesWhenFollowing: Boolean? = null
     private val navigateOnLongClick: Boolean?
     private val showStopButton: Boolean?
     private val routeProfile: String
@@ -461,6 +461,9 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                         .maxDuration(0) // instant transition
                         .build()
                 )
+                if(disableGesturesWhenFollowing == true) {
+                    toggleGestures(true)
+                }
             }
         }
     }
@@ -767,10 +770,16 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         binding!!.recenter.setOnClickListener {
             navigationCamera!!.requestNavigationCameraToFollowing()
             binding!!.routeOverview.showTextAndExtend(BUTTON_ANIMATION_DURATION)
+            if(disableGesturesWhenFollowing == true) {
+                toggleGestures(false)
+            }
         }
         binding!!.routeOverview.setOnClickListener {
             navigationCamera!!.requestNavigationCameraToOverview()
             binding!!.recenter.showTextAndExtend(BUTTON_ANIMATION_DURATION)
+            if(disableGesturesWhenFollowing == true) {
+                toggleGestures(true)
+            }
         }
         binding!!.soundButton.setOnClickListener {
             // mute/unmute voice instructions
@@ -982,16 +991,6 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         // Don't let the screen turn off while navigating
         binding!!.mapView.keepScreenOn = true
 
-        if(disableGesturesWhenNavigating == true) {
-            binding!!.mapView.gestures.doubleTapToZoomInEnabled = false
-            binding!!.mapView.gestures.quickZoomEnabled = false
-            binding!!.mapView.gestures.quickZoomEnabled = false
-            binding!!.mapView.gestures.pinchToZoomEnabled = false
-            binding!!.mapView.gestures.pitchEnabled = false
-            binding!!.mapView.gestures.rotateEnabled = false
-            binding!!.mapView.gestures.scrollEnabled = false
-        }
-
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILT)
 
         // set routes, where the first route in the list is the primary route that
@@ -1004,6 +1003,9 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         // move the camera to following when new route is available
         navigationCamera!!.requestNavigationCameraToFollowing()
+        if(disableGesturesWhenFollowing == true) {
+            toggleGestures(false)
+        }
         navigationStarted = true
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_RUNNING)
     }
@@ -1018,20 +1020,23 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         binding!!.maneuverView.visibility = View.GONE
         binding!!.tripProgressCard.visibility = View.GONE
 
-        if(disableGesturesWhenNavigating == true) {
-            binding!!.mapView.gestures.doubleTapToZoomInEnabled = true
-            binding!!.mapView.gestures.quickZoomEnabled = true
-            binding!!.mapView.gestures.quickZoomEnabled = true
-            binding!!.mapView.gestures.pinchToZoomEnabled = true
-            binding!!.mapView.gestures.pitchEnabled = true
-            binding!!.mapView.gestures.rotateEnabled = true
-            binding!!.mapView.gestures.scrollEnabled = true
-        }
-
         navigationCamera!!.requestNavigationCameraToOverview()
+        if(disableGesturesWhenFollowing == true) {
+            toggleGestures(true)
+        }
 
         // enable the screen to turn off again when navigation stops
         binding!!.mapView.keepScreenOn = false
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_CANCELLED)
+    }
+    
+    private fun toggleGestures(enabled: Boolean) {
+        binding!!.mapView.gestures.doubleTapToZoomInEnabled = enabled
+        binding!!.mapView.gestures.quickZoomEnabled = enabled
+        binding!!.mapView.gestures.quickZoomEnabled = enabled
+        binding!!.mapView.gestures.pinchToZoomEnabled = enabled
+        binding!!.mapView.gestures.pitchEnabled = enabled
+        binding!!.mapView.gestures.rotateEnabled = enabled
+        binding!!.mapView.gestures.scrollEnabled = enabled
     }
 }

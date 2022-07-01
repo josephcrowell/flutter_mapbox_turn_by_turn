@@ -126,7 +126,7 @@ class MapView extends StatelessWidget {
     this.eventNotifier,
     this.zoom,
     this.pitch,
-    this.disableGesturesWhenNavigating,
+    this.disableGesturesWhenFollowing,
     this.navigateOnLongClick,
     this.showStopButton,
     this.showSpeedIndicator,
@@ -159,7 +159,7 @@ class MapView extends StatelessWidget {
 
   final double? zoom;
   final double? pitch;
-  final bool? disableGesturesWhenNavigating;
+  final bool? disableGesturesWhenFollowing;
   final bool? navigateOnLongClick;
   final bool? showStopButton;
   final bool? showSpeedIndicator;
@@ -257,7 +257,7 @@ class MapView extends StatelessWidget {
     final Map<String, dynamic> creationParams = <String, dynamic>{
       "zoom": zoom,
       "pitch": pitch,
-      "disableGesturesWhenNavigating": disableGesturesWhenNavigating ?? true,
+      "disableGesturesWhenFollowing": disableGesturesWhenFollowing ?? true,
       "navigateOnLongClick": navigateOnLongClick,
       "showStopButton": showStopButton,
       "showSpeedIndicator": showSpeedIndicator ?? true,
