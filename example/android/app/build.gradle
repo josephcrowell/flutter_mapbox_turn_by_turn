@@ -65,5 +65,4 @@ flutter {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.9.1'
-    releaseImplementation 'com.squareup.leakcanary:leakcanary-android-no-op:2.7'
 }
