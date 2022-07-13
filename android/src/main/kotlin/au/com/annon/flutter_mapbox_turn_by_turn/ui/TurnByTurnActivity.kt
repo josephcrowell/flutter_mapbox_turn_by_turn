@@ -800,9 +800,11 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         mapboxNavigation.onDestroy()
         MapboxNavigationProvider.destroy()
-        mapboxMap = null
 
         finish()
+
+        mapboxMap = null
+        binding = null
 
         Log.d("TurnByTurnActivity","Activity destroyed")
     }
