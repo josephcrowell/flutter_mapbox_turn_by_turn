@@ -1,19 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:device_info_plus/device_info_plus.dart';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_progress_change_event.dart';
 
+import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_progress_change_event.dart';
 import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_turn_by_turn_event.dart';
 import 'package:flutter_mapbox_turn_by_turn/src/models/waypoint.dart';
 import 'package:flutter_mapbox_turn_by_turn/src/utilities.dart';
+
+import 'package:flutter_tts/flutter_tts.dart';
 
 class Language {
   /// Arabic
@@ -151,11 +151,28 @@ class MapView extends StatelessWidget {
     this.routeUnknownCongestionColor,
   }) : super(key: key) {
     _methodChannel.setMethodCallHandler(_handleMethod);
+    _flutterTts.setLanguage(language ?? Language.englishUS);
+    _flutterTts.setSpeechRate(0.5);
+    _flutterTts.setPitch(1.0);
+    _flutterTts.setVolume(0.5);
+
+    _instructionProcessTimer = Timer.periodic(
+      const Duration(milliseconds: 500),
+      (Timer timer) {
+        _processInstructionCache();
+      },
+    );
   }
 
   final ValueSetter<MapboxTurnByTurnEvent>? eventNotifier;
   late final StreamSubscription<MapboxTurnByTurnEvent>?
       _mapboxTurnByTurnEventSubscription;
+
+  static final FlutterTts _flutterTts = FlutterTts();
+  static List<String> _instructions = <String>[];
+  static bool _instructionPlaying = false;
+
+  late Timer _instructionProcessTimer;
 
   final double? zoom;
   final double? pitch;
@@ -321,6 +338,25 @@ class MapView extends StatelessWidget {
     }
   }
 
+  /// Clean up the timer object
+  void dispose() {
+    _instructionProcessTimer.cancel();
+  }
+
+  static Future<dynamic> _processInstructionCache() async {
+    if (!_instructionPlaying && _instructions.isNotEmpty) {
+      _instructionPlaying = true;
+
+      String currentInstruction = _instructions.elementAt(0);
+
+      if (await _flutterTts.speak(currentInstruction) == 1) {
+        _instructions.removeAt(0);
+      }
+
+      _instructionPlaying = false;
+    }
+  }
+
   /// Generic Handler for Messages sent from the Platform
   Future<dynamic> _handleMethod(MethodCall call) async {
     switch (call.method) {
@@ -332,6 +368,10 @@ class MapView extends StatelessWidget {
         } else {
           log.d('Event Notifier is not initialized because it is null');
         }
+        break;
+      case 'playVoiceInstruction':
+        _instructions.add(call.arguments);
+        log.d("Voice instructions: ${call.arguments}");
         break;
     }
   }
