@@ -313,7 +313,7 @@ class MapView extends StatelessWidget {
             );
           },
           onCreatePlatformView: (PlatformViewCreationParams params) {
-            return PlatformViewsService.initExpensiveAndroidView(
+            return PlatformViewsService.initSurfaceAndroidView(
               id: params.id,
               viewType: viewType,
               layoutDirection: TextDirection.ltr,
