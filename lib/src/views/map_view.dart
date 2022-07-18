@@ -349,6 +349,8 @@ class MapView extends StatelessWidget {
 
       String currentInstruction = _instructions.elementAt(0);
 
+      log.d("Voice instruction: $currentInstruction");
+
       if (await _flutterTts.speak(currentInstruction) == 1) {
         _instructions.removeAt(0);
       }
@@ -371,7 +373,6 @@ class MapView extends StatelessWidget {
         break;
       case 'playVoiceInstruction':
         _instructions.add(call.arguments);
-        log.d("Voice instructions: ${call.arguments}");
         break;
     }
   }
