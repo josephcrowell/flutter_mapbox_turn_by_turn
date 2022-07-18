@@ -113,6 +113,8 @@ class MeasurementUnits {
 }
 
 Stream<MapboxTurnByTurnEvent>? _onMapboxTurnByTurnEvent;
+FlutterTts _flutterTts = FlutterTts();
+List<String> _instructions = <String>[];
 
 // The widget that show the mapbox MapView
 class MapView extends StatelessWidget {
@@ -151,6 +153,7 @@ class MapView extends StatelessWidget {
     this.routeUnknownCongestionColor,
   }) : super(key: key) {
     _methodChannel.setMethodCallHandler(_handleMethod);
+
     _flutterTts.setLanguage(language ?? Language.englishUS);
     _flutterTts.setSpeechRate(0.5);
     _flutterTts.setPitch(1.0);
@@ -167,9 +170,6 @@ class MapView extends StatelessWidget {
   final ValueSetter<MapboxTurnByTurnEvent>? eventNotifier;
   late final StreamSubscription<MapboxTurnByTurnEvent>?
       _mapboxTurnByTurnEventSubscription;
-
-  static final FlutterTts _flutterTts = FlutterTts();
-  static List<String> _instructions = <String>[];
   static bool _instructionPlaying = false;
 
   late Timer _instructionProcessTimer;
