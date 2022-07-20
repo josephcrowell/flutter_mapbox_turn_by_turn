@@ -1,5 +1,6 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.models
 
+import android.util.Log
 import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnActivity
 import com.google.gson.Gson
 
@@ -35,14 +36,18 @@ class MapboxTurnByTurnEvents {
                     "  \"eventType\": \"${MapboxEventType.PROGRESS_CHANGE.value}\"," +
                     "  \"data\": $dataString" +
                     "}"
+            Log.i("sendEvent(MapboxProgressChangeEvent)", "Event data: $dataString")
             TurnByTurnActivity.eventSink?.success(jsonString)
         }
 
         fun sendEvent(event: MapboxLocationChangeEvent) {
-            val dataString = Gson().toJson(event)
             val jsonString = "{" +
                     "  \"eventType\": \"${MapboxEventType.LOCATION_CHANGE.value}\"," +
-                    "  \"data\": $dataString" +
+                    "  \"data\": {" +
+                    "\"isLocationChangeEvent\":${event.isLocationChangeEvent}," +
+                    "\"latitude\":${event.latitude}," +
+                    "\"longitude\":${event.longitude}" +
+                    "}" +
                     "}"
             TurnByTurnActivity.eventSink?.success(jsonString)
         }
