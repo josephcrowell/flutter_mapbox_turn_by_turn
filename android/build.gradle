@@ -2,7 +2,7 @@ group 'au.com.annon.flutter_mapbox_turn_by_turn'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.7.0'
+    ext.kotlin_version = '1.7.10'
     repositories {
         google()
         mavenCentral()
