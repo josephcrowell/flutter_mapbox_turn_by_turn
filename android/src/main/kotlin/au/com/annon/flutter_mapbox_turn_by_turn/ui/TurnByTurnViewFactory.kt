@@ -17,6 +17,6 @@ class TurnByTurnViewFactory(
     override fun create(context: Context?, viewId: Int, args: Any?): PlatformView {
         val binding = TurnByTurnActivityBinding.inflate(activity.layoutInflater)
         val creationParams = args as Map<String?, Any?>?
-        return TurnByTurnView(context!!, binding, messenger, viewId, creationParams)
+        return TurnByTurnView(context!!, binding, this, messenger, viewId, creationParams)
     }
 }

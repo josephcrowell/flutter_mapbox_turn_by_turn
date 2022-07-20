@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.Log
 
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
+import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
@@ -14,14 +15,24 @@ import io.flutter.plugin.platform.PlatformView
 internal class TurnByTurnView(
     context: Context,
     binding: TurnByTurnActivityBinding?,
+    mFactory: TurnByTurnViewFactory,
     private var messenger: BinaryMessenger?,
     private val id: Int,
     creationParams: Map<String?, Any?>?,
     )
     : PlatformView, TurnByTurnActivity(context, binding!!, creationParams) {
 
+    private var factory: TurnByTurnViewFactory = mFactory
+
     override fun getView(): View {
         return binding!!.root
+    }
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        flutterEngine
+            .platformViewsController
+            .registry
+            .registerViewFactory("MapView", factory)
     }
 
     init {
