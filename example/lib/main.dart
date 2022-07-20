@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -197,7 +198,6 @@ class _ExampleAppState extends State<ExampleApp> {
             _pastLocation = _currentLocation;
           }
         }
-        break;
         break;
       case MapboxEventType.routeBuilt:
         log.d('Route built');
