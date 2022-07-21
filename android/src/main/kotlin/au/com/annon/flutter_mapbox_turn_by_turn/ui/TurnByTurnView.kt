@@ -1,9 +1,9 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
-import android.view.View
 import android.content.Context
 import android.util.Log
-
+import android.view.View
+import androidx.annotation.NonNull
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.BinaryMessenger
@@ -33,6 +33,10 @@ internal class TurnByTurnView(
             .platformViewsController
             .registry
             .registerViewFactory("MapView", factory)
+    }
+
+    override fun cleanUpFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
+        flutterEngine.platformViewsController.detachFromView()
     }
 
     init {

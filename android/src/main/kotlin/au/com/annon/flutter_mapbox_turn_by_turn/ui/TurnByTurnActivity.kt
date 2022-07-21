@@ -784,15 +784,11 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         mapboxNavigation.unregisterArrivalObserver(arrivalObserver)
 
         navigationCamera!!.unregisterNavigationCameraStateChangeObserver(navigationCameraStateChangedObserver)
-        navigationCamera = null
-        navigationLocationProvider = null
         viewportDataSource!!.unregisterUpdateObserver(viewportDataSourceUpdateObserver)
-        viewportDataSource = null
 
         Log.d("TurnByTurnActivity","Activity detached")
     }
 
-    @SuppressLint("Lifecycle")
     fun destroy() {
         maneuverApi.cancel()
         routeLineApi.cancel()
@@ -802,9 +798,6 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         MapboxNavigationProvider.destroy()
 
         finish()
-
-        mapboxMap = null
-        binding = null
 
         Log.d("TurnByTurnActivity","Activity destroyed")
     }
@@ -962,7 +955,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         binding!!.mapView.keepScreenOn = false
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_CANCELLED)
     }
-    
+
     private fun toggleGestures(enabled: Boolean) {
         binding!!.mapView.gestures.doubleTapToZoomInEnabled = enabled
         binding!!.mapView.gestures.quickZoomEnabled = enabled
