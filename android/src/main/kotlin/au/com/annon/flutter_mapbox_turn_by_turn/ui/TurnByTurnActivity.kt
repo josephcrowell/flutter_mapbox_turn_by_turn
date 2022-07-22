@@ -100,6 +100,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         mBinding: TurnByTurnActivityBinding,
         creationParams: Map<String?, Any?>?,
     ) {
+        Log.d("TurnByTurnActivity", "Constructor called")
         super.attachBaseContext(mContext)
         binding = mBinding
 
@@ -739,7 +740,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
 
         // register observers and check routes
-        startActivity()
+        registerObservers()
 
         // start the trip session to being receiving location updates in free drive
         // and later when a route is set also receiving route progress updates
@@ -759,7 +760,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         Log.d("TurnByTurnActivity","Activity initialized")
     }
 
-    private fun startActivity() {
+    private fun registerObservers() {
         // register event listeners
         mapboxNavigation.registerRoutesObserver(routesObserver)
         mapboxNavigation.registerRouteProgressObserver(routeProgressObserver)
@@ -767,10 +768,10 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         mapboxNavigation.registerVoiceInstructionsObserver(voiceInstructionsObserver)
         mapboxNavigation.registerArrivalObserver(arrivalObserver)
 
-        Log.d("TurnByTurnActivity","Activity started")
+        Log.d("TurnByTurnActivity","Observers registered")
     }
 
-    fun detachActivity() {
+    fun unregisterObservers() {
         if(navigationStarted) {
             clearRouteAndStopNavigation()
         }
@@ -786,7 +787,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         navigationCamera!!.unregisterNavigationCameraStateChangeObserver(navigationCameraStateChangedObserver)
         viewportDataSource!!.unregisterUpdateObserver(viewportDataSourceUpdateObserver)
 
-        Log.d("TurnByTurnActivity","Activity detached")
+        Log.d("TurnByTurnActivity","Observers unregistered")
     }
 
     fun destroy() {
