@@ -45,6 +45,18 @@ internal class TurnByTurnView(
         Log.d("TurnByTurnView", "View initialised")
     }
 
+    override fun onFlutterViewAttached(flutterView: View) {
+        super.onFlutterViewAttached(flutterView)
+        Log.d("TurnByTurnView", "View attached")
+    }
+
+    override fun onFlutterViewDetached() {
+        unregisterObservers()
+        super.onFlutterViewDetached()
+        Log.d("TurnByTurnView", "View detached")
+    }
+
+
     override fun dispose() {
         methodChannel = null
         eventSink = null

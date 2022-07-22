@@ -322,9 +322,7 @@ class MapView extends StatelessWidget {
               onFocus: () {
                 params.onFocusChanged(true);
               },
-            )
-              ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
-              ..create();
+            )..addOnPlatformViewCreatedListener(params.onPlatformViewCreated);
           },
         );
       case TargetPlatform.iOS:
