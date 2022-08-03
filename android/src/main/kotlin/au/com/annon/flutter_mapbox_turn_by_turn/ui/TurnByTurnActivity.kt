@@ -28,6 +28,7 @@ import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.geojson.Point
 import com.mapbox.maps.*
+import com.mapbox.maps.extension.style.expressions.dsl.generated.switchCase
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.gestures.gestures
@@ -92,6 +93,12 @@ import java.util.*
  * - At any point in time you can finish guidance or select a new destination.
  * - You can use buttons to mute/unmute voice instructions, recenter the camera, or show the route overview.
  */
+
+enum class NavigationCameraType(val value: String) {
+    NO_CHANGE("noChange"),
+    OVERVIEW("overview"),
+    FOLLOWING("following"),
+}
 
 open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
 
@@ -690,7 +697,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             // add long click listener that search for a route to the clicked destination
             if (navigateOnLongClick == true) {
                 binding!!.mapView.gestures.addOnMapLongClickListener { point ->
-                    findRoutes(listOf(point),listOf(""))
+                    findRoutes(listOf(point),listOf(""), NavigationCameraType.FOLLOWING.value)
                     true
                 }
             }
@@ -840,13 +847,15 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             waypointNamesList = waypointNamesList + name
             waypointList = waypointList + Point.fromLngLat(longitude, latitude)
         }
+        
+        val navigationCameraType: String = arguments["navigationCameraType"] as String
 
         if(waypointList.isNotEmpty() && waypointNamesList.isNotEmpty()) run {
-            findRoutes(waypointList, waypointNamesList)
+            findRoutes(waypointList, waypointNamesList, navigationCameraType)
         }
     }
 
-    private fun findRoutes(waypoints: List<Point>, waypointNames: List<String>) {
+    private fun findRoutes(waypoints: List<Point>, waypointNames: List<String>, navigationCameraType: String) {
         if (!PluginUtilities.isNetworkAvailable(context)) {
             MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILD_FAILED, "No Internet Connection")
             return
@@ -888,7 +897,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                     routes: List<NavigationRoute>,
                     routerOrigin: RouterOrigin
                 ) {
-                    setRouteAndStartNavigation(routes)
+                    setRouteAndStartNavigation(routes, navigationCameraType)
                 }
 
                 override fun onFailure(
@@ -909,7 +918,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         )
     }
 
-    private fun setRouteAndStartNavigation(routes: List<NavigationRoute>) {
+    private fun setRouteAndStartNavigation(routes: List<NavigationRoute>, navigationCameraType: String) {
         if (routes.isEmpty()){
             MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILD_NO_ROUTES_FOUND)
             return
@@ -929,9 +938,20 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         binding!!.tripProgressCard.visibility = View.VISIBLE
 
         // move the camera to following when new route is available
-        navigationCamera!!.requestNavigationCameraToFollowing()
-        if(disableGesturesWhenFollowing == true) {
-            toggleGestures(false)
+        when(navigationCameraType) {
+            NavigationCameraType.FOLLOWING.value -> {
+                navigationCamera!!.requestNavigationCameraToFollowing()
+                if(disableGesturesWhenFollowing == true) {
+                    toggleGestures(false)
+                }
+            }
+            NavigationCameraType.OVERVIEW.value -> {
+                navigationCamera!!.requestNavigationCameraToOverview()
+                if(disableGesturesWhenFollowing == true) {
+                    toggleGestures(true)
+                }
+            }
+            NavigationCameraType.NO_CHANGE.value -> {}
         }
         navigationStarted = true
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_RUNNING)

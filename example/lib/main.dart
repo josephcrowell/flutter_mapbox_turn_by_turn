@@ -106,6 +106,7 @@ class _ExampleAppState extends State<ExampleApp> {
                       longitude: 151.21528,
                     ),
                   ],
+                  navigationCameraType: NavigationCameraType.overview,
                 );
               },
               icon: const Icon(FontAwesome.map_o),
