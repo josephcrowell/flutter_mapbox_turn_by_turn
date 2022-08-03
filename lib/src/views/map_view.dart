@@ -112,6 +112,18 @@ class MeasurementUnits {
   static const String imperial = "imperial";
 }
 
+/// What you want the navigation camera to do when starting navigation
+class NavigationCameraType {
+  /// Don't change hte camera type when starting navigation
+  static const String noChange = "noChange";
+
+  /// Switch the camera to overview when starting navigation
+  static const String overview = "overview";
+
+  /// Switch the camera to following when starting navigation
+  static const String following = "following";
+}
+
 Stream<MapboxTurnByTurnEvent>? _onMapboxTurnByTurnEvent;
 FlutterTts _flutterTts = FlutterTts();
 List<String> _instructions = <String>[];
@@ -376,7 +388,8 @@ class MapView extends StatelessWidget {
   }
 
   /// Starts the Navigation
-  Future<bool?> startNavigation({required List<Waypoint> waypoints}) async {
+  Future<bool?> startNavigation(
+      {required List<Waypoint> waypoints, String? navigationCameraType}) async {
     assert(waypoints.isNotEmpty);
     List<Map<String, Object?>> waypointList = [];
 
@@ -396,6 +409,8 @@ class MapView extends StatelessWidget {
 
     var args = <String, dynamic>{};
     args["waypoints"] = waypointMap;
+    args["navigationCameraType"] =
+        navigationCameraType ?? NavigationCameraType.following;
     return _methodChannel.invokeMethod('startNavigation', args);
   }
 

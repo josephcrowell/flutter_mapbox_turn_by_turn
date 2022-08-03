@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/scheduler.dart';
 
 import 'mapbox_progress_change_event.dart';
 import 'mapbox_location_change_event.dart';
@@ -44,7 +43,7 @@ class MapboxTurnByTurnEvent {
             (e) => e.toString().split(".").last == json['eventType']);
       } on StateError {
         //When the list is empty or eventType not found (Bad State: No Element)
-      } catch (e) {}
+      }
     }
     var dataJson = json['data'];
     switch (eventType) {
