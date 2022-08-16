@@ -23,7 +23,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.2.1'
+        classpath 'com.android.tools.build:gradle:7.2.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "com.mapbox.gradle.plugins:access-token:0.2.1"
     }
@@ -113,8 +113,8 @@ dependencies {
     implementation "com.google.android.material:material:1.6.1"
 
     implementation "com.mapbox.navigation:android:2.6.0"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1"
 
     debugImplementation "com.squareup.leakcanary:leakcanary-android:2.9.1"
 
