@@ -566,8 +566,8 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             MapboxTurnByTurnEvents.sendJsonEvent(
                 MapboxEventType.OFFLINE_PROGRESS,
                 "{" +
-                        "\"id\":${id}," +
-                        "\"percent\":${percent}" +
+                        "\"id\":\"${id}\"," +
+                        "\"percent\":\"${percent}\"" +
                         "}"
             )
         }
@@ -576,15 +576,15 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             if(region.isValue) {
                 MapboxTurnByTurnEvents.sendJsonEvent(
                     MapboxEventType.OFFLINE_FINISHED,
-                    "{\"id\":${id}}"
+                    "{\"id\":\"${id}\"}"
                 )
             } else {
                 region.error?.let {
                     MapboxTurnByTurnEvents.sendJsonEvent(
                         MapboxEventType.OFFLINE_ERROR,
                     "{" +
-                            "\"id\":${id}," +
-                            "\"error\":${it.message}" +
+                            "\"id\":\"${id}\"," +
+                            "\"error\":\"${it.message}\"" +
                             "}" )
                 }
             }
@@ -593,19 +593,19 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         override fun onRegionRemoved(id: String) {
             MapboxTurnByTurnEvents.sendJsonEvent(
                 MapboxEventType.OFFLINE_REGION_REMOVED,
-                "{\"id\":${id}}"
+                "{\"id\":\"${id}\"}"
             )
         }
 
         override fun onRegionGeometryChanged(id: String, geometry: Geometry) {
             MapboxTurnByTurnEvents.sendJsonEvent(MapboxEventType.OFFLINE_REGION_GEOMETRY_CHANGED,
-                "{\"id\":${id}}"
+                "{\"id\":\"${id}\"}"
             )
         }
 
         override fun onRegionMetadataChanged(id: String, value: Value) {
             MapboxTurnByTurnEvents.sendJsonEvent(MapboxEventType.OFFLINE_REGION_METADATA_CHANGED,
-                "{\"id\":${id}}"
+                "{\"id\":\"${id}\"}"
             )
         }
     }
