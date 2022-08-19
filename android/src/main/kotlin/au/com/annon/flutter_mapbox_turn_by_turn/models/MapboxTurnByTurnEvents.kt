@@ -1,5 +1,7 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.models
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnActivity
 import com.google.gson.Gson
@@ -30,6 +32,8 @@ enum class MapboxEventType(val value: String) {
 
 class MapboxTurnByTurnEvents {
     companion object {
+        private val handler: Handler = Handler(Looper.getMainLooper())
+
         fun sendEvent(event: MapboxProgressChangeEvent) {
             val dataString = Gson().toJson(event)
             val jsonString = "{" +
@@ -37,31 +41,41 @@ class MapboxTurnByTurnEvents {
                     "  \"data\": $dataString" +
                     "}"
             Log.i("sendEvent(MapboxProgressChangeEvent)", "Event data: $dataString")
-            TurnByTurnActivity.eventSink?.success(jsonString)
+            handler.post { TurnByTurnActivity.eventSink?.success(jsonString) }
         }
 
         fun sendEvent(event: MapboxLocationChangeEvent) {
             val jsonString = "{" +
                     "  \"eventType\": \"${MapboxEventType.LOCATION_CHANGE.value}\"," +
                     "  \"data\": {" +
-                    "\"isLocationChangeEvent\":${event.isLocationChangeEvent}," +
-                    "\"latitude\":${event.latitude}," +
-                    "\"longitude\":${event.longitude}" +
+                    "\"isLocationChangeEvent\": ${event.isLocationChangeEvent}," +
+                    "\"latitude\": ${event.latitude}," +
+                    "\"longitude\": ${event.longitude}" +
                     "}" +
                     "}"
-            TurnByTurnActivity.eventSink?.success(jsonString)
+            handler.post { TurnByTurnActivity.eventSink?.success(jsonString) }
         }
 
         fun sendEvent(event: MapboxEventType, data: String = "") {
-            val jsonString =
-                if (event == MapboxEventType.MILESTONE_EVENT || event == MapboxEventType.USER_OFF_ROUTE) "{" +
+            val jsonString = "{" +
                         "  \"eventType\": \"${event.value}\"," +
-                        "  \"data\": $data" +
-                        "}" else "{" +
-                        "  \"eventType\": \"${event.value}\"," +
-                        "  \"data\": \"$data\"" +
+                        "  \"data\": \"${data}\"" +
                         "}"
-            TurnByTurnActivity.eventSink?.success(jsonString)
+            handler.post { TurnByTurnActivity.eventSink?.success(jsonString) }
+        }
+
+        fun sendJsonEvent(event: MapboxEventType, data: String = "") {
+            var dataString = "\"\""
+
+            if(data.isNotEmpty()) {
+                dataString = data
+            }
+
+            val jsonString = "{" +
+                    "  \"eventType\": \"${event.value}\"," +
+                    "  \"data\": ${dataString}" +
+                    "}"
+            handler.post { TurnByTurnActivity.eventSink?.success(jsonString) }
         }
     }
 }
