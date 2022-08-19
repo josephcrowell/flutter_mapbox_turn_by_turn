@@ -9,7 +9,6 @@ import com.google.gson.Gson
 enum class MapboxEventType(val value: String) {
     PROGRESS_CHANGE("progressChange"),
     LOCATION_CHANGE("locationChange"),
-    MAP_READY("mapReady"),
     ROUTE_BUILDING("routeBuilding"),
     ROUTE_BUILT("routeBuilt"),
     ROUTE_BUILD_FAILED("routeBuildFailed"),
@@ -21,13 +20,17 @@ enum class MapboxEventType(val value: String) {
     NAVIGATION_CANCELLED("navigationCancelled"),
     NAVIGATION_FINISHED("navigationFinished"),
     FASTER_ROUTE_FOUND("fasterRouteFound"),
-    SPEECH_ANNOUNCEMENT("speechAnnouncement"),
-    BANNER_INSTRUCTION("bannerInstruction"),
     WAYPOINT_ARRIVAL("waypointArrival"),
     NEXT_ROUTE_LEG_START("nextRouteLegStart"),
     FINAL_DESTINATION_ARRIVAL("finalDestinationArrival"),
     FAILED_TO_REROUTE("failedToReroute"),
     REROUTE_ALONG("rerouteAlong"),
+    OFFLINE_PROGRESS("offlineProgress"),
+    OFFLINE_FINISHED("offlineFinished"),
+    OFFLINE_REGION_REMOVED("offlineRegionRemoved"),
+    OFFLINE_REGION_GEOMETRY_CHANGED("offlineRegionGeometryChanged"),
+    OFFLINE_REGION_METADATA_CHANGED("offlineRegionMetadataChanged"),
+    OFFLINE_ERROR("offlineError")
 }
 
 class MapboxTurnByTurnEvents {

@@ -388,8 +388,10 @@ class MapView extends StatelessWidget {
   }
 
   /// Starts the Navigation
-  Future<bool?> startNavigation(
-      {required List<Waypoint> waypoints, String? navigationCameraType}) async {
+  Future<bool?> startNavigation({
+    required List<Waypoint> waypoints,
+    String? navigationCameraType,
+  }) async {
     assert(waypoints.isNotEmpty);
     List<Map<String, Object?>> waypointList = [];
 
@@ -414,8 +416,33 @@ class MapView extends StatelessWidget {
     return _methodChannel.invokeMethod('startNavigation', args);
   }
 
+  /// Stops the navigation
   Future<bool?> stopNavigation() async {
     return _methodChannel.invokeMethod('stopNavigation');
+  }
+
+  /// Adds an offline map
+  /// [mapStyleUrl] is the url of the map style to download an offline map for
+  /// [areaId] is an id to give this region for retrieving it from storage
+  /// [centerLatitude] is the latitude of the center of the region to download
+  /// [centerLongitude] is the longitude of the center of the region to download
+  /// [distance] is the distance from center that we want loaded
+  Future<bool?> addOfflineMap({
+    required String mapStyleUrl,
+    required String areaId,
+    required double centerLatitude,
+    required double centerLongitude,
+    required double distance,
+  }) async {
+    var args = <String, dynamic>{};
+
+    args["mapStyleUrl"] = mapStyleUrl;
+    args["areaId"] = areaId;
+    args["centerLatitude"] = centerLatitude;
+    args["centerLongitude"] = centerLongitude;
+    args["distance"] = distance;
+
+    return _methodChannel.invokeMethod('addOfflineMap', args);
   }
 
   void _onEventData(MapboxTurnByTurnEvent event) {

@@ -6,7 +6,6 @@ import 'mapbox_location_change_event.dart';
 enum MapboxEventType {
   progressChange,
   locationChange,
-  mapReady,
   routeBuilding,
   routeBuilt,
   routeBuildFailed,
@@ -18,13 +17,17 @@ enum MapboxEventType {
   navigationCancelled,
   navigationFinished,
   fasterRouteFound,
-  speechAnnouncement,
-  bannerInstruction,
   waypointArrival,
   nextRouteLegStart,
   finalDestinationArrival,
   failedToReroute,
   rerouteAlong,
+  offlineProgress,
+  offlineFinished,
+  offlineRegionRemoved,
+  offlineRegionGeometryChanged,
+  offlineRegionMetadataChanged,
+  offlineError,
 }
 
 /// Represents an event sent by the navigation service

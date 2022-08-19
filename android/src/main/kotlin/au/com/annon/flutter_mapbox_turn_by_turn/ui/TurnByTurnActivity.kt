@@ -1,7 +1,6 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -26,9 +25,11 @@ import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxTurnByTurnEvents
 import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
 import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.api.directions.v5.models.RouteOptions
-import com.mapbox.geojson.Point
+import com.mapbox.bindgen.Expected
+import com.mapbox.bindgen.Value
+import com.mapbox.common.*
+import com.mapbox.geojson.*
 import com.mapbox.maps.*
-import com.mapbox.maps.extension.style.expressions.dsl.generated.switchCase
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.gestures.gestures
@@ -40,6 +41,7 @@ import com.mapbox.navigation.base.extensions.applyLanguageAndVoiceUnitOptions
 import com.mapbox.navigation.base.formatter.DistanceFormatterOptions
 import com.mapbox.navigation.base.formatter.UnitType
 import com.mapbox.navigation.base.options.NavigationOptions
+import com.mapbox.navigation.base.options.RoutingTilesOptions
 import com.mapbox.navigation.base.route.*
 import com.mapbox.navigation.base.trip.model.RouteLegProgress
 import com.mapbox.navigation.base.trip.model.RouteProgress
@@ -76,6 +78,9 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.util.*
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.roundToInt
 
 
 /**
@@ -174,7 +179,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
     companion object {
         private const val BUTTON_ANIMATION_DURATION = 1500L
-        var eventSink:EventChannel.EventSink? = null
+        var eventSink: EventChannel.EventSink? = null
 
         private var measurementUnits: String = "metric"
         private var speedThreshold: Int = 5
@@ -208,6 +213,13 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
      * Produces the camera frames based on the location and routing data for the [navigationCamera] to execute.
      */
     private var viewportDataSource: MapboxNavigationViewportDataSource? = null
+
+    /**
+     * Mapbox offline manager. There should only be one instance of this object for the app.
+     * The Offline Manager API provides a configuration interface and entrypoint for offline map functionality.
+     * It is used to manage style packs and to produce tileset descriptors that can be used with a tile store.
+     */
+    private lateinit var offlineManager: OfflineManager
 
     /*
      * Below are generated camera padding values to ensure that the route fits well on screen while
@@ -547,6 +559,57 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
     }
 
+    private val tileStoreObserver = object : TileStoreObserver {
+        override fun onRegionLoadProgress(id: String, progress: TileRegionLoadProgress) {
+            val percent =
+                (progress.completedResourceCount.toDouble() / progress.requiredResourceCount.toDouble() * 100).roundToInt()
+            MapboxTurnByTurnEvents.sendJsonEvent(
+                MapboxEventType.OFFLINE_PROGRESS,
+                "{" +
+                        "\"id\":${id}," +
+                        "\"percent\":${percent}" +
+                        "}"
+            )
+        }
+
+        override fun onRegionLoadFinished(id: String, region: Expected<TileRegionError, TileRegion>) {
+            if(region.isValue) {
+                MapboxTurnByTurnEvents.sendJsonEvent(
+                    MapboxEventType.OFFLINE_FINISHED,
+                    "{\"id\":${id}}"
+                )
+            } else {
+                region.error?.let {
+                    MapboxTurnByTurnEvents.sendJsonEvent(
+                        MapboxEventType.OFFLINE_ERROR,
+                    "{" +
+                            "\"id\":${id}," +
+                            "\"error\":${it.message}" +
+                            "}" )
+                }
+            }
+        }
+
+        override fun onRegionRemoved(id: String) {
+            MapboxTurnByTurnEvents.sendJsonEvent(
+                MapboxEventType.OFFLINE_REGION_REMOVED,
+                "{\"id\":${id}}"
+            )
+        }
+
+        override fun onRegionGeometryChanged(id: String, geometry: Geometry) {
+            MapboxTurnByTurnEvents.sendJsonEvent(MapboxEventType.OFFLINE_REGION_GEOMETRY_CHANGED,
+                "{\"id\":${id}}"
+            )
+        }
+
+        override fun onRegionMetadataChanged(id: String, value: Value) {
+            MapboxTurnByTurnEvents.sendJsonEvent(MapboxEventType.OFFLINE_REGION_METADATA_CHANGED,
+                "{\"id\":${id}}"
+            )
+        }
+    }
+
     private val viewportDataSourceUpdateObserver = ViewportDataSourceUpdateObserver {}
 
     override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
@@ -568,9 +631,25 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         Log.d("TurnByTurnActivity","Activity initializing")
 
         accessToken = PluginUtilities.getResourceFromContext(context, "mapbox_access_token")
-        binding!!.mapView.scalebar.enabled = false
 
         mapboxMap = binding!!.mapView.getMapboxMap()
+
+        mapboxMap!!.getResourceOptions().tileStore?.apply {
+            setOption(
+                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
+                TileDataDomain.MAPS,
+                Value(accessToken)
+            )
+            setOption(
+                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
+                TileDataDomain.NAVIGATION,
+                Value(accessToken)
+            )
+        }
+
+        mapboxMap!!.getResourceOptions().tileStoreUsageMode.apply {
+            TileStoreUsageMode.READ_AND_UPDATE
+        }
 
         var unitType: UnitType = UnitType.METRIC
         if(measurementUnits == DirectionsCriteria.IMPERIAL) {
@@ -581,6 +660,10 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             .unitType(unitType)
             .build()
 
+        val routingTilesOptions = RoutingTilesOptions.Builder()
+            .tileStore(mapboxMap!!.getResourceOptions().tileStore)
+            .build()
+
         // initialize Mapbox Navigation
         mapboxNavigation = if (MapboxNavigationProvider.isCreated()) {
             MapboxNavigationProvider.retrieve()
@@ -588,10 +671,15 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             MapboxNavigationProvider.create(
                 NavigationOptions.Builder(context)
                     .accessToken(accessToken)
+                    .routingTilesOptions(routingTilesOptions)
                     .distanceFormatterOptions(distanceFormatterOptions)
                     .build()
             )
         }
+
+        offlineManager = OfflineManager(mapboxMap!!.getResourceOptions())
+
+        binding!!.mapView.scalebar.enabled = false
 
         // initialize Navigation Camera
         viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap!!)
@@ -774,6 +862,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         mapboxNavigation.registerLocationObserver(locationObserver)
         mapboxNavigation.registerVoiceInstructionsObserver(voiceInstructionsObserver)
         mapboxNavigation.registerArrivalObserver(arrivalObserver)
+        mapboxMap!!.getResourceOptions().tileStore?.addObserver(tileStoreObserver)
 
         Log.d("TurnByTurnActivity","Observers registered")
     }
@@ -790,6 +879,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         mapboxNavigation.unregisterLocationObserver(locationObserver)
         mapboxNavigation.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
         mapboxNavigation.unregisterArrivalObserver(arrivalObserver)
+        mapboxMap!!.getResourceOptions().tileStore?.removeObserver(tileStoreObserver)
 
         navigationCamera!!.unregisterNavigationCameraStateChangeObserver(navigationCameraStateChangedObserver)
         viewportDataSource!!.unregisterUpdateObserver(viewportDataSourceUpdateObserver)
@@ -826,6 +916,9 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             }
             "stopNavigation" -> {
                 clearRouteAndStopNavigation()
+            }
+            "addOfflineMap" -> {
+                addOfflineMap(methodCall)
             }
             else -> result.notImplemented()
         }
@@ -975,6 +1068,54 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         // enable the screen to turn off again when navigation stops
         binding!!.mapView.keepScreenOn = false
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_CANCELLED)
+    }
+
+    private fun addOfflineMap(@NonNull call: MethodCall) {
+        val arguments = call.arguments as? Map<*, *>
+        val radiusEarth = 6371.0
+
+        val mapStyleUrl = arguments?.get("mapStyleUrl") as String
+        val areaId = arguments["areaId"] as String
+        val centerLatitude = arguments["centerLatitude"] as Double
+        val centerLongitude = arguments["centerLongitude"] as Double
+        val distance = arguments["distance"] as Double
+
+        // Calculate the distance to a square corner which contains a circle radius
+        val cornerDistance = hypot(distance, distance)
+        val deltaLatitude = Math.toDegrees(cornerDistance / radiusEarth)
+        val deltaLongitude = Math.toDegrees(cornerDistance / radiusEarth / cos(Math.toRadians(centerLatitude)))
+
+        val areaCoordinates = listOf(
+            listOf(
+                Point.fromLngLat(centerLatitude + deltaLatitude, centerLongitude - deltaLongitude),
+                Point.fromLngLat(centerLatitude + deltaLatitude, centerLongitude + deltaLongitude),
+                Point.fromLngLat(centerLatitude - deltaLatitude, centerLongitude + deltaLongitude),
+                Point.fromLngLat(centerLatitude - deltaLatitude, centerLongitude - deltaLongitude),
+                Point.fromLngLat(centerLatitude + deltaLatitude, centerLongitude - deltaLongitude),
+            )
+        )
+
+        val area = Polygon.fromLngLats(areaCoordinates)
+
+        val mapsTilesetDescriptor = offlineManager.createTilesetDescriptor(
+            TilesetDescriptorOptions.Builder()
+                .styleURI(mapStyleUrl)
+                .minZoom(0)
+                .maxZoom(20)
+                .build()
+        )
+
+        val navTilesetDescriptor = mapboxNavigation.tilesetDescriptorFactory.getLatest()
+
+        val tileRegionLoadOptions = TileRegionLoadOptions.Builder()
+            .geometry(area)
+            .descriptors(listOf(mapsTilesetDescriptor, navTilesetDescriptor))
+            .build()
+
+        mapboxMap!!.getResourceOptions().tileStore?.loadTileRegion(
+            areaId,
+            tileRegionLoadOptions
+        )
     }
 
     private fun toggleGestures(enabled: Boolean) {

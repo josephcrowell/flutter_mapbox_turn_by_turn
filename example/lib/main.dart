@@ -111,6 +111,19 @@ class _ExampleAppState extends State<ExampleApp> {
               },
               icon: const Icon(FontAwesome.map_o),
             ),
+            IconButton(
+              onPressed: () {
+                _mapView.addOfflineMap(
+                  mapStyleUrl:
+                      'mapbox://styles/computerlinkau/cl4rqvsmg000014o585f82uvn',
+                  areaId: '51',
+                  centerLatitude: -27.557667575031797,
+                  centerLongitude: 153.0225135375545,
+                  distance: 20,
+                );
+              },
+              icon: const Icon(FontAwesome.download),
+            ),
           ],
         ),
         backgroundColor: Colors.black,
@@ -239,6 +252,17 @@ class _ExampleAppState extends State<ExampleApp> {
           _routeBuilt = false;
           _isNavigating = false;
         });
+        break;
+      case MapboxEventType.offlineProgress:
+        String jsonString = e.data as String;
+        dynamic data = json.decode(jsonString);
+        log.d('Offline maps loading progress: ${data['percent']}%');
+        break;
+      case MapboxEventType.offlineFinished:
+        log.d('Offline maps loading finished');
+        break;
+      case MapboxEventType.offlineError:
+        log.d('Offline maps loading error');
         break;
       default:
         break;
