@@ -18,7 +18,6 @@ enum class MapboxEventType(val value: String) {
     MILESTONE_EVENT("milestoneEvent"),
     NAVIGATION_RUNNING("navigationRunning"),
     NAVIGATION_CANCELLED("navigationCancelled"),
-    NAVIGATION_FINISHED("navigationFinished"),
     FASTER_ROUTE_FOUND("fasterRouteFound"),
     WAYPOINT_ARRIVAL("waypointArrival"),
     NEXT_ROUTE_LEG_START("nextRouteLegStart"),

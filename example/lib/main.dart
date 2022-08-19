@@ -245,7 +245,6 @@ class _ExampleAppState extends State<ExampleApp> {
         );
         await _mapView.stopNavigation();
         break;
-      case MapboxEventType.navigationFinished:
       case MapboxEventType.navigationCancelled:
         log.d('Navigation stopped');
         setState(() {

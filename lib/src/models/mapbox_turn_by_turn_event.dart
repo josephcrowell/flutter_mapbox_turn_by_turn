@@ -15,7 +15,6 @@ enum MapboxEventType {
   milestoneEvent,
   navigationRunning,
   navigationCancelled,
-  navigationFinished,
   fasterRouteFound,
   waypointArrival,
   nextRouteLegStart,
