@@ -255,15 +255,24 @@ class _ExampleAppState extends State<ExampleApp> {
       case MapboxEventType.offlineProgress:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.d('Offline maps loading progress: ${data['percent']}%');
+        log.d(
+          'Offline map ${data['id']} loading progress: ${data['percent']}%',
+        );
         break;
       case MapboxEventType.offlineFinished:
-        log.d('Offline maps loading finished');
+        String jsonString = e.data as String;
+        dynamic data = json.decode(jsonString);
+        log.d('Offline map ${data['id']} loading finished');
         break;
       case MapboxEventType.offlineError:
-        log.d('Offline maps loading error');
+        String jsonString = e.data as String;
+        dynamic data = json.decode(jsonString);
+        log.d('Offline map ${data['id']} loading error');
         break;
       default:
+        String jsonString = e.data as String;
+        dynamic data = json.decode(jsonString);
+        log.e('Unrecognized event ${e.eventType} with data: $data');
         break;
     }
     setState(() {});
