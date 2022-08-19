@@ -429,6 +429,8 @@ class MapView extends StatelessWidget {
   /// [distance] is the distance from center that we want loaded
   Future<bool?> addOfflineMap({
     required String mapStyleUrl,
+    int? minZoom,
+    int? maxZoom,
     required String areaId,
     required double centerLatitude,
     required double centerLongitude,
@@ -437,6 +439,8 @@ class MapView extends StatelessWidget {
     var args = <String, dynamic>{};
 
     args["mapStyleUrl"] = mapStyleUrl;
+    args["minZoom"] = minZoom ?? 0;
+    args["maxZoom"] = maxZoom ?? 20;
     args["areaId"] = areaId;
     args["centerLatitude"] = centerLatitude;
     args["centerLongitude"] = centerLongitude;

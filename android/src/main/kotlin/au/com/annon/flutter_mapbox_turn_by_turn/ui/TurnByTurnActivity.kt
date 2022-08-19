@@ -1075,6 +1075,8 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         val radiusEarth = 6371.0
 
         val mapStyleUrl = arguments?.get("mapStyleUrl") as String
+        val minZoom = arguments["minZoom"] as Int
+        val maxZoom = arguments["maxZoom"] as Int
         val areaId = arguments["areaId"] as String
         val centerLatitude = arguments["centerLatitude"] as Double
         val centerLongitude = arguments["centerLongitude"] as Double
@@ -1100,8 +1102,8 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         val mapsTilesetDescriptor = offlineManager.createTilesetDescriptor(
             TilesetDescriptorOptions.Builder()
                 .styleURI(mapStyleUrl)
-                .minZoom(0)
-                .maxZoom(20)
+                .minZoom(minZoom.toByte())
+                .maxZoom(maxZoom.toByte())
                 .build()
         )
 
