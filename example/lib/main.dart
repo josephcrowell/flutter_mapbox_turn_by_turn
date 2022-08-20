@@ -116,6 +116,7 @@ class _ExampleAppState extends State<ExampleApp> {
                 _mapView.addOfflineMap(
                   mapStyleUrl:
                       'mapbox://styles/computerlinkau/cl4rqvsmg000014o585f82uvn',
+                  maxZoom: 24,
                   areaId: '51',
                   centerLatitude: -27.557667575031797,
                   centerLongitude: 153.0225135375545,
