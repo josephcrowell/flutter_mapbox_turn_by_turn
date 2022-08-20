@@ -21,12 +21,15 @@ enum MapboxEventType {
   finalDestinationArrival,
   failedToReroute,
   rerouteAlong,
-  offlineProgress,
-  offlineFinished,
-  offlineRegionRemoved,
-  offlineRegionGeometryChanged,
-  offlineRegionMetadataChanged,
-  offlineError,
+  stylePackProgress,
+  stylePackFinished,
+  stylePackError,
+  tileRegionProgress,
+  tileRegionFinished,
+  tileRegionRemoved,
+  tileRegionGeometryChanged,
+  tileRegionMetadataChanged,
+  tileRegionError,
 }
 
 /// Represents an event sent by the navigation service

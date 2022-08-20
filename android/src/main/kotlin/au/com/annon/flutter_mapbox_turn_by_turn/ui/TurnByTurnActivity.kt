@@ -564,7 +564,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             val percent =
                 (progress.completedResourceCount.toDouble() / progress.requiredResourceCount.toDouble() * 100).roundToInt()
             MapboxTurnByTurnEvents.sendJsonEvent(
-                MapboxEventType.OFFLINE_PROGRESS,
+                MapboxEventType.TILE_REGION_PROGRESS,
                 "{" +
                         "\"id\":\"${id}\"," +
                         "\"percent\":\"${percent}\"" +
@@ -575,13 +575,13 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         override fun onRegionLoadFinished(id: String, region: Expected<TileRegionError, TileRegion>) {
             if(region.isValue) {
                 MapboxTurnByTurnEvents.sendJsonEvent(
-                    MapboxEventType.OFFLINE_FINISHED,
+                    MapboxEventType.TILE_REGION_FINISHED,
                     "{\"id\":\"${id}\"}"
                 )
             } else {
                 region.error?.let {
                     MapboxTurnByTurnEvents.sendJsonEvent(
-                        MapboxEventType.OFFLINE_ERROR,
+                        MapboxEventType.TILE_REGION_ERROR,
                     "{" +
                             "\"id\":\"${id}\"," +
                             "\"error\":\"${it.message}\"" +
@@ -592,19 +592,19 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         override fun onRegionRemoved(id: String) {
             MapboxTurnByTurnEvents.sendJsonEvent(
-                MapboxEventType.OFFLINE_REGION_REMOVED,
+                MapboxEventType.TILE_REGION_REMOVED,
                 "{\"id\":\"${id}\"}"
             )
         }
 
         override fun onRegionGeometryChanged(id: String, geometry: Geometry) {
-            MapboxTurnByTurnEvents.sendJsonEvent(MapboxEventType.OFFLINE_REGION_GEOMETRY_CHANGED,
+            MapboxTurnByTurnEvents.sendJsonEvent(MapboxEventType.TILE_REGION_GEOMETRY_CHANGED,
                 "{\"id\":\"${id}\"}"
             )
         }
 
         override fun onRegionMetadataChanged(id: String, value: Value) {
-            MapboxTurnByTurnEvents.sendJsonEvent(MapboxEventType.OFFLINE_REGION_METADATA_CHANGED,
+            MapboxTurnByTurnEvents.sendJsonEvent(MapboxEventType.TILE_REGION_METADATA_CHANGED,
                 "{\"id\":\"${id}\"}"
             )
         }
@@ -644,6 +644,10 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                 TileStoreOptions.MAPBOX_ACCESS_TOKEN,
                 TileDataDomain.NAVIGATION,
                 Value(accessToken)
+            )
+            setOption(
+                TileStoreOptions.DISK_QUOTA,
+                Value(10737418240)
             )
         }
 
@@ -940,7 +944,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             waypointNamesList = waypointNamesList + name
             waypointList = waypointList + Point.fromLngLat(longitude, latitude)
         }
-        
+
         val navigationCameraType: String = arguments["navigationCameraType"] as String
 
         if(waypointList.isNotEmpty() && waypointNamesList.isNotEmpty()) run {
@@ -1094,6 +1098,10 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         val area = Polygon.fromLngLats(areaCoordinates)
 
+        val stylePackLoadOptions = StylePackLoadOptions.Builder()
+            .glyphsRasterizationMode(GlyphsRasterizationMode.IDEOGRAPHS_RASTERIZED_LOCALLY)
+            .build()
+
         val mapsTilesetDescriptor = offlineManager.createTilesetDescriptor(
             TilesetDescriptorOptions.Builder()
                 .styleURI(mapStyleUrl)
@@ -1108,6 +1116,38 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             .geometry(area)
             .descriptors(listOf(mapsTilesetDescriptor, navTilesetDescriptor))
             .build()
+
+        offlineManager.loadStylePack(
+            mapStyleUrl,
+            // Build Style pack load options
+            stylePackLoadOptions,
+            { progress ->
+                val percent =
+                    (progress.completedResourceCount.toDouble() / progress.requiredResourceCount.toDouble() * 100).roundToInt()
+                MapboxTurnByTurnEvents.sendJsonEvent(
+                    MapboxEventType.STYLE_PACK_PROGRESS,
+                    "{" +
+                            "\"percent\":\"${percent}\"" +
+                            "}"
+                )
+            },
+            { expected ->
+                if (expected.isValue) {
+                    expected.value?.let { stylePack ->
+                        MapboxTurnByTurnEvents.sendEvent(
+                            MapboxEventType.STYLE_PACK_FINISHED
+                        )
+                    }
+                }
+                expected.error?.let {
+                    MapboxTurnByTurnEvents.sendJsonEvent(
+                        MapboxEventType.STYLE_PACK_ERROR,
+                        "{" +
+                                "\"error\":\"${it.message}\"" +
+                                "}" )
+                }
+            }
+        )
 
         mapboxMap!!.getResourceOptions().tileStore?.loadTileRegion(
             areaId,

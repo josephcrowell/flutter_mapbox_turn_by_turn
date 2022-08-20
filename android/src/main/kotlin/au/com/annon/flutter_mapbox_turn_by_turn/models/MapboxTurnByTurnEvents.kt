@@ -24,12 +24,15 @@ enum class MapboxEventType(val value: String) {
     FINAL_DESTINATION_ARRIVAL("finalDestinationArrival"),
     FAILED_TO_REROUTE("failedToReroute"),
     REROUTE_ALONG("rerouteAlong"),
-    OFFLINE_PROGRESS("offlineProgress"),
-    OFFLINE_FINISHED("offlineFinished"),
-    OFFLINE_REGION_REMOVED("offlineRegionRemoved"),
-    OFFLINE_REGION_GEOMETRY_CHANGED("offlineRegionGeometryChanged"),
-    OFFLINE_REGION_METADATA_CHANGED("offlineRegionMetadataChanged"),
-    OFFLINE_ERROR("offlineError")
+    STYLE_PACK_PROGRESS("stylePackProgress"),
+    STYLE_PACK_FINISHED("stylePackFinished"),
+    STYLE_PACK_ERROR("stylePackError"),
+    TILE_REGION_PROGRESS("tileRegionProgress"),
+    TILE_REGION_FINISHED("tileRegionFinished"),
+    TILE_REGION_REMOVED("tileRegionRemoved"),
+    TILE_REGION_GEOMETRY_CHANGED("tileRegionGeometryChanged"),
+    TILE_REGION_METADATA_CHANGED("tileRegionMetadataChanged"),
+    TILE_REGION_ERROR("tileRegionError")
 }
 
 class MapboxTurnByTurnEvents {

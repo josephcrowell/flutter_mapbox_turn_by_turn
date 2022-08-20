@@ -252,22 +252,40 @@ class _ExampleAppState extends State<ExampleApp> {
           _isNavigating = false;
         });
         break;
-      case MapboxEventType.offlineProgress:
+      case MapboxEventType.stylePackProgress:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
         log.d(
-          'Offline map ${data['id']} loading progress: ${data['percent']}%',
+          'Offline style pack loading progress: ${data['percent']}%',
         );
         break;
-      case MapboxEventType.offlineFinished:
+      case MapboxEventType.stylePackFinished:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.d('Offline map ${data['id']} loading finished');
+        log.d('Offline style pack loading finished');
         break;
-      case MapboxEventType.offlineError:
+      case MapboxEventType.stylePackError:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.d('Offline map ${data['id']} loading error');
+        log.d('Offline style pack loading error: ${data['error']}');
+        break;
+      case MapboxEventType.tileRegionProgress:
+        String jsonString = e.data as String;
+        dynamic data = json.decode(jsonString);
+        log.d(
+          'Offline tile region ${data['id']} loading progress: ${data['percent']}%',
+        );
+        break;
+      case MapboxEventType.tileRegionFinished:
+        String jsonString = e.data as String;
+        dynamic data = json.decode(jsonString);
+        log.d('Offline tile region ${data['id']} loading finished');
+        break;
+      case MapboxEventType.tileRegionError:
+        String jsonString = e.data as String;
+        dynamic data = json.decode(jsonString);
+        log.d(
+            'Offline tile region ${data['id']} loading error: ${data['error']}');
         break;
       default:
         String jsonString = e.data as String;
