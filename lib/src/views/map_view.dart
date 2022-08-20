@@ -372,7 +372,7 @@ class MapView extends StatelessWidget {
   /// Generic Handler for Messages sent from the Platform
   Future<dynamic> _handleMethod(MethodCall call) async {
     switch (call.method) {
-      case 'initializeEventNotifier':
+      case 'runPostInitialization':
         if (eventNotifier != null) {
           _mapboxTurnByTurnEventSubscription =
               _eventStream!.listen(_onEventData);
