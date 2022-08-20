@@ -949,11 +949,6 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
     }
 
     private fun findRoutes(waypoints: List<Point>, waypointNames: List<String>, navigationCameraType: String) {
-        if (!PluginUtilities.isNetworkAvailable(context)) {
-            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILD_FAILED, "No Internet Connection")
-            return
-        }
-
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILDING)
 
         val originLocation = navigationLocationProvider!!.lastLocation
