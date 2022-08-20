@@ -39,6 +39,7 @@ class _ExampleAppState extends State<ExampleApp> {
 
     _mapView = MapView(
       eventNotifier: _onMapboxEvent,
+      onInitializationFinished: _onInitializationFinished,
       zoom: 20,
       pitch: 75,
       mapStyleUrlDay:
@@ -168,6 +169,13 @@ class _ExampleAppState extends State<ExampleApp> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Optional function to run after map initialization is complete
+  Future<void> _onInitializationFinished() async {
+    log.d(
+      'Initialization finished function called',
     );
   }
 

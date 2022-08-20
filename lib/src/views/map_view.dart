@@ -138,6 +138,7 @@ class MapView extends StatelessWidget {
   MapView({
     Key? key,
     this.eventNotifier,
+    this.onInitializationFinished,
     this.zoom,
     this.pitch,
     this.disableGesturesWhenFollowing,
@@ -182,6 +183,7 @@ class MapView extends StatelessWidget {
   final ValueSetter<MapboxTurnByTurnEvent>? eventNotifier;
   late final StreamSubscription<MapboxTurnByTurnEvent>?
       _mapboxTurnByTurnEventSubscription;
+  late final Function? onInitializationFinished;
   static bool _instructionPlaying = false;
 
   late Timer _instructionProcessTimer;
@@ -372,7 +374,7 @@ class MapView extends StatelessWidget {
   /// Generic Handler for Messages sent from the Platform
   Future<dynamic> _handleMethod(MethodCall call) async {
     switch (call.method) {
-      case 'runPostInitialization':
+      case 'onInitializationFinished':
         if (eventNotifier != null) {
           _mapboxTurnByTurnEventSubscription =
               _eventStream!.listen(_onEventData);
@@ -380,6 +382,11 @@ class MapView extends StatelessWidget {
         } else {
           log.d('Event Notifier is not initialized because it is null');
         }
+
+        if (onInitializationFinished != null) {
+          onInitializationFinished!();
+        }
+
         break;
       case 'playVoiceInstruction':
         _instructions.add(call.arguments);

@@ -855,7 +855,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
         mapboxNavigation.startTripSession()
 
-        methodChannel?.invokeMethod("runPostInitialization", null)
+        methodChannel?.invokeMethod("onInitializationFinished", null)
         Log.d("TurnByTurnActivity","Activity initialized")
     }
 
