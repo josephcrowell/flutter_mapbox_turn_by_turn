@@ -19,6 +19,6 @@ class TurnByTurnViewFactory(
         Log.d("TurnByTurnViewFactory", "Creating TurnByTurnViewFactory")
         val binding = TurnByTurnActivityBinding.inflate(activity.layoutInflater)
         val creationParams = args as Map<String?, Any?>?
-        return TurnByTurnView(context!!, binding, this, messenger, viewId, creationParams)
+        return TurnByTurnView(context!!, binding, this, messenger, creationParams)
     }
 }

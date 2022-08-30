@@ -16,6 +16,9 @@ import android.widget.Toast
 import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEventType
@@ -73,7 +76,7 @@ import com.mapbox.navigation.ui.maps.route.line.model.*
 import com.mapbox.navigation.ui.tripprogress.api.MapboxTripProgressApi
 import com.mapbox.navigation.ui.tripprogress.model.*
 import com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragment
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -105,7 +108,7 @@ enum class NavigationCameraType(val value: String) {
     FOLLOWING("following"),
 }
 
-open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
+open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler, LifecycleOwner {
 
     constructor(
         mContext: Context,
@@ -113,8 +116,10 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         creationParams: Map<String?, Any?>?,
     ) {
         Log.d("TurnByTurnActivity", "Constructor called")
-        super.attachBaseContext(mContext)
+        pluginContext = mContext
         binding = mBinding
+
+        lifecycleRegistry.currentState = Lifecycle.State.CREATED
 
         zoom = creationParams?.get("zoom") as? Double
         pitch = creationParams?.get("pitch") as? Double
@@ -143,9 +148,12 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         routeUnknownCongestionColor = creationParams["routeUnknownCongestionColor"] as String
     }
 
-    var binding: TurnByTurnActivityBinding? = null
+    lateinit var pluginContext: Context
+    lateinit var binding: TurnByTurnActivityBinding
     open var methodChannel: MethodChannel? = null
     open var eventChannel: EventChannel? = null
+
+    private val lifecycleRegistry: LifecycleRegistry = LifecycleRegistry(this)
 
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
@@ -297,9 +305,9 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         set(value) {
             field = value
             if (value) {
-                binding!!.soundButton.muteAndExtend(BUTTON_ANIMATION_DURATION)
+                binding.soundButton.muteAndExtend(BUTTON_ANIMATION_DURATION)
             } else {
-                binding!!.soundButton.unmuteAndExtend(BUTTON_ANIMATION_DURATION)
+                binding.soundButton.unmuteAndExtend(BUTTON_ANIMATION_DURATION)
             }
         }
 
@@ -349,18 +357,20 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                         val mSpeedLimit = speedLimit + speedThreshold
 
                         // We should be showing metric speed
-                        runOnUiThread {
-                            "$speed\nkph".also { binding!!.speedView.text = it }
-                            if (speed > mSpeedLimit) {
-                                binding!!.speedView.background = ContextCompat.getDrawable(
-                                    context,
-                                    R.drawable.speed_limit_speeding
-                                )
-                            } else {
-                                binding!!.speedView.background = ContextCompat.getDrawable(
-                                    context,
-                                    R.drawable.speed_limit_normal
-                                )
+                        if(isAdded) {
+                            activity!!.runOnUiThread {
+                                "$speed\nkph".also { binding.speedView.text = it }
+                                if (speed > mSpeedLimit) {
+                                    binding.speedView.background = ContextCompat.getDrawable(
+                                        pluginContext,
+                                        R.drawable.speed_limit_speeding
+                                    )
+                                } else {
+                                    binding.speedView.background = ContextCompat.getDrawable(
+                                        pluginContext,
+                                        R.drawable.speed_limit_normal
+                                    )
+                                }
                             }
                         }
                     } else {
@@ -370,18 +380,20 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                         val mSpeedLimit = speedLimit + speedThreshold
 
                         // We should be showing metric speed
-                        runOnUiThread {
-                            "$speed\nmph".also { binding!!.speedView.text = it }
-                            if (speed > mSpeedLimit) {
-                                binding!!.speedView.background = ContextCompat.getDrawable(
-                                    context,
-                                    R.drawable.speed_limit_speeding
-                                )
-                            } else {
-                                binding!!.speedView.background = ContextCompat.getDrawable(
-                                    context,
-                                    R.drawable.speed_limit_normal
-                                )
+                        if(isAdded) {
+                            activity!!.runOnUiThread {
+                                "$speed\nmph".also { binding.speedView.text = it }
+                                if (speed > mSpeedLimit) {
+                                    binding.speedView.background = ContextCompat.getDrawable(
+                                        pluginContext,
+                                        R.drawable.speed_limit_speeding
+                                    )
+                                } else {
+                                    binding.speedView.background = ContextCompat.getDrawable(
+                                        pluginContext,
+                                        R.drawable.speed_limit_normal
+                                    )
+                                }
                             }
                         }
                     }
@@ -391,24 +403,28 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
                         val speed = (enhancedLocation.speed * 3.6).toInt()
 
                         // We should be showing metric speed
-                        runOnUiThread {
-                            "$speed\nkph".also { binding!!.speedView.text = it }
-                            binding!!.speedView.background = ContextCompat.getDrawable(
-                                context,
-                                R.drawable.speed_limit_normal
-                            )
+                        if(isAdded) {
+                            activity!!.runOnUiThread {
+                                "$speed\nkph".also { binding.speedView.text = it }
+                                binding.speedView.background = ContextCompat.getDrawable(
+                                    pluginContext,
+                                    R.drawable.speed_limit_normal
+                                )
+                            }
                         }
                     } else {
                         // We should be showing imperial speed
                         val speed = (enhancedLocation.speed * 3.6 / 1.609).toInt()
 
                         // We should be showing metric speed
-                        runOnUiThread {
-                            "$speed\nmph".also { binding!!.speedView.text = it }
-                            binding!!.speedView.background = ContextCompat.getDrawable(
-                                context,
-                                R.drawable.speed_limit_normal
-                            )
+                        if(isAdded) {
+                            activity!!.runOnUiThread {
+                                "$speed\nmph".also { binding.speedView.text = it }
+                                binding.speedView.background = ContextCompat.getDrawable(
+                                    pluginContext,
+                                    R.drawable.speed_limit_normal
+                                )
+                            }
                         }
                     }
                 }
@@ -455,14 +471,14 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         maneuvers.fold(
             { error ->
                 Toast.makeText(
-                    context,
+                    pluginContext,
                     error.errorMessage,
                     Toast.LENGTH_SHORT
                 ).show()
             },
             {
-                binding!!.maneuverView.visibility = View.VISIBLE
-                binding!!.maneuverView.renderManeuvers(maneuvers)
+                binding.maneuverView.visibility = View.VISIBLE
+                binding.maneuverView.renderManeuvers(maneuvers)
             }
         )
 
@@ -480,7 +496,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
 
         // update bottom trip progress summary
-        binding!!.tripProgressView.render(
+        binding.tripProgressView.render(
             tripProgressApi.getTripProgress(routeProgress)
         )
     }
@@ -489,10 +505,10 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         // shows/hide the recenter button depending on the camera state
         when (navigationCameraState) {
             NavigationCameraState.TRANSITION_TO_FOLLOWING,
-            NavigationCameraState.FOLLOWING -> binding!!.recenter.visibility = View.GONE
+            NavigationCameraState.FOLLOWING -> binding.recenter.visibility = View.GONE
             NavigationCameraState.TRANSITION_TO_OVERVIEW,
             NavigationCameraState.OVERVIEW,
-            NavigationCameraState.IDLE -> binding!!.recenter.visibility = View.VISIBLE
+            NavigationCameraState.IDLE -> binding.recenter.visibility = View.VISIBLE
         }
     }
 
@@ -627,12 +643,15 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         eventChannel?.setStreamHandler(this)
     }
 
-    open fun initializeActivity() {
-        Log.d("TurnByTurnActivity","Activity initializing")
+    override fun onStart() {
+        Log.d("TurnByTurnActivity","Activity starting")
 
-        accessToken = PluginUtilities.getResourceFromContext(context, "mapbox_access_token")
+        accessToken = PluginUtilities.getResourceFromContext(pluginContext, "mapbox_access_token")
 
-        mapboxMap = binding!!.mapView.getMapboxMap()
+        super.onStart()
+        binding.mapView.onStart()
+
+        mapboxMap = binding.mapView.getMapboxMap()
 
         mapboxMap!!.getResourceOptions().tileStore?.apply {
             setOption(
@@ -660,7 +679,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             unitType = UnitType.IMPERIAL
         }
 
-        val distanceFormatterOptions = DistanceFormatterOptions.Builder(context)
+        val distanceFormatterOptions = DistanceFormatterOptions.Builder(pluginContext)
             .unitType(unitType)
             .build()
 
@@ -673,7 +692,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             MapboxNavigationProvider.retrieve()
         } else {
             MapboxNavigationProvider.create(
-                NavigationOptions.Builder(context)
+                NavigationOptions.Builder(pluginContext)
                     .accessToken(accessToken)
                     .routingTilesOptions(routingTilesOptions)
                     .distanceFormatterOptions(distanceFormatterOptions)
@@ -683,19 +702,19 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         offlineManager = OfflineManager(mapboxMap!!.getResourceOptions())
 
-        binding!!.mapView.scalebar.enabled = false
+        binding.mapView.scalebar.enabled = false
 
         // initialize Navigation Camera
         viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap!!)
         viewportDataSource!!.registerUpdateObserver(viewportDataSourceUpdateObserver)
         navigationCamera = NavigationCamera(
             mapboxMap!!,
-            binding!!.mapView.camera,
+            binding.mapView.camera,
             viewportDataSource!!,
         )
         // set the animations lifecycle listener to ensure the NavigationCamera stops
         // automatically following the user location when the map is interacted with
-        binding!!.mapView.camera.addCameraAnimationsLifecycleListener(
+        binding.mapView.camera.addCameraAnimationsLifecycleListener(
             NavigationBasicGesturesHandler(navigationCamera!!)
         )
         navigationCamera!!.registerNavigationCameraStateChangeObserver(
@@ -703,7 +722,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         )
 
         // set the padding values depending on screen orientation and visible view layout
-        if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        if (pluginContext.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             viewportDataSource!!.overviewPadding = landscapeOverviewPadding
             viewportDataSource!!.followingPadding = landscapeFollowingPadding
         } else {
@@ -726,18 +745,18 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         // initialize bottom progress view
         tripProgressApi = MapboxTripProgressApi(
-            TripProgressUpdateFormatter.Builder(context)
+            TripProgressUpdateFormatter.Builder(pluginContext)
                 .distanceRemainingFormatter(
                     DistanceRemainingFormatter(distanceFormatterOptions)
                 )
                 .timeRemainingFormatter(
-                    TimeRemainingFormatter(context)
+                    TimeRemainingFormatter(pluginContext)
                 )
                 .percentRouteTraveledFormatter(
                     PercentDistanceTraveledFormatter()
                 )
                 .estimatedTimeToArrivalFormatter(
-                    EstimatedTimeToArrivalFormatter(context, TimeFormat.NONE_SPECIFIED)
+                    EstimatedTimeToArrivalFormatter(pluginContext, TimeFormat.NONE_SPECIFIED)
                 )
                 .build()
         )
@@ -764,7 +783,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             .routeLineColorResources(customColorResources)
             .build()
 
-        val mapboxRouteLineOptions = MapboxRouteLineOptions.Builder(context)
+        val mapboxRouteLineOptions = MapboxRouteLineOptions.Builder(pluginContext)
             .withRouteLineResources(routeLineResources)
             .withRouteLineBelowLayerId("road-label")
             .build()
@@ -772,7 +791,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         routeLineView = MapboxRouteLineView(mapboxRouteLineOptions)
 
         // initialize maneuver arrow view to draw arrows on the map
-        val routeArrowOptions = RouteArrowOptions.Builder(context)
+        val routeArrowOptions = RouteArrowOptions.Builder(pluginContext)
             .build()
         routeArrowView = MapboxRouteArrowView(routeArrowOptions)
 
@@ -788,7 +807,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         ) {
             // add long click listener that search for a route to the clicked destination
             if (navigateOnLongClick == true) {
-                binding!!.mapView.gestures.addOnMapLongClickListener { point ->
+                binding.mapView.gestures.addOnMapLongClickListener { point ->
                     findRoutes(listOf(point),listOf(""), NavigationCameraType.FOLLOWING.value)
                     true
                 }
@@ -797,40 +816,40 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
 
         // initialize view interactions
         if(showStopButton == true) {
-            binding!!.stop.visibility = View.VISIBLE
-            binding!!.stop.setOnClickListener {
+            binding.stop.visibility = View.VISIBLE
+            binding.stop.setOnClickListener {
                 clearRouteAndStopNavigation()
             }
         }
-        binding!!.recenter.setOnClickListener {
+        binding.recenter.setOnClickListener {
             navigationCamera!!.requestNavigationCameraToFollowing()
-            binding!!.routeOverview.showTextAndExtend(BUTTON_ANIMATION_DURATION)
+            binding.routeOverview.showTextAndExtend(BUTTON_ANIMATION_DURATION)
             if(disableGesturesWhenFollowing == true) {
                 toggleGestures(false)
             }
         }
-        binding!!.routeOverview.setOnClickListener {
+        binding.routeOverview.setOnClickListener {
             navigationCamera!!.requestNavigationCameraToOverview()
-            binding!!.recenter.showTextAndExtend(BUTTON_ANIMATION_DURATION)
+            binding.recenter.showTextAndExtend(BUTTON_ANIMATION_DURATION)
             if(disableGesturesWhenFollowing == true) {
                 toggleGestures(true)
             }
         }
-        binding!!.soundButton.setOnClickListener {
+        binding.soundButton.setOnClickListener {
             // mute/unmute voice instructions
             isVoiceInstructionsMuted = !isVoiceInstructionsMuted
         }
 
         // set initial sounds button state
-        binding!!.soundButton.unmute()
+        binding.soundButton.unmute()
 
         // initialize the location puck
-        binding!!.mapView.location.apply {
+        binding.mapView.location.apply {
             setLocationProvider(navigationLocationProvider!!)
 
             locationPuck = LocationPuck2D(
                 bearingImage = ContextCompat.getDrawable(
-                    context,
+                    pluginContext,
                     R.drawable.mapbox_navigation_puck_icon
                 )
             )
@@ -844,19 +863,20 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         // start the trip session to being receiving location updates in free drive
         // and later when a route is set also receiving route progress updates
         if (ActivityCompat.checkSelfPermission(
-                this,
+                pluginContext,
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
+                pluginContext,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             return
         }
         mapboxNavigation.startTripSession()
+        lifecycleRegistry.currentState = Lifecycle.State.INITIALIZED
 
         methodChannel?.invokeMethod("onInitializationFinished", null)
-        Log.d("TurnByTurnActivity","Activity initialized")
+        Log.d("TurnByTurnActivity","Activity started")
     }
 
     private fun registerObservers() {
@@ -891,19 +911,6 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         Log.d("TurnByTurnActivity","Observers unregistered")
     }
 
-    fun destroy() {
-        maneuverApi.cancel()
-        routeLineApi.cancel()
-        routeLineView.cancel()
-
-        mapboxNavigation.onDestroy()
-        MapboxNavigationProvider.destroy()
-
-        finish()
-
-        Log.d("TurnByTurnActivity","Activity destroyed")
-    }
-
     //Flutter stream listener delegate methods
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
         eventSink = events
@@ -926,6 +933,38 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             }
             else -> result.notImplemented()
         }
+    }
+
+    override fun onStop() {
+        Log.d("TurnByTurnActivity","Activity stopped")
+        super.onStop()
+        binding.mapView.onStop()
+    }
+
+    override fun onLowMemory() {
+        Log.d("TurnByTurnActivity","Activity low memory")
+        super.onLowMemory()
+        binding.mapView.onLowMemory()
+    }
+
+    override fun onDestroy() {
+        maneuverApi.cancel()
+        routeLineApi.cancel()
+        routeLineView.cancel()
+
+        mapboxNavigation.onDestroy()
+        MapboxNavigationProvider.destroy()
+
+        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
+
+        super.onDestroy()
+        binding.mapView.onDestroy()
+
+        Log.d("TurnByTurnActivity","Activity destroyed")
+    }
+
+    override fun getLifecycle(): Lifecycle {
+        return lifecycleRegistry
     }
 
     private fun startNavigation(@NonNull call: MethodCall) {
@@ -974,7 +1013,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
             RouteOptions.builder()
                 .annotationsList(annotations)
                 .applyDefaultNavigationOptions()
-                .applyLanguageAndVoiceUnitOptions(context)
+                .applyLanguageAndVoiceUnitOptions(pluginContext)
                 .coordinatesList(combinedWaypoints)
                 .waypointNamesList(combinedWaypointNames)
                 .profile(routeProfile)
@@ -1017,7 +1056,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
 
         // Don't let the screen turn off while navigating
-        binding!!.mapView.keepScreenOn = true
+        binding.mapView.keepScreenOn = true
 
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILT)
 
@@ -1026,8 +1065,8 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         mapboxNavigation.setNavigationRoutes(routes)
 
         // show UI elements
-        binding!!.soundButton.visibility = View.VISIBLE
-        binding!!.tripProgressCard.visibility = View.VISIBLE
+        binding.soundButton.visibility = View.VISIBLE
+        binding.tripProgressCard.visibility = View.VISIBLE
 
         // move the camera to following when new route is available
         when(navigationCameraType) {
@@ -1055,9 +1094,9 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         mapboxNavigation.setNavigationRoutes(listOf())
 
         // hide UI elements
-        binding!!.soundButton.visibility = View.GONE
-        binding!!.maneuverView.visibility = View.GONE
-        binding!!.tripProgressCard.visibility = View.GONE
+        binding.soundButton.visibility = View.GONE
+        binding.maneuverView.visibility = View.GONE
+        binding.tripProgressCard.visibility = View.GONE
 
         navigationCamera!!.requestNavigationCameraToOverview()
         if(disableGesturesWhenFollowing == true) {
@@ -1065,7 +1104,7 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
         }
 
         // enable the screen to turn off again when navigation stops
-        binding!!.mapView.keepScreenOn = false
+        binding.mapView.keepScreenOn = false
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_CANCELLED)
     }
 
@@ -1156,12 +1195,12 @@ open class TurnByTurnActivity : FlutterActivity, SensorEventListener, MethodChan
     }
 
     private fun toggleGestures(enabled: Boolean) {
-        binding!!.mapView.gestures.doubleTapToZoomInEnabled = enabled
-        binding!!.mapView.gestures.quickZoomEnabled = enabled
-        binding!!.mapView.gestures.quickZoomEnabled = enabled
-        binding!!.mapView.gestures.pinchToZoomEnabled = enabled
-        binding!!.mapView.gestures.pitchEnabled = enabled
-        binding!!.mapView.gestures.rotateEnabled = enabled
-        binding!!.mapView.gestures.scrollEnabled = enabled
+        binding.mapView.gestures.doubleTapToZoomInEnabled = enabled
+        binding.mapView.gestures.quickZoomEnabled = enabled
+        binding.mapView.gestures.quickZoomEnabled = enabled
+        binding.mapView.gestures.pinchToZoomEnabled = enabled
+        binding.mapView.gestures.pitchEnabled = enabled
+        binding.mapView.gestures.rotateEnabled = enabled
+        binding.mapView.gestures.scrollEnabled = enabled
     }
 }

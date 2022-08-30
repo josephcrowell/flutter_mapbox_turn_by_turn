@@ -17,7 +17,6 @@ internal class TurnByTurnView(
     binding: TurnByTurnActivityBinding?,
     private val factory: TurnByTurnViewFactory,
     private var messenger: BinaryMessenger?,
-    private val id: Int,
     creationParams: Map<String?, Any?>?,
     )
     : PlatformView, TurnByTurnActivity(context, binding!!, creationParams) {
@@ -41,7 +40,7 @@ internal class TurnByTurnView(
 
     init {
         initializeFlutterChannelHandlers()
-        initializeActivity()
+        super.onStart()
         Log.d("TurnByTurnView", "View initialised")
     }
 
@@ -56,14 +55,13 @@ internal class TurnByTurnView(
         Log.d("TurnByTurnView", "View detached")
     }
 
-
     override fun dispose() {
+        super.onDestroy()
         methodChannel = null
         eventSink = null
         eventChannel = null
         messenger = null
 
-        destroy()
         Log.d("TurnByTurnView", "View disposed")
     }
 
