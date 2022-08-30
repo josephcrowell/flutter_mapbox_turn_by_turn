@@ -1172,7 +1172,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
             },
             { expected ->
                 if (expected.isValue) {
-                    expected.value?.let { stylePack ->
+                    expected.value?.let { _ ->
                         MapboxTurnByTurnEvents.sendEvent(
                             MapboxEventType.STYLE_PACK_FINISHED
                         )

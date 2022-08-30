@@ -22,7 +22,7 @@ internal class TurnByTurnView(
     : PlatformView, TurnByTurnActivity(context, binding!!, creationParams) {
 
     override fun getView(): View {
-        return binding!!.root
+        return binding.root
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
