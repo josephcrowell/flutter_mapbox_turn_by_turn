@@ -34,6 +34,7 @@ import com.mapbox.common.*
 import com.mapbox.geojson.*
 import com.mapbox.maps.*
 import com.mapbox.maps.plugin.LocationPuck2D
+import com.mapbox.maps.plugin.animation.CameraAnimationsLifecycleListener
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
@@ -501,6 +502,8 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         )
     }
 
+    private var navigationBasicGesturesHandler: NavigationBasicGesturesHandler? = null
+
     private val navigationCameraStateChangedObserver = NavigationCameraStateChangedObserver { navigationCameraState ->
         // shows/hide the recenter button depending on the camera state
         when (navigationCameraState) {
@@ -714,8 +717,9 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         )
         // set the animations lifecycle listener to ensure the NavigationCamera stops
         // automatically following the user location when the map is interacted with
+        navigationBasicGesturesHandler = NavigationBasicGesturesHandler(navigationCamera!!)
         binding.mapView.camera.addCameraAnimationsLifecycleListener(
-            NavigationBasicGesturesHandler(navigationCamera!!)
+            navigationBasicGesturesHandler!!
         )
         navigationCamera!!.registerNavigationCameraStateChangeObserver(
             navigationCameraStateChangedObserver
@@ -845,14 +849,14 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
 
         // initialize the location puck
         binding.mapView.location.apply {
-            setLocationProvider(navigationLocationProvider!!)
-
             locationPuck = LocationPuck2D(
                 bearingImage = ContextCompat.getDrawable(
                     pluginContext,
                     R.drawable.mapbox_navigation_puck_icon
                 )
             )
+
+            setLocationProvider(navigationLocationProvider!!)
 
             enabled = true
         }
@@ -904,8 +908,13 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         mapboxNavigation.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
         mapboxNavigation.unregisterArrivalObserver(arrivalObserver)
         mapboxMap!!.getResourceOptions().tileStore?.removeObserver(tileStoreObserver)
+        // disable the location puck
+        binding.mapView.location.apply {
+            enabled = false
+        }
 
         navigationCamera!!.unregisterNavigationCameraStateChangeObserver(navigationCameraStateChangedObserver)
+        binding.mapView.camera.removeCameraAnimationsLifecycleListener(navigationBasicGesturesHandler!!)
         viewportDataSource!!.unregisterUpdateObserver(viewportDataSourceUpdateObserver)
 
         Log.d("TurnByTurnActivity","Observers unregistered")
