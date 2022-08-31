@@ -189,6 +189,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
     companion object {
         private const val BUTTON_ANIMATION_DURATION = 1500L
         var eventSink: EventChannel.EventSink? = null
+        var observersRegistered: Boolean = false
 
         private var measurementUnits: String = "metric"
         private var speedThreshold: Int = 5
@@ -892,6 +893,8 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         mapboxNavigation.registerArrivalObserver(arrivalObserver)
         mapboxMap!!.getResourceOptions().tileStore?.addObserver(tileStoreObserver)
 
+        observersRegistered = true
+
         Log.d("TurnByTurnActivity","Observers registered")
     }
 
@@ -916,6 +919,8 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         navigationCamera!!.unregisterNavigationCameraStateChangeObserver(navigationCameraStateChangedObserver)
         binding.mapView.camera.removeCameraAnimationsLifecycleListener(navigationBasicGesturesHandler!!)
         viewportDataSource!!.unregisterUpdateObserver(viewportDataSourceUpdateObserver)
+
+        observersRegistered = false
 
         Log.d("TurnByTurnActivity","Observers unregistered")
     }

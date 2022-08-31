@@ -56,12 +56,15 @@ internal class TurnByTurnView(
     }
 
     override fun dispose() {
-        super.onDestroy()
+        if(observersRegistered) {
+            unregisterObservers()
+        }
         methodChannel = null
         eventSink = null
         eventChannel = null
         messenger = null
 
+        super.onDestroy()
         Log.d("TurnByTurnView", "View disposed")
     }
 
