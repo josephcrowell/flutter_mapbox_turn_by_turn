@@ -1,6 +1,7 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -112,11 +113,13 @@ enum class NavigationCameraType(val value: String) {
 open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler, LifecycleOwner {
 
     constructor(
+        mActivity: Activity,
         mContext: Context,
         mBinding: TurnByTurnActivityBinding,
         creationParams: Map<String?, Any?>?,
     ) {
         Log.d("TurnByTurnActivity", "Constructor called")
+        pluginActivity = mActivity
         pluginContext = mContext
         binding = mBinding
 
@@ -149,6 +152,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         routeUnknownCongestionColor = creationParams["routeUnknownCongestionColor"] as String
     }
 
+    lateinit var pluginActivity: Activity
     lateinit var pluginContext: Context
     lateinit var binding: TurnByTurnActivityBinding
     open var methodChannel: MethodChannel? = null
@@ -359,20 +363,18 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
                         val mSpeedLimit = speedLimit + speedThreshold
 
                         // We should be showing metric speed
-                        if(isAdded) {
-                            activity!!.runOnUiThread {
-                                "$speed\nkph".also { binding.speedView.text = it }
-                                if (speed > mSpeedLimit) {
-                                    binding.speedView.background = ContextCompat.getDrawable(
-                                        pluginContext,
-                                        R.drawable.speed_limit_speeding
-                                    )
-                                } else {
-                                    binding.speedView.background = ContextCompat.getDrawable(
-                                        pluginContext,
-                                        R.drawable.speed_limit_normal
-                                    )
-                                }
+                        pluginActivity.runOnUiThread {
+                            "$speed\nkph".also { binding.speedView.text = it }
+                            if (speed > mSpeedLimit) {
+                                binding.speedView.background = ContextCompat.getDrawable(
+                                    pluginContext,
+                                    R.drawable.speed_limit_speeding
+                                )
+                            } else {
+                                binding.speedView.background = ContextCompat.getDrawable(
+                                    pluginContext,
+                                    R.drawable.speed_limit_normal
+                                )
                             }
                         }
                     } else {
@@ -382,20 +384,18 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
                         val mSpeedLimit = speedLimit + speedThreshold
 
                         // We should be showing metric speed
-                        if(isAdded) {
-                            activity!!.runOnUiThread {
-                                "$speed\nmph".also { binding.speedView.text = it }
-                                if (speed > mSpeedLimit) {
-                                    binding.speedView.background = ContextCompat.getDrawable(
-                                        pluginContext,
-                                        R.drawable.speed_limit_speeding
-                                    )
-                                } else {
-                                    binding.speedView.background = ContextCompat.getDrawable(
-                                        pluginContext,
-                                        R.drawable.speed_limit_normal
-                                    )
-                                }
+                        pluginActivity.runOnUiThread {
+                            "$speed\nmph".also { binding.speedView.text = it }
+                            if (speed > mSpeedLimit) {
+                                binding.speedView.background = ContextCompat.getDrawable(
+                                    pluginContext,
+                                    R.drawable.speed_limit_speeding
+                                )
+                            } else {
+                                binding.speedView.background = ContextCompat.getDrawable(
+                                    pluginContext,
+                                    R.drawable.speed_limit_normal
+                                )
                             }
                         }
                     }
@@ -405,28 +405,24 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
                         val speed = (enhancedLocation.speed * 3.6).toInt()
 
                         // We should be showing metric speed
-                        if(isAdded) {
-                            activity!!.runOnUiThread {
-                                "$speed\nkph".also { binding.speedView.text = it }
-                                binding.speedView.background = ContextCompat.getDrawable(
-                                    pluginContext,
-                                    R.drawable.speed_limit_normal
-                                )
-                            }
+                        pluginActivity.runOnUiThread {
+                            "$speed\nkph".also { binding.speedView.text = it }
+                            binding.speedView.background = ContextCompat.getDrawable(
+                                pluginContext,
+                                R.drawable.speed_limit_normal
+                            )
                         }
                     } else {
                         // We should be showing imperial speed
                         val speed = (enhancedLocation.speed * 3.6 / 1.609).toInt()
 
                         // We should be showing metric speed
-                        if(isAdded) {
-                            activity!!.runOnUiThread {
-                                "$speed\nmph".also { binding.speedView.text = it }
-                                binding.speedView.background = ContextCompat.getDrawable(
-                                    pluginContext,
-                                    R.drawable.speed_limit_normal
-                                )
-                            }
+                        pluginActivity.runOnUiThread {
+                            "$speed\nmph".also { binding.speedView.text = it }
+                            binding.speedView.background = ContextCompat.getDrawable(
+                                pluginContext,
+                                R.drawable.speed_limit_normal
+                            )
                         }
                     }
                 }

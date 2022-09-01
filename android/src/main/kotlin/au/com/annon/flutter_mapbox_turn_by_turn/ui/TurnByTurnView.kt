@@ -1,5 +1,6 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
+import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.view.View
@@ -13,13 +14,14 @@ import io.flutter.plugin.platform.PlatformView
 
 
 internal class TurnByTurnView(
+    activity: Activity,
     context: Context,
     binding: TurnByTurnActivityBinding?,
     private val factory: TurnByTurnViewFactory,
     private var messenger: BinaryMessenger?,
     creationParams: Map<String?, Any?>?,
     )
-    : PlatformView, TurnByTurnActivity(context, binding!!, creationParams) {
+    : PlatformView, TurnByTurnActivity(activity, context, binding!!, creationParams) {
 
     override fun getView(): View {
         return binding.root
