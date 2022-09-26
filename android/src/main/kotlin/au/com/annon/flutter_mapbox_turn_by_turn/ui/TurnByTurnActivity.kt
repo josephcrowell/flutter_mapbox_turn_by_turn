@@ -17,9 +17,6 @@ import android.widget.Toast
 import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEventType
@@ -35,8 +32,8 @@ import com.mapbox.common.*
 import com.mapbox.geojson.*
 import com.mapbox.maps.*
 import com.mapbox.maps.plugin.LocationPuck2D
-import com.mapbox.maps.plugin.animation.CameraAnimationsLifecycleListener
 import com.mapbox.maps.plugin.animation.camera
+import com.mapbox.maps.plugin.compass.compass
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.plugin.scalebar.scalebar
@@ -110,7 +107,7 @@ enum class NavigationCameraType(val value: String) {
     FOLLOWING("following"),
 }
 
-open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler, LifecycleOwner {
+open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
 
     constructor(
         mActivity: Activity,
@@ -122,8 +119,6 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         pluginActivity = mActivity
         pluginContext = mContext
         binding = mBinding
-
-        lifecycleRegistry.currentState = Lifecycle.State.CREATED
 
         zoom = creationParams?.get("zoom") as? Double
         pitch = creationParams?.get("pitch") as? Double
@@ -157,8 +152,6 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
     lateinit var binding: TurnByTurnActivityBinding
     open var methodChannel: MethodChannel? = null
     open var eventChannel: EventChannel? = null
-
-    private val lifecycleRegistry: LifecycleRegistry = LifecycleRegistry(this)
 
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
@@ -488,7 +481,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
                 val progressEvent = MapboxProgressChangeEvent(routeProgress)
                 MapboxTurnByTurnEvents.sendEvent(progressEvent)
 
-            } catch (e: java.lang.Exception) {
+            } catch (_: java.lang.Exception) {
 
             }
         }
@@ -703,6 +696,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         offlineManager = OfflineManager(mapboxMap!!.getResourceOptions())
 
         binding.mapView.scalebar.enabled = false
+        binding.mapView.compass.enabled = false
 
         // initialize Navigation Camera
         viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap!!)
@@ -874,7 +868,6 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
             return
         }
         mapboxNavigation.startTripSession()
-        lifecycleRegistry.currentState = Lifecycle.State.INITIALIZED
 
         methodChannel?.invokeMethod("onInitializationFinished", null)
         Log.d("TurnByTurnActivity","Activity started")
@@ -965,16 +958,10 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         mapboxNavigation.onDestroy()
         MapboxNavigationProvider.destroy()
 
-        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
-
         super.onDestroy()
         binding.mapView.onDestroy()
 
         Log.d("TurnByTurnActivity","Activity destroyed")
-    }
-
-    override fun getLifecycle(): Lifecycle {
-        return lifecycleRegistry
     }
 
     private fun startNavigation(@NonNull call: MethodCall) {
