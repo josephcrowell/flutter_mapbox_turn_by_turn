@@ -423,7 +423,7 @@ class MapView extends StatelessWidget {
     var args = <String, dynamic>{};
     args["waypoints"] = waypointMap;
     args["navigationCameraType"] =
-        navigationCameraType ?? NavigationCameraType.following;
+        navigationCameraType ?? NavigationCameraType.noChange;
     return _methodChannel.invokeMethod('startNavigation', args);
   }
 
