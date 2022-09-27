@@ -17,9 +17,6 @@ import android.widget.Toast
 import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEventType
@@ -35,8 +32,8 @@ import com.mapbox.common.*
 import com.mapbox.geojson.*
 import com.mapbox.maps.*
 import com.mapbox.maps.plugin.LocationPuck2D
-import com.mapbox.maps.plugin.animation.CameraAnimationsLifecycleListener
 import com.mapbox.maps.plugin.animation.camera
+import com.mapbox.maps.plugin.compass.compass
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.plugin.scalebar.scalebar
@@ -104,14 +101,15 @@ import kotlin.math.roundToInt
  * - You can use buttons to mute/unmute voice instructions, recenter the camera, or show the route overview.
  */
 
-enum class NavigationCameraType(val value: String) {
-    NO_CHANGE("noChange"),
-    OVERVIEW("overview"),
-    FOLLOWING("following"),
+class NavigationCameraType {
+    companion object {
+        const val NO_CHANGE: String = "noChange"
+        const val OVERVIEW: String = "overview"
+        const val FOLLOWING: String = "following"
+    }
 }
 
-open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler, LifecycleOwner {
-
+open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
     constructor(
         mActivity: Activity,
         mContext: Context,
@@ -123,14 +121,13 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         pluginContext = mContext
         binding = mBinding
 
-        lifecycleRegistry.currentState = Lifecycle.State.CREATED
-
         zoom = creationParams?.get("zoom") as? Double
         pitch = creationParams?.get("pitch") as? Double
         disableGesturesWhenFollowing = creationParams?.get("disableGesturesWhenFollowing") as? Boolean
         navigateOnLongClick = creationParams?.get("navigateOnLongClick") as? Boolean
         showStopButton = creationParams?.get("showStopButton") as? Boolean
         showSpeedIndicator = creationParams?.get("showSpeedIndicator") as Boolean
+        navigationCameraType = creationParams["navigationCameraType"] as String
         routeProfile = creationParams["routeProfile"] as String
         language = creationParams["language"] as String
         measurementUnits = creationParams["measurementUnits"] as String
@@ -158,8 +155,6 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
     open var methodChannel: MethodChannel? = null
     open var eventChannel: EventChannel? = null
 
-    private val lifecycleRegistry: LifecycleRegistry = LifecycleRegistry(this)
-
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
     private var distanceRemaining: Float? = null
@@ -172,6 +167,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
     private var disableGesturesWhenFollowing: Boolean? = null
     private val navigateOnLongClick: Boolean?
     private val showStopButton: Boolean?
+    private val navigationCameraType: String?
     private val routeProfile: String
     private val language: String
     private val showAlternativeRoutes: Boolean
@@ -488,7 +484,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
                 val progressEvent = MapboxProgressChangeEvent(routeProgress)
                 MapboxTurnByTurnEvents.sendEvent(progressEvent)
 
-            } catch (e: java.lang.Exception) {
+            } catch (_: java.lang.Exception) {
 
             }
         }
@@ -703,6 +699,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         offlineManager = OfflineManager(mapboxMap!!.getResourceOptions())
 
         binding.mapView.scalebar.enabled = false
+        binding.mapView.compass.enabled = false
 
         // initialize Navigation Camera
         viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap!!)
@@ -712,6 +709,22 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
             binding.mapView.camera,
             viewportDataSource!!,
         )
+        // set the camera to initial following/overview state
+        when(navigationCameraType) {
+            NavigationCameraType.FOLLOWING -> {
+                navigationCamera!!.requestNavigationCameraToFollowing()
+                if(disableGesturesWhenFollowing == true) {
+                    toggleGestures(false)
+                }
+            }
+            NavigationCameraType.OVERVIEW -> {
+                navigationCamera!!.requestNavigationCameraToOverview()
+                if(disableGesturesWhenFollowing == true) {
+                    toggleGestures(true)
+                }
+            }
+            NavigationCameraType.NO_CHANGE -> {}
+        }
         // set the animations lifecycle listener to ensure the NavigationCamera stops
         // automatically following the user location when the map is interacted with
         navigationBasicGesturesHandler = NavigationBasicGesturesHandler(navigationCamera!!)
@@ -809,7 +822,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
             // add long click listener that search for a route to the clicked destination
             if (navigateOnLongClick == true) {
                 binding.mapView.gestures.addOnMapLongClickListener { point ->
-                    findRoutes(listOf(point),listOf(""), NavigationCameraType.FOLLOWING.value)
+                    findRoutes(listOf(point),listOf(""), NavigationCameraType.NO_CHANGE)
                     true
                 }
             }
@@ -828,6 +841,12 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
             if(disableGesturesWhenFollowing == true) {
                 toggleGestures(false)
             }
+            MapboxTurnByTurnEvents.sendJsonEvent(
+                MapboxEventType.NAVIGATION_CAMERA_CHANGED,
+                "{" +
+                    "\"state\":\"${NavigationCameraType.FOLLOWING}\"" +
+                "}"
+            )
         }
         binding.routeOverview.setOnClickListener {
             navigationCamera!!.requestNavigationCameraToOverview()
@@ -835,6 +854,12 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
             if(disableGesturesWhenFollowing == true) {
                 toggleGestures(true)
             }
+            MapboxTurnByTurnEvents.sendJsonEvent(
+                MapboxEventType.NAVIGATION_CAMERA_CHANGED,
+                "{" +
+                    "\"state\":\"${NavigationCameraType.OVERVIEW}\"" +
+                "}"
+            )
         }
         binding.soundButton.setOnClickListener {
             // mute/unmute voice instructions
@@ -874,7 +899,6 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
             return
         }
         mapboxNavigation.startTripSession()
-        lifecycleRegistry.currentState = Lifecycle.State.INITIALIZED
 
         methodChannel?.invokeMethod("onInitializationFinished", null)
         Log.d("TurnByTurnActivity","Activity started")
@@ -965,16 +989,10 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         mapboxNavigation.onDestroy()
         MapboxNavigationProvider.destroy()
 
-        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
-
         super.onDestroy()
         binding.mapView.onDestroy()
 
         Log.d("TurnByTurnActivity","Activity destroyed")
-    }
-
-    override fun getLifecycle(): Lifecycle {
-        return lifecycleRegistry
     }
 
     private fun startNavigation(@NonNull call: MethodCall) {
@@ -994,10 +1012,10 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
             waypointList = waypointList + Point.fromLngLat(longitude, latitude)
         }
 
-        val navigationCameraType: String = arguments["navigationCameraType"] as String
+        val cameraType: String = arguments["navigationCameraType"] as String
 
         if(waypointList.isNotEmpty() && waypointNamesList.isNotEmpty()) run {
-            findRoutes(waypointList, waypointNamesList, navigationCameraType)
+            findRoutes(waypointList, waypointNamesList, cameraType)
         }
     }
 
@@ -1078,21 +1096,33 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         binding.soundButton.visibility = View.VISIBLE
         binding.tripProgressCard.visibility = View.VISIBLE
 
-        // move the camera to following when new route is available
+        // move the camera to requested state when new route is available
         when(navigationCameraType) {
-            NavigationCameraType.FOLLOWING.value -> {
+            NavigationCameraType.FOLLOWING -> {
                 navigationCamera!!.requestNavigationCameraToFollowing()
                 if(disableGesturesWhenFollowing == true) {
                     toggleGestures(false)
                 }
+                MapboxTurnByTurnEvents.sendJsonEvent(
+                    MapboxEventType.NAVIGATION_CAMERA_CHANGED,
+                    "{" +
+                            "\"state\":\"${NavigationCameraType.FOLLOWING}\"" +
+                            "}"
+                )
             }
-            NavigationCameraType.OVERVIEW.value -> {
+            NavigationCameraType.OVERVIEW -> {
                 navigationCamera!!.requestNavigationCameraToOverview()
                 if(disableGesturesWhenFollowing == true) {
                     toggleGestures(true)
                 }
+                MapboxTurnByTurnEvents.sendJsonEvent(
+                    MapboxEventType.NAVIGATION_CAMERA_CHANGED,
+                    "{" +
+                            "\"state\":\"${NavigationCameraType.OVERVIEW}\"" +
+                            "}"
+                )
             }
-            NavigationCameraType.NO_CHANGE.value -> {}
+            NavigationCameraType.NO_CHANGE -> {}
         }
         navigationStarted = true
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_RUNNING)
