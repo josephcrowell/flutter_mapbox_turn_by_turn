@@ -46,7 +46,6 @@ class MapboxTurnByTurnEvents {
                     "  \"eventType\": \"${MapboxEventType.PROGRESS_CHANGE.value}\"," +
                     "  \"data\": $dataString" +
                     "}"
-            Log.i("sendEvent(MapboxProgressChangeEvent)", "Event data: $dataString")
             handler.post { TurnByTurnActivity.eventSink?.success(jsonString) }
         }
 
