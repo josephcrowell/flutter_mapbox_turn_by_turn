@@ -261,6 +261,13 @@ class _ExampleAppState extends State<ExampleApp> {
           _isNavigating = false;
         });
         break;
+      case MapboxEventType.navigationCameraChanged:
+        String jsonString = e.data as String;
+        dynamic data = json.decode(jsonString);
+        log.d(
+          'Navigation camera changed to : ${data['state']}',
+        );
+        break;
       case MapboxEventType.stylePackProgress:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);

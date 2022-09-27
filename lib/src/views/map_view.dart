@@ -145,6 +145,7 @@ class MapView extends StatelessWidget {
     this.navigateOnLongClick,
     this.showStopButton,
     this.showSpeedIndicator,
+    this.navigationCameraType,
     this.routeProfile,
     this.language,
     this.measurementUnits,
@@ -194,6 +195,7 @@ class MapView extends StatelessWidget {
   final bool? navigateOnLongClick;
   final bool? showStopButton;
   final bool? showSpeedIndicator;
+  final String? navigationCameraType;
   final String? routeProfile;
   final String? language;
   final String? measurementUnits;
@@ -292,6 +294,8 @@ class MapView extends StatelessWidget {
       "navigateOnLongClick": navigateOnLongClick,
       "showStopButton": showStopButton,
       "showSpeedIndicator": showSpeedIndicator ?? true,
+      "navigationCameraType":
+          navigationCameraType ?? NavigationCameraType.overview,
       "routeProfile": routeProfile ?? RouteProfile.drivingTraffic,
       "language": language ?? Language.englishUS,
       "measurementUnits": measurementUnits ?? MeasurementUnits.metric,
