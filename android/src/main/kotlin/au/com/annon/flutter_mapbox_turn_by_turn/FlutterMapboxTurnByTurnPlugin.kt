@@ -119,13 +119,19 @@ class FlutterMapboxTurnByTurnPlugin
   }
 
   private fun isPermissionGranted(): Boolean {
-    val result: Int = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-    return result == PackageManager.PERMISSION_GRANTED
+    val coarseResult: Int = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+    val fineResult: Int = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+
+    if(coarseResult == PackageManager.PERMISSION_GRANTED && fineResult == PackageManager.PERMISSION_GRANTED) {
+      return true
+    } else {
+      return false
+    }
   }
 
   private fun askForPermission() {
     ActivityCompat.requestPermissions(
-      activity!!, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+      activity!!, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION),
       LOCATION_REQUEST_CODE
     )
   }
