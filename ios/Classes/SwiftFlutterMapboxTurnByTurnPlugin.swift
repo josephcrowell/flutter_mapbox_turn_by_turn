@@ -3,9 +3,8 @@ import UIKit
 
 public class SwiftFlutterMapboxTurnByTurnPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
-    let channel = FlutterMethodChannel(name: "flutter_mapbox_turn_by_turn/method", binaryMessenger: registrar.messenger())
-    let instance = SwiftFlutterMapboxTurnByTurnPlugin()
-    registrar.addMethodCallDelegate(instance, channel: channel)
+    let factory = TurnByTurnViewFactory(messenger: registrar.messenger())
+    registrar.register(factory, withId: "MapView")
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
