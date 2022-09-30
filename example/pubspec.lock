@@ -133,12 +133,10 @@ packages:
   flutter_tts:
     dependency: transitive
     description:
-      path: "."
-      ref: master
-      resolved-ref: dd06358305469a9444de96cc66cf85db168f5c65
-      url: "https://github.com/josephcrowell/flutter_tts.git"
-    source: git
-    version: "3.5.0"
+      name: flutter_tts
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.5.3"
   flutter_web_plugins:
     dependency: transitive
     description: flutter

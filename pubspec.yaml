@@ -11,10 +11,7 @@ dependencies:
   device_info_plus: ^4.0.0
   flutter:
     sdk: flutter
-  flutter_tts: #^3.5.0
-    git:
-      url: https://github.com/josephcrowell/flutter_tts.git
-      ref: master
+  flutter_tts: ^3.5.0
   logger: ^1.1.0
 
 dev_dependencies:
