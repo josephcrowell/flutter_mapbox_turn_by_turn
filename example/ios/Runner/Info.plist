@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
+		<key>CADisableMinimumFrameDurationOnPhone</key>
+		<true />
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
@@ -27,7 +29,9 @@
 		<key>MGLMapboxMetricsEnabledSettingShownInApp</key>
 		<string>YES</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Shows your location on the map and helps improve OpenStreetMap</string>
+		<string>Shows your location on the map and helps improve OpenStreetMap.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Marks deliveries as completed and tracks your delivery route.</string>
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>audio</string>
@@ -54,7 +58,5 @@
 		</array>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false />
-		<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-</dict>
+	</dict>
 </plist>
