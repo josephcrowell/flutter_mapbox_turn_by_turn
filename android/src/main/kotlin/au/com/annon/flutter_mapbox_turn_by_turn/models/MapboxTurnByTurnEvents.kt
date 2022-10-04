@@ -3,7 +3,7 @@ package au.com.annon.flutter_mapbox_turn_by_turn.models
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnActivity
+import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnNative
 import com.google.gson.Gson
 
 enum class MapboxEventType(val value: String) {
@@ -46,7 +46,7 @@ class MapboxTurnByTurnEvents {
                     "  \"eventType\": \"${MapboxEventType.PROGRESS_CHANGE.value}\"," +
                     "  \"data\": $dataString" +
                     "}"
-            handler.post { TurnByTurnActivity.eventSink?.success(jsonString) }
+            handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
         }
 
         fun sendEvent(event: MapboxLocationChangeEvent) {
@@ -58,7 +58,7 @@ class MapboxTurnByTurnEvents {
                     "\"longitude\": ${event.longitude}" +
                     "}" +
                     "}"
-            handler.post { TurnByTurnActivity.eventSink?.success(jsonString) }
+            handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
         }
 
         fun sendEvent(event: MapboxEventType, data: String = "") {
@@ -66,7 +66,7 @@ class MapboxTurnByTurnEvents {
                         "  \"eventType\": \"${event.value}\"," +
                         "  \"data\": \"${data}\"" +
                         "}"
-            handler.post { TurnByTurnActivity.eventSink?.success(jsonString) }
+            handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
         }
 
         fun sendJsonEvent(event: MapboxEventType, data: String = "") {
@@ -80,7 +80,7 @@ class MapboxTurnByTurnEvents {
                     "  \"eventType\": \"${event.value}\"," +
                     "  \"data\": ${dataString}" +
                     "}"
-            handler.post { TurnByTurnActivity.eventSink?.success(jsonString) }
+            handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
         }
     }
 }

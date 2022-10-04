@@ -18,7 +18,7 @@ import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import au.com.annon.flutter_mapbox_turn_by_turn.R
-import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnActivityBinding
+import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEventType
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxLocationChangeEvent
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxProgressChangeEvent
@@ -109,14 +109,14 @@ class NavigationCameraType {
     }
 }
 
-open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
+open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
     constructor(
         mActivity: Activity,
         mContext: Context,
-        mBinding: TurnByTurnActivityBinding,
+        mBinding: TurnByTurnNativeBinding,
         creationParams: Map<String?, Any?>?,
     ) {
-        Log.d("TurnByTurnActivity", "Constructor called")
+        Log.d("TurnByTurnNative", "Constructor called")
         pluginActivity = mActivity
         pluginContext = mContext
         binding = mBinding
@@ -151,7 +151,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
 
     lateinit var pluginActivity: Activity
     lateinit var pluginContext: Context
-    lateinit var binding: TurnByTurnActivityBinding
+    lateinit var binding: TurnByTurnNativeBinding
     open var methodChannel: MethodChannel? = null
     open var eventChannel: EventChannel? = null
 
@@ -640,7 +640,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
     }
 
     override fun onStart() {
-        Log.d("TurnByTurnActivity","Activity starting")
+        Log.d("TurnByTurnNative","Activity starting")
 
         accessToken = PluginUtilities.getResourceFromContext(pluginContext, "mapbox_access_token")
 
@@ -901,7 +901,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         mapboxNavigation.startTripSession()
 
         methodChannel?.invokeMethod("onInitializationFinished", null)
-        Log.d("TurnByTurnActivity","Activity started")
+        Log.d("TurnByTurnNative","Activity started")
     }
 
     private fun registerObservers() {
@@ -915,7 +915,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
 
         observersRegistered = true
 
-        Log.d("TurnByTurnActivity","Observers registered")
+        Log.d("TurnByTurnNative","Observers registered")
     }
 
     fun unregisterObservers() {
@@ -942,7 +942,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
 
         observersRegistered = false
 
-        Log.d("TurnByTurnActivity","Observers unregistered")
+        Log.d("TurnByTurnNative","Observers unregistered")
     }
 
     //Flutter stream listener delegate methods
@@ -970,13 +970,13 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
     }
 
     override fun onStop() {
-        Log.d("TurnByTurnActivity","Activity stopped")
+        Log.d("TurnByTurnNative","Activity stopped")
         super.onStop()
         binding.mapView.onStop()
     }
 
     override fun onLowMemory() {
-        Log.d("TurnByTurnActivity","Activity low memory")
+        Log.d("TurnByTurnNative","Activity low memory")
         super.onLowMemory()
         binding.mapView.onLowMemory()
     }
@@ -992,7 +992,7 @@ open class TurnByTurnActivity : FlutterFragment, SensorEventListener, MethodChan
         super.onDestroy()
         binding.mapView.onDestroy()
 
-        Log.d("TurnByTurnActivity","Activity destroyed")
+        Log.d("TurnByTurnNative","Activity destroyed")
     }
 
     private fun startNavigation(@NonNull call: MethodCall) {
