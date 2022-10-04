@@ -1,7 +1,8 @@
 import Flutter
 import UIKit
 
-class TurnByTurnView: NSObject, FlutterPlatformView {
+class TurnByTurnView: TurnByTurnNative, FlutterPlatformView
+{
     private var _view: UIView
 
     init(
@@ -11,7 +12,13 @@ class TurnByTurnView: NSObject, FlutterPlatformView {
         binaryMessenger messenger: FlutterBinaryMessenger?
     ) {
         _view = UIView()
+
+        super.messenger = messenger
+        super.methodChannel = FlutterMethodChannel(name: "flutter_mapbox_turn_by_turn/map_view/method", binaryMessenger: messenger)
+        super.eventChannel = FlutterEventChannel(name: "flutter_mapbox_turn_by_turn/map_view/events", binaryMessenger: messenger)
+
         super.init()
+
         // iOS views can be created here
         createNativeView(view: _view)
     }
