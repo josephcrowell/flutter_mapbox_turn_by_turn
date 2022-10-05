@@ -109,49 +109,16 @@ class NavigationCameraType {
     }
 }
 
-open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
-    constructor(
-        mActivity: Activity,
-        mContext: Context,
-        mBinding: TurnByTurnNativeBinding,
-        creationParams: Map<String?, Any?>?,
-    ) {
-        Log.d("TurnByTurnNative", "Constructor called")
-        pluginActivity = mActivity
-        pluginContext = mContext
-        binding = mBinding
+open class TurnByTurnNative(
+    mActivity: Activity,
+    mContext: Context,
+    mBinding: TurnByTurnNativeBinding,
+    creationParams: Map<String?, Any?>?
+) : FlutterFragment(), SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
 
-        zoom = creationParams?.get("zoom") as? Double
-        pitch = creationParams?.get("pitch") as? Double
-        disableGesturesWhenFollowing = creationParams?.get("disableGesturesWhenFollowing") as? Boolean
-        navigateOnLongClick = creationParams?.get("navigateOnLongClick") as? Boolean
-        showStopButton = creationParams?.get("showStopButton") as? Boolean
-        showSpeedIndicator = creationParams?.get("showSpeedIndicator") as Boolean
-        navigationCameraType = creationParams["navigationCameraType"] as String
-        routeProfile = creationParams["routeProfile"] as String
-        language = creationParams["language"] as String
-        measurementUnits = creationParams["measurementUnits"] as String
-        speedThreshold = creationParams["speedThreshold"] as Int
-        showAlternativeRoutes = creationParams["showAlternativeRoutes"] as Boolean
-        allowUTurnsAtWaypoints = creationParams["allowUTurnsAtWaypoints"] as Boolean
-        mapStyleUrlDay = creationParams["mapStyleUrlDay"] as? String
-        mapStyleUrlNight = creationParams["mapStyleUrlNight"] as? String
-        routeCasingColor = creationParams["routeCasingColor"] as String
-        routeDefaultColor = creationParams["routeDefaultColor"] as String
-        restrictedRoadColor = creationParams["restrictedRoadColor"] as String
-        routeLineTraveledColor = creationParams["routeLineTraveledColor"] as String
-        routeLineTraveledCasingColor = creationParams["routeLineTraveledCasingColor"] as String
-        routeClosureColor = creationParams["routeClosureColor"] as String
-        routeLowCongestionColor = creationParams["routeLowCongestionColor"] as String
-        routeModerateCongestionColor = creationParams["routeModerateCongestionColor"] as String
-        routeHeavyCongestionColor = creationParams["routeHeavyCongestionColor"] as String
-        routeSevereCongestionColor = creationParams["routeSevereCongestionColor"] as String
-        routeUnknownCongestionColor = creationParams["routeUnknownCongestionColor"] as String
-    }
-
-    lateinit var pluginActivity: Activity
-    lateinit var pluginContext: Context
-    lateinit var binding: TurnByTurnNativeBinding
+    var pluginActivity: Activity = mActivity
+    var pluginContext: Context = mContext
+    var binding: TurnByTurnNativeBinding = mBinding
     open var methodChannel: MethodChannel? = null
     open var eventChannel: EventChannel? = null
 
@@ -185,6 +152,36 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
     private val routeHeavyCongestionColor: String
     private val routeSevereCongestionColor: String
     private val routeUnknownCongestionColor: String
+
+    init {
+        Log.d("TurnByTurnNative", "Constructor called")
+        zoom = creationParams?.get("zoom") as? Double
+        pitch = creationParams?.get("pitch") as? Double
+        disableGesturesWhenFollowing = creationParams?.get("disableGesturesWhenFollowing") as? Boolean
+        navigateOnLongClick = creationParams?.get("navigateOnLongClick") as? Boolean
+        showStopButton = creationParams?.get("showStopButton") as? Boolean
+        showSpeedIndicator = creationParams?.get("showSpeedIndicator") as Boolean
+        navigationCameraType = creationParams["navigationCameraType"] as String
+        routeProfile = creationParams["routeProfile"] as String
+        language = creationParams["language"] as String
+        measurementUnits = creationParams["measurementUnits"] as String
+        speedThreshold = creationParams["speedThreshold"] as Int
+        showAlternativeRoutes = creationParams["showAlternativeRoutes"] as Boolean
+        allowUTurnsAtWaypoints = creationParams["allowUTurnsAtWaypoints"] as Boolean
+        mapStyleUrlDay = creationParams["mapStyleUrlDay"] as? String
+        mapStyleUrlNight = creationParams["mapStyleUrlNight"] as? String
+        routeCasingColor = creationParams["routeCasingColor"] as String
+        routeDefaultColor = creationParams["routeDefaultColor"] as String
+        restrictedRoadColor = creationParams["restrictedRoadColor"] as String
+        routeLineTraveledColor = creationParams["routeLineTraveledColor"] as String
+        routeLineTraveledCasingColor = creationParams["routeLineTraveledCasingColor"] as String
+        routeClosureColor = creationParams["routeClosureColor"] as String
+        routeLowCongestionColor = creationParams["routeLowCongestionColor"] as String
+        routeModerateCongestionColor = creationParams["routeModerateCongestionColor"] as String
+        routeHeavyCongestionColor = creationParams["routeHeavyCongestionColor"] as String
+        routeSevereCongestionColor = creationParams["routeSevereCongestionColor"] as String
+        routeUnknownCongestionColor = creationParams["routeUnknownCongestionColor"] as String
+    }
 
     companion object {
         private const val BUTTON_ANIMATION_DURATION = 1500L
