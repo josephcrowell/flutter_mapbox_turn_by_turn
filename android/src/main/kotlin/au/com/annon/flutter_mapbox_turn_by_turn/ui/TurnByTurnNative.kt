@@ -20,6 +20,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.ViewTreeLifecycleOwner
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEventType
@@ -697,13 +698,15 @@ open class TurnByTurnNative(
         mapboxNavigation = if (MapboxNavigationApp.isSetup()) {
             MapboxNavigationApp.current()!!
         } else {
-            MapboxNavigationApp.setup(
-                NavigationOptions.Builder(pluginContext)
-                    .accessToken(accessToken)
-                    .routingTilesOptions(routingTilesOptions)
-                    .distanceFormatterOptions(distanceFormatterOptions)
-                    .build()
-            ).attach(this).current()!!
+            ViewTreeLifecycleOwner.get(binding.root)?.let {
+                MapboxNavigationApp.setup(
+                    NavigationOptions.Builder(pluginContext)
+                        .accessToken(accessToken)
+                        .routingTilesOptions(routingTilesOptions)
+                        .distanceFormatterOptions(distanceFormatterOptions)
+                        .build()
+                ).attach(it).current()
+            }!!
         }
 
         offlineManager = OfflineManager(mapboxMap!!.getResourceOptions())
@@ -998,12 +1001,8 @@ open class TurnByTurnNative(
         routeLineView.cancel()
 
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
-        mapboxNavigation.onDestroy()
-        MapboxNavigationApp.detach(this)
+        ViewTreeLifecycleOwner.get(binding.root)?.let { MapboxNavigationApp.detach(it) }
         MapboxNavigationApp.disable()
-
-        super.onDestroy()
-        binding.mapView.onDestroy()
 
         Log.d("TurnByTurnNative","Activity destroyed")
     }
