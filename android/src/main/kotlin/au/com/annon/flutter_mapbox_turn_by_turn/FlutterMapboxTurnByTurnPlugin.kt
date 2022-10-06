@@ -6,6 +6,10 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.ViewTreeLifecycleOwner
 import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnViewFactory
 import io.flutter.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -18,10 +22,11 @@ import io.flutter.plugin.platform.PlatformViewRegistry
 
 /** FlutterMapboxTurnByTurnPlugin */
 class FlutterMapboxTurnByTurnPlugin
-  : FlutterPlugin, PluginRegistry.RequestPermissionsResultListener, ActivityAware, MethodCallHandler {
+  : FlutterPlugin, PluginRegistry.RequestPermissionsResultListener, ActivityAware, MethodCallHandler, LifecycleOwner {
   private var activity: Activity? = null
   private lateinit var methodChannel : MethodChannel
   private lateinit var context: Context
+  private lateinit var lifecycleRegistry: LifecycleRegistry
   private var platformViewRegistry: PlatformViewRegistry? = null
   private var binaryMessenger: BinaryMessenger? = null
 
@@ -35,6 +40,8 @@ class FlutterMapboxTurnByTurnPlugin
     Log.d("FlutterMapboxTurnByTurnPlugin","Engine attached")
     binaryMessenger = binding.binaryMessenger
     platformViewRegistry = binding.platformViewRegistry
+    lifecycleRegistry = LifecycleRegistry(this)
+    lifecycleRegistry.currentState = Lifecycle.State.INITIALIZED
     methodChannel = MethodChannel(binaryMessenger!!, "flutter_mapbox_turn_by_turn/method")
     methodChannel.setMethodCallHandler(this)
   }
@@ -52,7 +59,10 @@ class FlutterMapboxTurnByTurnPlugin
 
     if(platformViewRegistry != null && binaryMessenger != null && activity != null) {
       Log.d("FlutterMapboxTurnByTurnPlugin","Registering view factory")
-      platformViewRegistry?.registerViewFactory(VIEW_NAME, TurnByTurnViewFactory(binaryMessenger!!, activity!!))
+      val factory = TurnByTurnViewFactory(binaryMessenger!!, activity!!, lifecycleRegistry)
+      lifecycleRegistry.currentState = Lifecycle.State.CREATED
+      platformViewRegistry?.registerViewFactory(VIEW_NAME, factory)
+      ViewTreeLifecycleOwner.set(factory.view, this)
       context = binding.activity.baseContext
     }
   }
@@ -74,6 +84,7 @@ class FlutterMapboxTurnByTurnPlugin
     Log.d("FlutterMapboxTurnByTurnPlugin","Activity reattached for config changes")
     activity = binding.activity
     binding.addRequestPermissionsResultListener(this)
+    lifecycleRegistry.currentState = Lifecycle.State.RESUMED
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
@@ -122,11 +133,7 @@ class FlutterMapboxTurnByTurnPlugin
     val coarseResult: Int = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
     val fineResult: Int = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
 
-    if(coarseResult == PackageManager.PERMISSION_GRANTED && fineResult == PackageManager.PERMISSION_GRANTED) {
-      return true
-    } else {
-      return false
-    }
+    return coarseResult == PackageManager.PERMISSION_GRANTED && fineResult == PackageManager.PERMISSION_GRANTED
   }
 
   private fun askForPermission() {
@@ -134,5 +141,9 @@ class FlutterMapboxTurnByTurnPlugin
       activity!!, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION),
       LOCATION_REQUEST_CODE
     )
+  }
+
+  override fun getLifecycle(): Lifecycle {
+    return lifecycleRegistry
   }
 }

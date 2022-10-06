@@ -3,6 +3,7 @@ package au.com.annon.flutter_mapbox_turn_by_turn.ui
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import androidx.lifecycle.LifecycleRegistry
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
 import io.flutter.plugin.common.*
 
@@ -12,13 +13,25 @@ import io.flutter.plugin.platform.PlatformViewFactory
 @Suppress("UNCHECKED_CAST")
 class TurnByTurnViewFactory(
         private val messenger: BinaryMessenger,
-        private val activity: Activity
+        private val activity: Activity,
+        private val lifecycleRegistry: LifecycleRegistry
     )
     : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
+
+    private val binding: TurnByTurnNativeBinding = TurnByTurnNativeBinding.inflate(activity.layoutInflater)
+    val view get() = binding.root
+
     override fun create(context: Context?, viewId: Int, args: Any?): PlatformView {
         Log.d("TurnByTurnViewFactory", "Creating TurnByTurnViewFactory")
-        val binding = TurnByTurnNativeBinding.inflate(activity.layoutInflater)
         val creationParams = args as Map<String?, Any?>?
-        return TurnByTurnView(activity, context!!, binding, this, messenger, creationParams)
+        return TurnByTurnView(
+            activity,
+            context!!,
+            binding,
+            this,
+            lifecycleRegistry,
+            messenger,
+            creationParams
+        )
     }
 }

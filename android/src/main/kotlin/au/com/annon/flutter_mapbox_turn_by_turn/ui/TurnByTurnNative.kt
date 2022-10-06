@@ -11,12 +11,15 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.location.Location
+import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleRegistry
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEventType
@@ -29,7 +32,9 @@ import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Expected
 import com.mapbox.bindgen.Value
 import com.mapbox.common.*
-import com.mapbox.geojson.*
+import com.mapbox.geojson.Geometry
+import com.mapbox.geojson.Point
+import com.mapbox.geojson.Polygon
 import com.mapbox.maps.*
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.camera
@@ -48,10 +53,10 @@ import com.mapbox.navigation.base.route.*
 import com.mapbox.navigation.base.trip.model.RouteLegProgress
 import com.mapbox.navigation.base.trip.model.RouteProgress
 import com.mapbox.navigation.core.MapboxNavigation
-import com.mapbox.navigation.core.MapboxNavigationProvider
 import com.mapbox.navigation.core.arrival.ArrivalObserver
 import com.mapbox.navigation.core.directions.session.RoutesObserver
 import com.mapbox.navigation.core.formatter.MapboxDistanceFormatter
+import com.mapbox.navigation.core.lifecycle.MapboxNavigationApp
 import com.mapbox.navigation.core.trip.session.LocationMatcherResult
 import com.mapbox.navigation.core.trip.session.LocationObserver
 import com.mapbox.navigation.core.trip.session.RouteProgressObserver
@@ -79,7 +84,6 @@ import io.flutter.embedding.android.FlutterFragment
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import java.util.*
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -110,15 +114,16 @@ class NavigationCameraType {
 }
 
 open class TurnByTurnNative(
-    mActivity: Activity,
-    mContext: Context,
-    mBinding: TurnByTurnNativeBinding,
+    private val pluginActivity: Activity,
+    private val pluginContext: Context,
+    private val binding: TurnByTurnNativeBinding,
+    private val lifecycleRegistry: LifecycleRegistry,
     creationParams: Map<String?, Any?>?
-) : FlutterFragment(), SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
+) : FlutterFragment(),
+    SensorEventListener,
+    MethodChannel.MethodCallHandler,
+    EventChannel.StreamHandler {
 
-    var pluginActivity: Activity = mActivity
-    var pluginContext: Context = mContext
-    var binding: TurnByTurnNativeBinding = mBinding
     open var methodChannel: MethodChannel? = null
     open var eventChannel: EventChannel? = null
 
@@ -206,7 +211,7 @@ open class TurnByTurnNative(
 
     /**
      * Mapbox Navigation entry point. There should only be one instance of this object for the app.
-     * You can use [MapboxNavigationProvider] to help create and obtain that instance.
+     * You can use [MapboxNavigationApp] to help create and obtain that instance.
      */
     private lateinit var mapboxNavigation: MapboxNavigation
 
@@ -636,12 +641,20 @@ open class TurnByTurnNative(
         eventChannel?.setStreamHandler(this)
     }
 
-    override fun onStart() {
-        Log.d("TurnByTurnNative","Activity starting")
+    override fun onCreate(savedInstanceState: Bundle? ) {
+        Log.d("TurnByTurnNative","Activity created")
+        super.onCreate(savedInstanceState)
+
+
+        lifecycleRegistry.currentState = Lifecycle.State.CREATED
+    }
+
+    fun initializeMapbox() {
+        Log.d("TurnByTurnNative","Mapbox initializing")
+        super.onStart()
 
         accessToken = PluginUtilities.getResourceFromContext(pluginContext, "mapbox_access_token")
 
-        super.onStart()
         binding.mapView.onStart()
 
         mapboxMap = binding.mapView.getMapboxMap()
@@ -681,16 +694,16 @@ open class TurnByTurnNative(
             .build()
 
         // initialize Mapbox Navigation
-        mapboxNavigation = if (MapboxNavigationProvider.isCreated()) {
-            MapboxNavigationProvider.retrieve()
+        mapboxNavigation = if (MapboxNavigationApp.isSetup()) {
+            MapboxNavigationApp.current()!!
         } else {
-            MapboxNavigationProvider.create(
+            MapboxNavigationApp.setup(
                 NavigationOptions.Builder(pluginContext)
                     .accessToken(accessToken)
                     .routingTilesOptions(routingTilesOptions)
                     .distanceFormatterOptions(distanceFormatterOptions)
                     .build()
-            )
+            ).attach(this).current()!!
         }
 
         offlineManager = OfflineManager(mapboxMap!!.getResourceOptions())
@@ -883,8 +896,8 @@ open class TurnByTurnNative(
         // register observers and check routes
         registerObservers()
 
-        // start the trip session to being receiving location updates in free drive
-        // and later when a route is set also receiving route progress updates
+        // Starts the trip session to receive location updates in free drive
+        // and later when a route is set also receive route progress updates
         if (ActivityCompat.checkSelfPermission(
                 pluginContext,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -898,7 +911,8 @@ open class TurnByTurnNative(
         mapboxNavigation.startTripSession()
 
         methodChannel?.invokeMethod("onInitializationFinished", null)
-        Log.d("TurnByTurnNative","Activity started")
+        Log.d("TurnByTurnNative","Mapbox initialized")
+        lifecycleRegistry.currentState = Lifecycle.State.STARTED
     }
 
     private fun registerObservers() {
@@ -983,13 +997,19 @@ open class TurnByTurnNative(
         routeLineApi.cancel()
         routeLineView.cancel()
 
+        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
         mapboxNavigation.onDestroy()
-        MapboxNavigationProvider.destroy()
+        MapboxNavigationApp.detach(this)
+        MapboxNavigationApp.disable()
 
         super.onDestroy()
         binding.mapView.onDestroy()
 
         Log.d("TurnByTurnNative","Activity destroyed")
+    }
+
+    override fun getLifecycle(): Lifecycle {
+        return lifecycleRegistry
     }
 
     private fun startNavigation(@NonNull call: MethodCall) {

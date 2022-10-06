@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.Log
 import android.view.View
 import androidx.annotation.NonNull
+import androidx.lifecycle.LifecycleRegistry
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.BinaryMessenger
@@ -13,15 +14,16 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
 
 
-internal class TurnByTurnView(
+class TurnByTurnView(
     activity: Activity,
     context: Context,
-    binding: TurnByTurnNativeBinding?,
+    private val binding: TurnByTurnNativeBinding,
     private val factory: TurnByTurnViewFactory,
+    lifecycleRegistry: LifecycleRegistry,
     private var messenger: BinaryMessenger?,
     creationParams: Map<String?, Any?>?,
     )
-    : PlatformView, TurnByTurnNative(activity, context, binding!!, creationParams) {
+    : PlatformView, TurnByTurnNative(activity, context, binding, lifecycleRegistry, creationParams) {
 
     override fun getView(): View {
         return binding.root
@@ -42,7 +44,8 @@ internal class TurnByTurnView(
 
     init {
         initializeFlutterChannelHandlers()
-        super.onStart()
+        initializeMapbox()
+
         Log.d("TurnByTurnView", "View initialised")
     }
 
@@ -52,7 +55,6 @@ internal class TurnByTurnView(
     }
 
     override fun onFlutterViewDetached() {
-        unregisterObservers()
         super.onFlutterViewDetached()
         Log.d("TurnByTurnView", "View detached")
     }
@@ -62,6 +64,7 @@ internal class TurnByTurnView(
             unregisterObservers()
         }
         methodChannel = null
+        eventSink!!.endOfStream()
         eventSink = null
         eventChannel = null
         messenger = null
