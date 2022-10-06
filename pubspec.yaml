@@ -8,7 +8,7 @@ environment:
   flutter: ">=2.10.5"
 
 dependencies:
-  device_info_plus: ^4.0.0
+  device_info_plus: ^5.0.1
   flutter:
     sdk: flutter
   flutter_tts: ^3.5.0
