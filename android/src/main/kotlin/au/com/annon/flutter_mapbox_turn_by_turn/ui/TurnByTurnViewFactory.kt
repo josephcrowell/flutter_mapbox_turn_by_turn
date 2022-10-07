@@ -14,15 +14,12 @@ import io.flutter.plugin.platform.PlatformViewFactory
 class TurnByTurnViewFactory(
         private val messenger: BinaryMessenger,
         private val activity: Activity,
+        private val binding: TurnByTurnNativeBinding,
         private val lifecycleRegistry: LifecycleRegistry
     )
     : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
 
-    private lateinit var binding: TurnByTurnNativeBinding
-    val view get() = binding.root
-
     override fun create(context: Context?, viewId: Int, args: Any?): PlatformView {
-        binding = TurnByTurnNativeBinding.inflate(activity.layoutInflater)
         Log.d("TurnByTurnViewFactory", "Creating TurnByTurnViewFactory")
         val creationParams = args as Map<String?, Any?>?
         return TurnByTurnView(
