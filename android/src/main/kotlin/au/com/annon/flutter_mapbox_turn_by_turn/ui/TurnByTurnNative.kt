@@ -1041,7 +1041,7 @@ open class TurnByTurnNative(
         MapboxTurnByTurnEvents.sendJsonEvent(
             MapboxEventType.MUTE_CHANGED,
             "{" +
-                    "\"muted\":\"${isVoiceInstructionsMuted}\"" +
+                    "\"muted\":${isVoiceInstructionsMuted}" +
                     "}"
         )
     }
