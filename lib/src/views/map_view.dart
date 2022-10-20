@@ -143,6 +143,8 @@ class MapView extends StatelessWidget {
     this.pitch,
     this.disableGesturesWhenFollowing,
     this.navigateOnLongClick,
+    this.muted,
+    this.showMuteButton,
     this.showStopButton,
     this.showSpeedIndicator,
     this.navigationCameraType,
@@ -193,6 +195,8 @@ class MapView extends StatelessWidget {
   final double? pitch;
   final bool? disableGesturesWhenFollowing;
   final bool? navigateOnLongClick;
+  final bool? muted;
+  final bool? showMuteButton;
   final bool? showStopButton;
   final bool? showSpeedIndicator;
   final String? navigationCameraType;
@@ -292,7 +296,9 @@ class MapView extends StatelessWidget {
       "pitch": pitch,
       "disableGesturesWhenFollowing": disableGesturesWhenFollowing ?? true,
       "navigateOnLongClick": navigateOnLongClick,
-      "showStopButton": showStopButton,
+      "muted": muted,
+      "showMuteButton": showMuteButton ?? true,
+      "showStopButton": showStopButton ?? true,
       "showSpeedIndicator": showSpeedIndicator ?? true,
       "navigationCameraType":
           navigationCameraType ?? NavigationCameraType.overview,
@@ -458,6 +464,10 @@ class MapView extends StatelessWidget {
     args["distance"] = distance;
 
     return _methodChannel.invokeMethod('addOfflineMap', args);
+  }
+
+  Future<void> toggleMuted() async {
+    return _methodChannel.invokeMethod('toggleMuted');
   }
 
   void _onEventData(MapboxTurnByTurnEvent event) {

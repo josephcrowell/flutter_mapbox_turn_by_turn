@@ -13,6 +13,7 @@ enum MapboxEventType {
   routeBuildNoRoutesFound,
   userOffRoute,
   milestoneEvent,
+  muteChanged,
   navigationRunning,
   navigationCancelled,
   navigationCameraChanged,

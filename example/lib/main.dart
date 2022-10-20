@@ -222,6 +222,13 @@ class _ExampleAppState extends State<ExampleApp> {
           }
         }
         break;
+      case MapboxEventType.muteChanged:
+        String jsonString = e.data as String;
+        dynamic data = json.decode(jsonString);
+        log.d(
+          'Are instructions muted? ${data['muted']}',
+        );
+        break;
       case MapboxEventType.routeBuilt:
         log.d('Route built');
         setState(() {

@@ -16,6 +16,7 @@ enum class MapboxEventType(val value: String) {
     ROUTE_BUILD_NO_ROUTES_FOUND("routeBuildNoRoutesFound"),
     USER_OFF_ROUTE("userOffRoute"),
     MILESTONE_EVENT("milestoneEvent"),
+    MUTE_CHANGED("muteChanged"),
     NAVIGATION_RUNNING("navigationRunning"),
     NAVIGATION_CANCELLED("navigationCancelled"),
     NAVIGATION_CAMERA_CHANGED("navigationCameraChanged"),

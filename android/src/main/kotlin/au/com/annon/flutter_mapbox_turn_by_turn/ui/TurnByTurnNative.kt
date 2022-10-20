@@ -139,6 +139,8 @@ open class TurnByTurnNative(
     private val pitch: Double?
     private var disableGesturesWhenFollowing: Boolean? = null
     private val navigateOnLongClick: Boolean?
+    private val muted: Boolean?
+    private val showMuteButton: Boolean?
     private val showStopButton: Boolean?
     private val navigationCameraType: String?
     private val routeProfile: String
@@ -165,6 +167,8 @@ open class TurnByTurnNative(
         pitch = creationParams?.get("pitch") as? Double
         disableGesturesWhenFollowing = creationParams?.get("disableGesturesWhenFollowing") as? Boolean
         navigateOnLongClick = creationParams?.get("navigateOnLongClick") as? Boolean
+        muted = creationParams?.get("muted") as? Boolean
+        showMuteButton = creationParams?.get("showMuteButton") as? Boolean
         showStopButton = creationParams?.get("showStopButton") as? Boolean
         showSpeedIndicator = creationParams?.get("showSpeedIndicator") as Boolean
         navigationCameraType = creationParams["navigationCameraType"] as String
@@ -848,6 +852,7 @@ open class TurnByTurnNative(
                 clearRouteAndStopNavigation()
             }
         }
+
         binding.recenter.setOnClickListener {
             navigationCamera!!.requestNavigationCameraToFollowing()
             binding.routeOverview.showTextAndExtend(BUTTON_ANIMATION_DURATION)
@@ -874,13 +879,21 @@ open class TurnByTurnNative(
                 "}"
             )
         }
+
         binding.soundButton.setOnClickListener {
-            // mute/unmute voice instructions
-            isVoiceInstructionsMuted = !isVoiceInstructionsMuted
+            toggleMuted()
         }
 
-        // set initial sounds button state
-        binding.soundButton.unmute()
+        // set initial sound button state
+        if(muted == true) {
+            isVoiceInstructionsMuted = true
+
+            binding.soundButton.mute()
+        } else {
+            isVoiceInstructionsMuted = false
+
+            binding.soundButton.unmute()
+        }
 
         // initialize the location puck
         binding.mapView.location.apply {
@@ -979,6 +992,9 @@ open class TurnByTurnNative(
             "addOfflineMap" -> {
                 addOfflineMap(methodCall)
             }
+            "toggleMuted" -> {
+                toggleMuted()
+            }
             else -> result.notImplemented()
         }
     }
@@ -1009,6 +1025,25 @@ open class TurnByTurnNative(
 
     override fun getLifecycle(): Lifecycle {
         return lifecycleRegistry
+    }
+
+    // mute/unmute voice instructions
+    private fun toggleMuted() {
+        isVoiceInstructionsMuted = !isVoiceInstructionsMuted
+
+        // set sound button state
+        if(isVoiceInstructionsMuted) {
+            binding.soundButton.mute()
+        } else {
+            binding.soundButton.unmute()
+        }
+
+        MapboxTurnByTurnEvents.sendJsonEvent(
+            MapboxEventType.MUTE_CHANGED,
+            "{" +
+                    "\"muted\":\"${isVoiceInstructionsMuted}\"" +
+                    "}"
+        )
     }
 
     private fun startNavigation(@NonNull call: MethodCall) {
@@ -1109,7 +1144,9 @@ open class TurnByTurnNative(
         mapboxNavigation.setNavigationRoutes(routes)
 
         // show UI elements
-        binding.soundButton.visibility = View.VISIBLE
+        if(showMuteButton == true) {
+            binding.soundButton.visibility = View.VISIBLE
+        }
         binding.tripProgressCard.visibility = View.VISIBLE
 
         // move the camera to requested state when new route is available
