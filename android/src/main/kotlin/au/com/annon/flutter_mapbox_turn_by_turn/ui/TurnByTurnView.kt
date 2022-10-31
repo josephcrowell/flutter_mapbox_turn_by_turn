@@ -23,7 +23,7 @@ class TurnByTurnView(
     private var messenger: BinaryMessenger?,
     creationParams: Map<String?, Any?>?,
     )
-    : PlatformView, TurnByTurnNative(activity, context, binding, lifecycleRegistry, creationParams) {
+    : PlatformView, TurnByTurnNative(activity, context, binding, lifecycleRegistry, messenger, creationParams) {
 
     override fun getView(): View {
         return binding.root
@@ -71,11 +71,5 @@ class TurnByTurnView(
 
         super.onDestroy()
         Log.d("TurnByTurnView", "View disposed")
-    }
-
-    override fun initializeFlutterChannelHandlers() {
-        methodChannel = MethodChannel(messenger!!, "flutter_mapbox_turn_by_turn/map_view/method")
-        eventChannel = EventChannel(messenger, "flutter_mapbox_turn_by_turn/map_view/events")
-        super.initializeFlutterChannelHandlers()
     }
 }

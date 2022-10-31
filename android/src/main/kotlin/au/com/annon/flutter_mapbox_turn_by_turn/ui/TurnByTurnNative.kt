@@ -82,6 +82,7 @@ import com.mapbox.navigation.ui.tripprogress.api.MapboxTripProgressApi
 import com.mapbox.navigation.ui.tripprogress.model.*
 import com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView
 import io.flutter.embedding.android.FlutterFragment
+import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -119,6 +120,7 @@ open class TurnByTurnNative(
     private val pluginContext: Context,
     private val binding: TurnByTurnNativeBinding,
     private val lifecycleRegistry: LifecycleRegistry,
+    messenger: BinaryMessenger?,
     creationParams: Map<String?, Any?>?
 ) : FlutterFragment(),
     SensorEventListener,
@@ -163,6 +165,9 @@ open class TurnByTurnNative(
 
     init {
         Log.d("TurnByTurnNative", "Constructor called")
+        methodChannel = MethodChannel(messenger!!, "flutter_mapbox_turn_by_turn/map_view/method")
+        eventChannel = EventChannel(messenger, "flutter_mapbox_turn_by_turn/map_view/events")
+
         zoom = creationParams?.get("zoom") as? Double
         pitch = creationParams?.get("pitch") as? Double
         disableGesturesWhenFollowing = creationParams?.get("disableGesturesWhenFollowing") as? Boolean
