@@ -116,7 +116,7 @@ dependencies {
     implementation "com.google.android.gms:play-services-location:20.0.0"
     implementation "com.google.android.material:material:1.7.0"
 
-    implementation "com.mapbox.navigation:android:2.9.0-beta.3"
+    implementation "com.mapbox.navigation:android:2.9.0-rc.2"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1"
 
