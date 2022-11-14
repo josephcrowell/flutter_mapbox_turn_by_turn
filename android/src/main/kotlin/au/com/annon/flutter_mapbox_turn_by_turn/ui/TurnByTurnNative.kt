@@ -133,8 +133,8 @@ open class TurnByTurnNative(
     MethodChannel.MethodCallHandler,
     EventChannel.StreamHandler {
 
-    open var methodChannel: MethodChannel? = null
-    open var eventChannel: EventChannel? = null
+    var methodChannel: MethodChannel? = null
+    var eventChannel: EventChannel? = null
 
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
