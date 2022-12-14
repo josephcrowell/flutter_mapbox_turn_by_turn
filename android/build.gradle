@@ -116,11 +116,11 @@ dependencies {
     implementation "com.google.android.gms:play-services-location:20.0.0"
     implementation "com.google.android.material:material:1.7.0"
 
-    implementation "com.mapbox.navigation:android:2.9.1"
+    implementation "com.mapbox.navigation:android:2.9.5"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4"
 
-    debugImplementation "com.squareup.leakcanary:leakcanary-android:2.9.1"
+    debugImplementation "com.squareup.leakcanary:leakcanary-android:2.10"
 
     testImplementation 'junit:junit:4.13.2'
 
