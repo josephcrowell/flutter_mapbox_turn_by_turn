@@ -1133,9 +1133,6 @@ open class TurnByTurnNative(
             return
         }
 
-        // Don't let the screen turn off while navigating
-        binding.mapView.keepScreenOn = true
-
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILT)
 
         // set routes, where the first route in the list is the primary route that
@@ -1195,8 +1192,6 @@ open class TurnByTurnNative(
             toggleGestures(true)
         }
 
-        // enable the screen to turn off again when navigation stops
-        binding.mapView.keepScreenOn = false
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_CANCELLED)
     }
 
