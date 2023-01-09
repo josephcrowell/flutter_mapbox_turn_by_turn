@@ -365,6 +365,7 @@ class MapView extends StatelessWidget {
   /// Clean up the timer object
   void dispose() {
     _instructionProcessTimer.cancel();
+    _mapboxTurnByTurnEventSubscription?.cancel();
   }
 
   static Future<dynamic> _processInstructionCache() async {
