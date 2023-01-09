@@ -64,7 +64,6 @@ class TurnByTurnView(
             unregisterObservers()
         }
         methodChannel = null
-        eventSink!!.endOfStream()
         eventSink = null
         eventChannel = null
         messenger = null
