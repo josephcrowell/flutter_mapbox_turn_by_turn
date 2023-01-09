@@ -42,8 +42,10 @@ import com.mapbox.maps.*
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.compass.compass
+import com.mapbox.maps.plugin.compass.generated.CompassSettings
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.mapbox.maps.plugin.scalebar.generated.ScaleBarSettings
 import com.mapbox.maps.plugin.scalebar.scalebar
 import com.mapbox.navigation.base.TimeFormat
 import com.mapbox.navigation.base.extensions.applyDefaultNavigationOptions
@@ -715,7 +717,11 @@ open class TurnByTurnNative(
         offlineManager = OfflineManager(mapboxMap!!.getResourceOptions())
 
         binding.mapView.scalebar.enabled = false
-        binding.mapView.compass.enabled = false
+        binding.mapView.compass.updateSettings {
+            CompassSettings(
+                opacity = 0.0f
+            )
+        }
 
         // initialize Navigation Camera
         viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap!!)
