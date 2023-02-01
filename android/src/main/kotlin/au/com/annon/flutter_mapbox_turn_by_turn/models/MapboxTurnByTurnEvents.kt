@@ -8,6 +8,7 @@ import com.google.gson.Gson
 
 enum class MapboxEventType(val value: String) {
     PROGRESS_CHANGE("progressChange"),
+    ENHANCED_LOCATION_CHANGE("enhancedLocationChange"),
     LOCATION_CHANGE("locationChange"),
     ROUTE_BUILDING("routeBuilding"),
     ROUTE_BUILT("routeBuilt"),
@@ -50,6 +51,18 @@ class MapboxTurnByTurnEvents {
             handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
         }
 
+        fun sendEvent(event: MapboxEnhancedLocationChangeEvent) {
+            val jsonString = "{" +
+                    "  \"eventType\": \"${MapboxEventType.ENHANCED_LOCATION_CHANGE.value}\"," +
+                    "  \"data\": {" +
+                    "\"isLocationChangeEvent\": ${event.isEnhancedLocationChangeEvent}," +
+                    "\"latitude\": ${event.latitude}," +
+                    "\"longitude\": ${event.longitude}" +
+                    "}" +
+                    "}"
+            handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
+        }
+
         fun sendEvent(event: MapboxLocationChangeEvent) {
             val jsonString = "{" +
                     "  \"eventType\": \"${MapboxEventType.LOCATION_CHANGE.value}\"," +
@@ -79,7 +92,7 @@ class MapboxTurnByTurnEvents {
 
             val jsonString = "{" +
                     "  \"eventType\": \"${event.value}\"," +
-                    "  \"data\": ${dataString}" +
+                    "  \"data\": $dataString" +
                     "}"
             handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
         }

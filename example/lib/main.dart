@@ -27,6 +27,8 @@ class _ExampleAppState extends State<ExampleApp> {
   bool _isNavigating = false;
   static LatLng? _pastLocation;
   static LatLng? _currentLocation;
+  static LatLng? _pastEnhancedLocation;
+  static LatLng? _currentEnhancedLocation;
   String _instruction = "";
 
   late final MapView _mapView;
@@ -219,6 +221,36 @@ class _ExampleAppState extends State<ExampleApp> {
             );
 
             _pastLocation = _currentLocation;
+          }
+        }
+        break;
+      case MapboxEventType.enhancedLocationChange:
+        var locationChangeEvent = e.data as MapboxEnhancedLocationChangeEvent;
+
+        _currentEnhancedLocation = LatLng(
+          locationChangeEvent.latitude!,
+          locationChangeEvent.longitude!,
+        );
+
+        if (_pastEnhancedLocation == null) {
+          log.d(
+            'Enhanced Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
+          );
+
+          _pastEnhancedLocation = _currentEnhancedLocation;
+        } else {
+          const Distance distance = Distance();
+
+          if (distance(
+                _pastEnhancedLocation!,
+                _currentEnhancedLocation!,
+              ) >
+              4) {
+            log.d(
+              'Enhanced Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
+            );
+
+            _pastEnhancedLocation = _currentEnhancedLocation;
           }
         }
         break;

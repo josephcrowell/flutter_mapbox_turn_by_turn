@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
-import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -38,7 +37,7 @@ class FlutterMapboxTurnByTurnPlugin
     private const val VIEW_NAME = "MapView"
   }
 
-  override fun onAttachedToEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+  override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     Log.d("FlutterMapboxTurnByTurnPlugin","Engine attached")
     binaryMessenger = binding.binaryMessenger
     platformViewRegistry = binding.platformViewRegistry
@@ -48,7 +47,7 @@ class FlutterMapboxTurnByTurnPlugin
     methodChannel.setMethodCallHandler(this)
   }
 
-  override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+  override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     Log.d("FlutterMapboxTurnByTurnPlugin","Engine detached")
     activity = null
     methodChannel.setMethodCallHandler(null)
@@ -90,7 +89,7 @@ class FlutterMapboxTurnByTurnPlugin
     lifecycleRegistry.currentState = Lifecycle.State.RESUMED
   }
 
-  override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
+  override fun onMethodCall(call: MethodCall, result: Result) {
     when (call.method) {
       "hasPermission" -> {
         hasPermission(result)

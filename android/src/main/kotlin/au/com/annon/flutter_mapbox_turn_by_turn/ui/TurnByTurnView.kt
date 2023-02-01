@@ -4,13 +4,10 @@ import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.view.View
-import androidx.annotation.NonNull
 import androidx.lifecycle.LifecycleRegistry
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.BinaryMessenger
-import io.flutter.plugin.common.EventChannel
-import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
 
 
@@ -37,7 +34,7 @@ class TurnByTurnView(
             .registerViewFactory("MapView", factory)
     }
 
-    override fun cleanUpFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
         Log.d("TurnByTurnView", "Cleaning up Flutter engine")
         flutterEngine.platformViewsController.detachFromView()
     }

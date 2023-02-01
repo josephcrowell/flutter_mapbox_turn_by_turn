@@ -11,13 +11,10 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.location.Location
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
-import androidx.annotation.NonNull
-import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -26,6 +23,7 @@ import androidx.lifecycle.ViewTreeLifecycleOwner
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEventType
+import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEnhancedLocationChangeEvent
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxLocationChangeEvent
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxProgressChangeEvent
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxTurnByTurnEvents
@@ -118,7 +116,6 @@ class NavigationCameraType {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.CUPCAKE)
 open class TurnByTurnNative(
     private val pluginActivity: Activity,
     private val pluginContext: Context,
@@ -351,7 +348,7 @@ open class TurnByTurnNative(
         var firstLocationUpdateReceived = false
 
         override fun onNewRawLocation(rawLocation: Location) {
-            // not handled
+            MapboxTurnByTurnEvents.sendEvent(MapboxLocationChangeEvent(rawLocation))
         }
 
         override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
@@ -439,7 +436,7 @@ open class TurnByTurnNative(
             // update camera position to account for new location
             viewportDataSource!!.onLocationChanged(enhancedLocation)
             viewportDataSource!!.evaluate()
-            MapboxTurnByTurnEvents.sendEvent(MapboxLocationChangeEvent(enhancedLocation))
+            MapboxTurnByTurnEvents.sendEvent(MapboxEnhancedLocationChangeEvent(enhancedLocation))
 
             // if this is the first location update the activity has received,
             // it's best to immediately move the camera to the current user location
@@ -664,8 +661,6 @@ open class TurnByTurnNative(
         super.onStart()
 
         accessToken = PluginUtilities.getResourceFromContext(pluginContext, "mapbox_access_token")
-
-        binding.mapView.onStart()
 
         mapboxMap = binding.mapView.getMapboxMap()
 
@@ -1001,23 +996,24 @@ open class TurnByTurnNative(
     override fun onStop() {
         Log.d("TurnByTurnNative","Activity stopped")
         super.onStop()
-        binding.mapView.onStop()
     }
 
     override fun onLowMemory() {
         Log.d("TurnByTurnNative","Activity low memory")
         super.onLowMemory()
-        binding.mapView.onLowMemory()
     }
 
     override fun onDestroy() {
         maneuverApi.cancel()
         routeLineApi.cancel()
         routeLineView.cancel()
+        binding.mapView.onStop()
 
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
         ViewTreeLifecycleOwner.get(binding.root)?.let { MapboxNavigationApp.detach(it) }
         MapboxNavigationApp.disable()
+
+        super.onDestroy()
 
         Log.d("TurnByTurnNative","Activity destroyed")
     }
@@ -1045,7 +1041,7 @@ open class TurnByTurnNative(
         )
     }
 
-    private fun startNavigation(@NonNull call: MethodCall) {
+    private fun startNavigation(call: MethodCall) {
         val arguments = call.arguments as? Map<*, *>
 
         var waypointList: List<Point> = listOf()
@@ -1195,7 +1191,7 @@ open class TurnByTurnNative(
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_CANCELLED)
     }
 
-    private fun addOfflineMap(@NonNull call: MethodCall) {
+    private fun addOfflineMap(call: MethodCall) {
         val arguments = call.arguments as? Map<*, *>
         val radiusEarth = 6371.0
 
