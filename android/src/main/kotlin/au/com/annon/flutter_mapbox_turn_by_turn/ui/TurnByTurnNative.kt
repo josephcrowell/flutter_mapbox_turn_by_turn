@@ -1007,7 +1007,6 @@ open class TurnByTurnNative(
         maneuverApi.cancel()
         routeLineApi.cancel()
         routeLineView.cancel()
-        binding.mapView.onStop()
 
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
         ViewTreeLifecycleOwner.get(binding.root)?.let { MapboxNavigationApp.detach(it) }
