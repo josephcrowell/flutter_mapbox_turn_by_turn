@@ -1,4 +1,7 @@
 {
     "cSpell.words": ["Operahouse"],
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "editor.codeActionsOnSave": {
+        "source.fixAll": true
+    }
 }
