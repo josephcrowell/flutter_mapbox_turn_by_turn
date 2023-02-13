@@ -11,15 +11,19 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.location.Location
+import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
-import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.ViewTreeLifecycleOwner
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEventType
+import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEnhancedLocationChangeEvent
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxLocationChangeEvent
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxProgressChangeEvent
 import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxTurnByTurnEvents
@@ -29,7 +33,9 @@ import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Expected
 import com.mapbox.bindgen.Value
 import com.mapbox.common.*
-import com.mapbox.geojson.*
+import com.mapbox.geojson.Geometry
+import com.mapbox.geojson.Point
+import com.mapbox.geojson.Polygon
 import com.mapbox.maps.*
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.camera
@@ -48,10 +54,11 @@ import com.mapbox.navigation.base.route.*
 import com.mapbox.navigation.base.trip.model.RouteLegProgress
 import com.mapbox.navigation.base.trip.model.RouteProgress
 import com.mapbox.navigation.core.MapboxNavigation
-import com.mapbox.navigation.core.MapboxNavigationProvider
 import com.mapbox.navigation.core.arrival.ArrivalObserver
 import com.mapbox.navigation.core.directions.session.RoutesObserver
 import com.mapbox.navigation.core.formatter.MapboxDistanceFormatter
+import com.mapbox.navigation.core.lifecycle.MapboxNavigationApp
+import com.mapbox.navigation.core.lifecycle.requireMapboxNavigation
 import com.mapbox.navigation.core.trip.session.LocationMatcherResult
 import com.mapbox.navigation.core.trip.session.LocationObserver
 import com.mapbox.navigation.core.trip.session.RouteProgressObserver
@@ -76,10 +83,10 @@ import com.mapbox.navigation.ui.tripprogress.api.MapboxTripProgressApi
 import com.mapbox.navigation.ui.tripprogress.model.*
 import com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView
 import io.flutter.embedding.android.FlutterFragment
+import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import java.util.*
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -109,22 +116,65 @@ class NavigationCameraType {
     }
 }
 
-open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
-    constructor(
-        mActivity: Activity,
-        mContext: Context,
-        mBinding: TurnByTurnNativeBinding,
-        creationParams: Map<String?, Any?>?,
-    ) {
+open class TurnByTurnNative(
+    private val pluginActivity: Activity,
+    private val pluginContext: Context,
+    private val binding: TurnByTurnNativeBinding,
+    private val lifecycleRegistry: LifecycleRegistry,
+    messenger: BinaryMessenger?,
+    creationParams: Map<String?, Any?>?
+) : FlutterFragment(),
+    SensorEventListener,
+    MethodChannel.MethodCallHandler,
+    EventChannel.StreamHandler {
+
+    var methodChannel: MethodChannel? = null
+    var eventChannel: EventChannel? = null
+
+    private val darkThreshold = 1.0f
+    private var lightValue = 1.1f
+    private var distanceRemaining: Float? = null
+    private var durationRemaining: Double? = null
+    private var navigationStarted: Boolean = false
+
+    // flutter creation parameters
+    private val zoom: Double?
+    private val pitch: Double?
+    private var disableGesturesWhenFollowing: Boolean? = null
+    private val navigateOnLongClick: Boolean?
+    private val muted: Boolean?
+    private val showMuteButton: Boolean?
+    private val showStopButton: Boolean?
+    private val navigationCameraType: String?
+    private val routeProfile: String
+    private val language: String
+    private val showAlternativeRoutes: Boolean
+    private val allowUTurnsAtWaypoints: Boolean
+    private val mapStyleUrlDay: String?
+    private val mapStyleUrlNight: String?
+    private val routeCasingColor: String
+    private val routeDefaultColor: String
+    private val restrictedRoadColor: String
+    private val routeLineTraveledColor: String
+    private val routeLineTraveledCasingColor: String
+    private val routeClosureColor: String
+    private val routeLowCongestionColor: String
+    private val routeModerateCongestionColor: String
+    private val routeHeavyCongestionColor: String
+    private val routeSevereCongestionColor: String
+    private val routeUnknownCongestionColor: String
+
+    init {
         Log.d("TurnByTurnNative", "Constructor called")
-        pluginActivity = mActivity
-        pluginContext = mContext
-        binding = mBinding
+        methodChannel = MethodChannel(messenger!!, "flutter_mapbox_turn_by_turn/map_view/method")
+        eventChannel = EventChannel(messenger, "flutter_mapbox_turn_by_turn/map_view/events")
 
         zoom = creationParams?.get("zoom") as? Double
         pitch = creationParams?.get("pitch") as? Double
         disableGesturesWhenFollowing = creationParams?.get("disableGesturesWhenFollowing") as? Boolean
         navigateOnLongClick = creationParams?.get("navigateOnLongClick") as? Boolean
+        muted = creationParams?.get("muted") as? Boolean
+        showMuteButton = creationParams?.get("showMuteButton") as? Boolean
         showStopButton = creationParams?.get("showStopButton") as? Boolean
         showSpeedIndicator = creationParams?.get("showSpeedIndicator") as Boolean
         navigationCameraType = creationParams["navigationCameraType"] as String
@@ -149,43 +199,6 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
         routeUnknownCongestionColor = creationParams["routeUnknownCongestionColor"] as String
     }
 
-    lateinit var pluginActivity: Activity
-    lateinit var pluginContext: Context
-    lateinit var binding: TurnByTurnNativeBinding
-    open var methodChannel: MethodChannel? = null
-    open var eventChannel: EventChannel? = null
-
-    private val darkThreshold = 1.0f
-    private var lightValue = 1.1f
-    private var distanceRemaining: Float? = null
-    private var durationRemaining: Double? = null
-    private var navigationStarted: Boolean = false
-
-    // flutter creation parameters
-    private val zoom: Double?
-    private val pitch: Double?
-    private var disableGesturesWhenFollowing: Boolean? = null
-    private val navigateOnLongClick: Boolean?
-    private val showStopButton: Boolean?
-    private val navigationCameraType: String?
-    private val routeProfile: String
-    private val language: String
-    private val showAlternativeRoutes: Boolean
-    private val allowUTurnsAtWaypoints: Boolean
-    private val mapStyleUrlDay: String?
-    private val mapStyleUrlNight: String?
-    private val routeCasingColor: String
-    private val routeDefaultColor: String
-    private val restrictedRoadColor: String
-    private val routeLineTraveledColor: String
-    private val routeLineTraveledCasingColor: String
-    private val routeClosureColor: String
-    private val routeLowCongestionColor: String
-    private val routeModerateCongestionColor: String
-    private val routeHeavyCongestionColor: String
-    private val routeSevereCongestionColor: String
-    private val routeUnknownCongestionColor: String
-
     companion object {
         private const val BUTTON_ANIMATION_DURATION = 1500L
         var eventSink: EventChannel.EventSink? = null
@@ -207,11 +220,7 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
      */
     private var mapboxMap: MapboxMap? = null
 
-    /**
-     * Mapbox Navigation entry point. There should only be one instance of this object for the app.
-     * You can use [MapboxNavigationProvider] to help create and obtain that instance.
-     */
-    private lateinit var mapboxNavigation: MapboxNavigation
+    private val mapboxNavigation: MapboxNavigation by requireMapboxNavigation()
 
     /**
      * Used to execute camera transitions based on the data generated by the [viewportDataSource].
@@ -339,7 +348,7 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
         var firstLocationUpdateReceived = false
 
         override fun onNewRawLocation(rawLocation: Location) {
-            // not handled
+            MapboxTurnByTurnEvents.sendEvent(MapboxLocationChangeEvent(rawLocation))
         }
 
         override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
@@ -427,7 +436,7 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
             // update camera position to account for new location
             viewportDataSource!!.onLocationChanged(enhancedLocation)
             viewportDataSource!!.evaluate()
-            MapboxTurnByTurnEvents.sendEvent(MapboxLocationChangeEvent(enhancedLocation))
+            MapboxTurnByTurnEvents.sendEvent(MapboxEnhancedLocationChangeEvent(enhancedLocation))
 
             // if this is the first location update the activity has received,
             // it's best to immediately move the camera to the current user location
@@ -639,13 +648,19 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
         eventChannel?.setStreamHandler(this)
     }
 
-    override fun onStart() {
-        Log.d("TurnByTurnNative","Activity starting")
+    override fun onCreate(savedInstanceState: Bundle? ) {
+        Log.d("TurnByTurnNative","Activity created")
+        super.onCreate(savedInstanceState)
+
+
+        lifecycleRegistry.currentState = Lifecycle.State.CREATED
+    }
+
+    fun initializeMapbox() {
+        Log.d("TurnByTurnNative","Mapbox initializing")
+        super.onStart()
 
         accessToken = PluginUtilities.getResourceFromContext(pluginContext, "mapbox_access_token")
-
-        super.onStart()
-        binding.mapView.onStart()
 
         mapboxMap = binding.mapView.getMapboxMap()
 
@@ -684,17 +699,13 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
             .build()
 
         // initialize Mapbox Navigation
-        mapboxNavigation = if (MapboxNavigationProvider.isCreated()) {
-            MapboxNavigationProvider.retrieve()
-        } else {
-            MapboxNavigationProvider.create(
-                NavigationOptions.Builder(pluginContext)
-                    .accessToken(accessToken)
-                    .routingTilesOptions(routingTilesOptions)
-                    .distanceFormatterOptions(distanceFormatterOptions)
-                    .build()
-            )
-        }
+        MapboxNavigationApp.setup(
+            NavigationOptions.Builder(pluginContext)
+                .accessToken(accessToken)
+                .routingTilesOptions(routingTilesOptions)
+                .distanceFormatterOptions(distanceFormatterOptions)
+                .build()
+        )
 
         offlineManager = OfflineManager(mapboxMap!!.getResourceOptions())
 
@@ -835,6 +846,7 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
                 clearRouteAndStopNavigation()
             }
         }
+
         binding.recenter.setOnClickListener {
             navigationCamera!!.requestNavigationCameraToFollowing()
             binding.routeOverview.showTextAndExtend(BUTTON_ANIMATION_DURATION)
@@ -861,13 +873,21 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
                 "}"
             )
         }
+
         binding.soundButton.setOnClickListener {
-            // mute/unmute voice instructions
-            isVoiceInstructionsMuted = !isVoiceInstructionsMuted
+            toggleMuted()
         }
 
-        // set initial sounds button state
-        binding.soundButton.unmute()
+        // set initial sound button state
+        if(muted == true) {
+            isVoiceInstructionsMuted = true
+
+            binding.soundButton.mute()
+        } else {
+            isVoiceInstructionsMuted = false
+
+            binding.soundButton.unmute()
+        }
 
         // initialize the location puck
         binding.mapView.location.apply {
@@ -886,8 +906,8 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
         // register observers and check routes
         registerObservers()
 
-        // start the trip session to being receiving location updates in free drive
-        // and later when a route is set also receiving route progress updates
+        // Starts the trip session to receive location updates in free drive
+        // and later when a route is set also receive route progress updates
         if (ActivityCompat.checkSelfPermission(
                 pluginContext,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -901,7 +921,8 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
         mapboxNavigation.startTripSession()
 
         methodChannel?.invokeMethod("onInitializationFinished", null)
-        Log.d("TurnByTurnNative","Activity started")
+        Log.d("TurnByTurnNative","Mapbox initialized")
+        lifecycleRegistry.currentState = Lifecycle.State.STARTED
     }
 
     private fun registerObservers() {
@@ -965,6 +986,9 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
             "addOfflineMap" -> {
                 addOfflineMap(methodCall)
             }
+            "toggleMuted" -> {
+                toggleMuted()
+            }
             else -> result.notImplemented()
         }
     }
@@ -972,13 +996,11 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
     override fun onStop() {
         Log.d("TurnByTurnNative","Activity stopped")
         super.onStop()
-        binding.mapView.onStop()
     }
 
     override fun onLowMemory() {
         Log.d("TurnByTurnNative","Activity low memory")
         super.onLowMemory()
-        binding.mapView.onLowMemory()
     }
 
     override fun onDestroy() {
@@ -986,16 +1008,39 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
         routeLineApi.cancel()
         routeLineView.cancel()
 
-        mapboxNavigation.onDestroy()
-        MapboxNavigationProvider.destroy()
+        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
+        ViewTreeLifecycleOwner.get(binding.root)?.let { MapboxNavigationApp.detach(it) }
+        MapboxNavigationApp.disable()
 
         super.onDestroy()
-        binding.mapView.onDestroy()
 
         Log.d("TurnByTurnNative","Activity destroyed")
     }
 
-    private fun startNavigation(@NonNull call: MethodCall) {
+    override fun getLifecycle(): Lifecycle {
+        return lifecycleRegistry
+    }
+
+    // mute/unmute voice instructions
+    private fun toggleMuted() {
+        isVoiceInstructionsMuted = !isVoiceInstructionsMuted
+
+        // set sound button state
+        if(isVoiceInstructionsMuted) {
+            binding.soundButton.mute()
+        } else {
+            binding.soundButton.unmute()
+        }
+
+        MapboxTurnByTurnEvents.sendJsonEvent(
+            MapboxEventType.MUTE_CHANGED,
+            "{" +
+                    "\"muted\":${isVoiceInstructionsMuted}" +
+                    "}"
+        )
+    }
+
+    private fun startNavigation(call: MethodCall) {
         val arguments = call.arguments as? Map<*, *>
 
         var waypointList: List<Point> = listOf()
@@ -1083,9 +1128,6 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
             return
         }
 
-        // Don't let the screen turn off while navigating
-        binding.mapView.keepScreenOn = true
-
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILT)
 
         // set routes, where the first route in the list is the primary route that
@@ -1093,7 +1135,9 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
         mapboxNavigation.setNavigationRoutes(routes)
 
         // show UI elements
-        binding.soundButton.visibility = View.VISIBLE
+        if(showMuteButton == true) {
+            binding.soundButton.visibility = View.VISIBLE
+        }
         binding.tripProgressCard.visibility = View.VISIBLE
 
         // move the camera to requested state when new route is available
@@ -1143,12 +1187,10 @@ open class TurnByTurnNative : FlutterFragment, SensorEventListener, MethodChanne
             toggleGestures(true)
         }
 
-        // enable the screen to turn off again when navigation stops
-        binding.mapView.keepScreenOn = false
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_CANCELLED)
     }
 
-    private fun addOfflineMap(@NonNull call: MethodCall) {
+    private fun addOfflineMap(call: MethodCall) {
         val arguments = call.arguments as? Map<*, *>
         val radiusEarth = 6371.0
 

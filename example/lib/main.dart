@@ -27,6 +27,8 @@ class _ExampleAppState extends State<ExampleApp> {
   bool _isNavigating = false;
   static LatLng? _pastLocation;
   static LatLng? _currentLocation;
+  static LatLng? _pastEnhancedLocation;
+  static LatLng? _currentEnhancedLocation;
   String _instruction = "";
 
   late final MapView _mapView;
@@ -43,9 +45,9 @@ class _ExampleAppState extends State<ExampleApp> {
       zoom: 20,
       pitch: 75,
       mapStyleUrlDay:
-          'mapbox://styles/computerlinkau/cl4rr03te001c14msq5a2ojxt',
+          'mapbox://styles/computerlinkau/clcqxdshr000615mffw3uwdb2',
       mapStyleUrlNight:
-          'mapbox://styles/computerlinkau/cl4rqvsmg000014o585f82uvn',
+          'mapbox://styles/computerlinkau/clcqwxzco000y16p5e6im2riy',
       navigateOnLongClick: true,
       showStopButton: true,
       routeDefaultColor: const Color(0xFF00FF0D),
@@ -116,7 +118,7 @@ class _ExampleAppState extends State<ExampleApp> {
               onPressed: () {
                 _mapView.addOfflineMap(
                   mapStyleUrl:
-                      'mapbox://styles/computerlinkau/cl4rqvsmg000014o585f82uvn',
+                      'mapbox://styles/computerlinkau/clcqwxzco000y16p5e6im2riy',
                   maxZoom: 24,
                   areaId: '51',
                   centerLatitude: -27.557667575031797,
@@ -221,6 +223,43 @@ class _ExampleAppState extends State<ExampleApp> {
             _pastLocation = _currentLocation;
           }
         }
+        break;
+      case MapboxEventType.enhancedLocationChange:
+        var locationChangeEvent = e.data as MapboxEnhancedLocationChangeEvent;
+
+        _currentEnhancedLocation = LatLng(
+          locationChangeEvent.latitude!,
+          locationChangeEvent.longitude!,
+        );
+
+        if (_pastEnhancedLocation == null) {
+          log.d(
+            'Enhanced Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
+          );
+
+          _pastEnhancedLocation = _currentEnhancedLocation;
+        } else {
+          const Distance distance = Distance();
+
+          if (distance(
+                _pastEnhancedLocation!,
+                _currentEnhancedLocation!,
+              ) >
+              4) {
+            log.d(
+              'Enhanced Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
+            );
+
+            _pastEnhancedLocation = _currentEnhancedLocation;
+          }
+        }
+        break;
+      case MapboxEventType.muteChanged:
+        String jsonString = e.data as String;
+        dynamic data = json.decode(jsonString);
+        log.d(
+          'Are instructions muted? ${data['muted']}',
+        );
         break;
       case MapboxEventType.routeBuilt:
         log.d('Route built');

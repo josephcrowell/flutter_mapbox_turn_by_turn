@@ -1,10 +1,12 @@
 import 'dart:convert';
 
-import 'mapbox_progress_change_event.dart';
-import 'mapbox_location_change_event.dart';
+import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_enhanced_location_change_event.dart';
+import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_location_change_event.dart';
+import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_progress_change_event.dart';
 
 enum MapboxEventType {
   progressChange,
+  enhancedLocationChange,
   locationChange,
   routeBuilding,
   routeBuilt,
@@ -13,6 +15,7 @@ enum MapboxEventType {
   routeBuildNoRoutesFound,
   userOffRoute,
   milestoneEvent,
+  muteChanged,
   navigationRunning,
   navigationCancelled,
   navigationCameraChanged,
@@ -55,6 +58,9 @@ class MapboxTurnByTurnEvent {
     switch (eventType) {
       case MapboxEventType.progressChange:
         data = MapboxProgressChangeEvent.fromJson(dataJson);
+        break;
+      case MapboxEventType.enhancedLocationChange:
+        data = MapboxEnhancedLocationChangeEvent.fromJson(dataJson);
         break;
       case MapboxEventType.locationChange:
         data = MapboxLocationChangeEvent.fromJson(dataJson);

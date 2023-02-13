@@ -1,11 +1,9 @@
-package au.com.annon.flutter_mapbox_turn_by_turn.utilities;
+package au.com.annon.flutter_mapbox_turn_by_turn.utilities
 
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
-
-import androidx.annotation.NonNull
 
 import io.flutter.plugin.common.MethodCall
 
@@ -16,7 +14,7 @@ import java.util.*
 class PluginUtilities {
     companion object {
         @JvmStatic
-        fun getResourceFromContext(@NonNull context: Context, resName: String): String {
+        fun getResourceFromContext(context: Context, resName: String): String {
             val stringRes = context.resources.getIdentifier(resName, "string", context.packageName)
             if (stringRes == 0) {
                 throw IllegalArgumentException(String.format("The 'R.string.%s' value it's not defined in your project's resources file.", resName))
@@ -87,21 +85,16 @@ class PluginUtilities {
 
         fun isNetworkAvailable(context: Context): Boolean {
             val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val nw = connectivityManager.activeNetwork ?: return false
-                val actNw = connectivityManager.getNetworkCapabilities(nw) ?: return false
-                return when {
-                    actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-                    actNw.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-                    //for other device how are able to connect with Ethernet
-                    actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
-                    //for check internet over Bluetooth
-                    actNw.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> true
-                    else -> false
-                }
-            } else {
-                // Plugin no longer supports SDK less than 23 so don't handle the condition
-                return false
+            val nw = connectivityManager.activeNetwork ?: return false
+            val actNw = connectivityManager.getNetworkCapabilities(nw) ?: return false
+            return when {
+                actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                actNw.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                //for other device how are able to connect with Ethernet
+                actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+                //for check internet over Bluetooth
+                actNw.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> true
+                else -> false
             }
         }
     }

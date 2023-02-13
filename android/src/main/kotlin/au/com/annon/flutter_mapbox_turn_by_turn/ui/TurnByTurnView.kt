@@ -4,24 +4,23 @@ import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.view.View
-import androidx.annotation.NonNull
+import androidx.lifecycle.LifecycleRegistry
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.BinaryMessenger
-import io.flutter.plugin.common.EventChannel
-import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
 
 
-internal class TurnByTurnView(
+class TurnByTurnView(
     activity: Activity,
     context: Context,
-    binding: TurnByTurnNativeBinding?,
+    private val binding: TurnByTurnNativeBinding,
     private val factory: TurnByTurnViewFactory,
+    lifecycleRegistry: LifecycleRegistry,
     private var messenger: BinaryMessenger?,
     creationParams: Map<String?, Any?>?,
     )
-    : PlatformView, TurnByTurnNative(activity, context, binding!!, creationParams) {
+    : PlatformView, TurnByTurnNative(activity, context, binding, lifecycleRegistry, messenger, creationParams) {
 
     override fun getView(): View {
         return binding.root
@@ -35,14 +34,15 @@ internal class TurnByTurnView(
             .registerViewFactory("MapView", factory)
     }
 
-    override fun cleanUpFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
         Log.d("TurnByTurnView", "Cleaning up Flutter engine")
         flutterEngine.platformViewsController.detachFromView()
     }
 
     init {
         initializeFlutterChannelHandlers()
-        super.onStart()
+        initializeMapbox()
+
         Log.d("TurnByTurnView", "View initialised")
     }
 
@@ -52,7 +52,6 @@ internal class TurnByTurnView(
     }
 
     override fun onFlutterViewDetached() {
-        unregisterObservers()
         super.onFlutterViewDetached()
         Log.d("TurnByTurnView", "View detached")
     }
@@ -68,11 +67,5 @@ internal class TurnByTurnView(
 
         super.onDestroy()
         Log.d("TurnByTurnView", "View disposed")
-    }
-
-    override fun initializeFlutterChannelHandlers() {
-        methodChannel = MethodChannel(messenger!!, "flutter_mapbox_turn_by_turn/map_view/method")
-        eventChannel = EventChannel(messenger, "flutter_mapbox_turn_by_turn/map_view/events")
-        super.initializeFlutterChannelHandlers()
     }
 }
