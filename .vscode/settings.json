@@ -1,5 +1,5 @@
 {
-    "cSpell.words": ["Operahouse"],
+    "cSpell.words": ["Autoresizing", "Operahouse", "subviews", "swiftlint"],
     "java.configuration.updateBuildConfiguration": "interactive",
     "editor.codeActionsOnSave": {
         "source.fixAll": true
