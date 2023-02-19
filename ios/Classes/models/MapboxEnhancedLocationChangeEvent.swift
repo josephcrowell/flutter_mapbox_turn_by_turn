@@ -1,6 +1,6 @@
 import Foundation
 
-public class MapboxLocationChangeEvent: Codable {
+public class MapboxEnhancedLocationChangeEvent: Codable {
   let name: String
   let latitude: Double?
   let longitude: Double?
