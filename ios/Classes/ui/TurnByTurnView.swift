@@ -1,3 +1,4 @@
+import CoreLocation
 import Flutter
 import UIKit
 
@@ -9,7 +10,7 @@ class TurnByTurnView: TurnByTurnNative, FlutterPlatformView {
   let methodChannel: FlutterMethodChannel
   let eventChannel: FlutterEventChannel
 
-  var navigationMapView: NavigationMapView!
+  var navigationMapView: TurnByTurnView!
   var arguments: NSDictionary?
 
   var routeResponse: RouteResponse?
@@ -95,7 +96,7 @@ class TurnByTurnView: TurnByTurnNative, FlutterPlatformView {
   }
 
   private func setupMapView() {
-    navigationMapView = NavigationMapView(frame: frame)
+    navigationMapView = TurnByTurnView(frame: frame)
     navigationMapView.delegate = self
 
     if self.arguments != nil {
@@ -157,12 +158,12 @@ class TurnByTurnView: TurnByTurnNative, FlutterPlatformView {
     self.view().setNeedsDisplay()
 
     routeResponse = nil
-    sendEvent(eventType: MapBoxEventType.navigation_cancelled)
+    sendEvent(eventType: MapboxEventType.navigation_cancelled)
   }
 
   func buildRoute(arguments: NSDictionary?, flutterResult: @escaping FlutterResult) {
     isEmbeddedNavigation = true
-    sendEvent(eventType: MapBoxEventType.route_building)
+    sendEvent(eventType: MapboxEventType.route_building)
 
     guard let oWayPoints = arguments?["wayPoints"] as? NSDictionary else { return }
 
@@ -231,11 +232,11 @@ class TurnByTurnView: TurnByTurnNative, FlutterPlatformView {
 
       guard case let .success(response) = result, let strongSelf = self else {
         flutterResult(false)
-        self?.sendEvent(eventType: MapBoxEventType.route_build_failed)
+        self?.sendEvent(eventType: MapboxEventType.route_build_failed)
         return
       }
       strongSelf.routeResponse = response
-      strongSelf.sendEvent(eventType: MapBoxEventType.route_built)
+      strongSelf.sendEvent(eventType: MapboxEventType.route_built)
       strongSelf.navigationMapView?.showcase(
         response.routes!, routesPresentationStyle: .all(shouldFit: true), animated: true)
       flutterResult(true)
@@ -360,7 +361,7 @@ extension TurnByTurnView: NavigationServiceDelegate {
     _lastKnownLocation = location
     _distanceRemaining = progress.distanceRemaining
     _durationRemaining = progress.durationRemaining
-    sendEvent(eventType: MapBoxEventType.navigation_running)
+    sendEvent(eventType: MapboxEventType.navigation_running)
     //_currentLegDescription =  progress.currentLeg.description
     if _eventSink != nil {
       let jsonEncoder = JSONEncoder()
@@ -379,25 +380,25 @@ extension TurnByTurnView: NavigationServiceDelegate {
   }
 }
 
-extension FlutterMapboxNavigationView: NavigationMapViewDelegate {
+extension TurnByTurnView: TurnByTurnViewDelegate {
 
-  //    public func mapView(_ mapView: NavigationMapView, didFinishLoading style: Style) {
+  //    public func mapView(_ mapView: TurnByTurnView, didFinishLoading style: Style) {
   //        _mapInitialized = true
-  //        sendEvent(eventType: MapBoxEventType.map_ready)
+  //        sendEvent(eventType: MapboxEventType.map_ready)
   //    }
 
-  public func navigationMapView(_ mapView: NavigationMapView, didSelect route: Route) {
+  public func navigationMapView(_ mapView: TurnByTurnView, didSelect route: Route) {
     self.selectedRouteIndex = self.routeResponse!.routes?.firstIndex(of: route) ?? 0
   }
 
-  public func mapViewDidFinishLoadingMap(_ mapView: NavigationMapView) {
+  public func mapViewDidFinishLoadingMap(_ mapView: TurnByTurnView) {
     // Wait for the map to load before initiating the first camera movement.
     moveCameraToCenter()
   }
 
 }
 
-extension FlutterMapboxNavigationView: UIGestureRecognizerDelegate {
+extension TurnByTurnView: UIGestureRecognizerDelegate {
 
   public func gestureRecognizer(
     _ gestureRecognizer: UIGestureRecognizer,
@@ -414,7 +415,7 @@ extension FlutterMapboxNavigationView: UIGestureRecognizerDelegate {
   }
 
   func requestRoute(destination: CLLocationCoordinate2D) {
-    sendEvent(eventType: MapBoxEventType.route_building)
+    sendEvent(eventType: MapboxEventType.route_building)
 
     guard let userLocation = navigationMapView.mapView.location.latestLocation else { return }
     let location = CLLocation(
@@ -433,13 +434,13 @@ extension FlutterMapboxNavigationView: UIGestureRecognizerDelegate {
         switch result {
         case .failure(let error):
           print(error.localizedDescription)
-          strongSelf.sendEvent(eventType: MapBoxEventType.route_build_failed)
+          strongSelf.sendEvent(eventType: MapboxEventType.route_build_failed)
         case .success(let response):
           guard let routes = response.routes, let route = response.routes?.first else {
-            strongSelf.sendEvent(eventType: MapBoxEventType.route_build_failed)
+            strongSelf.sendEvent(eventType: MapboxEventType.route_build_failed)
             return
           }
-          strongSelf.sendEvent(eventType: MapBoxEventType.route_built)
+          strongSelf.sendEvent(eventType: MapboxEventType.route_built)
           strongSelf.routeOptions = routeOptions
           strongSelf._routes = routes
           strongSelf.navigationMapView.show(routes)

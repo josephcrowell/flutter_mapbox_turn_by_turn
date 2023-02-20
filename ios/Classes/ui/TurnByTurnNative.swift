@@ -115,7 +115,7 @@ public class TurnByTurnNative: NSObject, FlutterStreamHandler {
       strongSelf.options = options
       switch result {
       case .failure(let error):
-        strongSelf.sendEvent(eventType: MapBoxEventType.route_build_failed)
+        strongSelf.sendEvent(eventType: MapboxEventType.route_build_failed)
         flutterResult("An error occurred while calculating the route \(error.localizedDescription)")
       case .success(let response):
         guard let routes = response.routes else { return }
@@ -173,9 +173,9 @@ public class TurnByTurnNative: NSObject, FlutterStreamHandler {
       switch result {
       case .failure(let error):
         strongSelf.sendEvent(
-          eventType: MapBoxEventType.route_build_failed, data: error.localizedDescription)
+          eventType: MapboxEventType.route_build_failed, data: error.localizedDescription)
       case .success(let response):
-        strongSelf.sendEvent(eventType: MapBoxEventType.route_built)
+        strongSelf.sendEvent(eventType: MapboxEventType.route_built)
         guard let routes = response.routes else { return }
         //TODO: if more than one route found, give user option to select one: DOES NOT WORK
         if routes.count > 1 && strongSelf.allowRouteSelection {
@@ -190,7 +190,7 @@ public class TurnByTurnNative: NSObject, FlutterStreamHandler {
   }
 
   func endNavigation(result: FlutterResult?) {
-    sendEvent(eventType: MapBoxEventType.navigation_finished)
+    sendEvent(eventType: MapboxEventType.navigation_finished)
     if self.navigationViewController != nil {
       self.navigationViewController?.navigationService.endNavigation(feedback: nil)
       if isEmbeddedNavigation {
@@ -218,7 +218,7 @@ public class TurnByTurnNative: NSObject, FlutterStreamHandler {
   }
 
   func sendEvent(eventType: MapboxEventType, data: String = "") {
-    let routeEvent = MapBoxRouteEvent(eventType: eventType, data: data)
+    let routeEvent = MapboxRouteEvent(eventType: eventType, data: data)
 
     let jsonEncoder = JSONEncoder()
     guard let jsonData = try? jsonEncoder.encode(routeEvent) else {
@@ -296,7 +296,7 @@ extension TurnByTurnViewFactory: NavigationViewControllerDelegate {
     lastKnownLocation = location
     distanceRemaining = progress.distanceRemaining
     durationRemaining = progress.durationRemaining
-    sendEvent(eventType: MapBoxEventType.navigation_running)
+    sendEvent(eventType: MapboxEventType.navigation_running)
     if eventSink != nil {
       let jsonEncoder = JSONEncoder()
 
@@ -321,7 +321,7 @@ extension TurnByTurnViewFactory: NavigationViewControllerDelegate {
     _ navigationViewController: NavigationViewController, didArriveAt waypoint: Waypoint
   ) -> Bool {
 
-    sendEvent(eventType: MapBoxEventType.on_arrival, data: "true")
+    sendEvent(eventType: MapboxEventType.on_arrival, data: "true")
     if !waypoints.isEmpty && isMultipleUniqueRoutes {
       continueNavigationWithWayPoints(wayPoints: [getLastKnownLocation(), waypoints.remove(at: 0)])
       return false
@@ -334,7 +334,7 @@ extension TurnByTurnViewFactory: NavigationViewControllerDelegate {
     _ navigationViewController: NavigationViewController, byCanceling canceled: Bool
   ) {
     if canceled {
-      sendEvent(eventType: MapBoxEventType.navigation_cancelled)
+      sendEvent(eventType: MapboxEventType.navigation_cancelled)
     }
     endNavigation(result: nil)
   }
