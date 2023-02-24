@@ -44,10 +44,8 @@ class _ExampleAppState extends State<ExampleApp> {
       onInitializationFinished: _onInitializationFinished,
       zoom: 20,
       pitch: 75,
-      mapStyleUrlDay:
-          'mapbox://styles/computerlinkau/clcqxdshr000615mffw3uwdb2',
-      mapStyleUrlNight:
-          'mapbox://styles/computerlinkau/clcqwxzco000y16p5e6im2riy',
+      mapStyleUrlDay: 'mapbox://styles/mapbox/streets-v12',
+      mapStyleUrlNight: 'mapbox://styles/mapbox/streets-v12',
       navigateOnLongClick: true,
       showStopButton: true,
       routeDefaultColor: const Color(0xFF00FF0D),
