@@ -14,12 +14,13 @@ public class MapboxProgressChangeEvent: Codable {
   let legIndex: Int
 
   init(progress: RouteProgress) {
+    isProgressChangeEvent = true
     currentLegDistanceRemaining = progress.currentLegProgress.distanceRemaining
     currentLegDistanceTraveled = progress.currentLegProgress.distanceTraveled
-    currentStepInstruction = progress.currentStepInstruction
+    currentStepInstruction = progress.currentLegProgress.currentStep.description
     distance = progress.distanceRemaining
     distanceTraveled = progress.distanceTraveled
     duration = progress.durationRemaining
-    legIndex = progress.currentLegProgress.legIndex
+    legIndex = progress.legIndex
   }
 }
