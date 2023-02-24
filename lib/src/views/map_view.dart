@@ -308,8 +308,10 @@ class MapView extends StatelessWidget {
       "speedThreshold": speedThreshold ?? 5,
       "showAlternativeRoutes": showAlternativeRoutes ?? false,
       "allowUTurnsAtWaypoints": allowUTurnsAtWaypoints ?? false,
-      "mapStyleUrlDay": mapStyleUrlDay,
-      "mapStyleUrlNight": mapStyleUrlNight,
+      "mapStyleUrlDay":
+          mapStyleUrlDay ?? 'mapbox://styles/mapbox/navigation-day-v1',
+      "mapStyleUrlNight":
+          mapStyleUrlNight ?? 'mapbox://styles/mapbox/navigation-night-v1',
       "routeCasingColor": routeCasingColorString,
       "routeDefaultColor": routeDefaultColorString,
       "restrictedRoadColor": restrictedRoadColorString,
