@@ -6,37 +6,55 @@ import MapboxMaps
 import MapboxNavigation
 import UIKit
 
-public class TurnByTurnNative: NSObject, FlutterStreamHandler {
+public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
+  NavigationViewControllerDelegate, FlutterStreamHandler
+{
+  let navigationView: UIView
   let frame: CGRect
-  var navigationMapView: NavigationMapView?
   var arguments: NSDictionary?
 
-  var navigationViewController: NavigationViewController?
   var eventSink: FlutterEventSink?
 
   let messenger: FlutterBinaryMessenger
   let methodChannel: FlutterMethodChannel
   let eventChannel: FlutterEventChannel
 
-  var routeResponse: RouteResponse?
-  var selectedRouteIndex = 0
-  var routeOptions: NavigationRouteOptions?
-  var navigationService: NavigationService!
+  var navigationMapView: NavigationMapView?
+  var navigationViewController: NavigationViewController?
 
-  var mapInitialized = false
-  var locationManager = CLLocationManager()
-  let allowRouteSelection = false
-  let isMultipleUniqueRoutes = false
-  var isEmbeddedNavigation = false
+  var currentRouteIndex = 0 {
+    didSet {
+      showCurrentRoute()
+    }
+  }
+  var currentRoute: Route? {
+    return routes?[currentRouteIndex]
+  }
 
-  var distanceRemaining: Double?
-  var durationRemaining: Double?
-  var navigationMode: String?
-  var routes: [Route]?
-  var waypoints = [Waypoint]()
-  var lastKnownLocation: CLLocation?
+  var routes: [Route]? {
+    return routeResponse?.routes
+  }
 
-  var options: NavigationRouteOptions?
+  var routeResponse: RouteResponse? {
+    didSet {
+      guard currentRoute != nil else {
+        navigationMapView!.removeRoutes()
+        return
+      }
+      currentRouteIndex = 0
+    }
+  }
+
+  func showCurrentRoute() {
+    guard let currentRoute = currentRoute else { return }
+
+    var routes = [currentRoute]
+    routes.append(
+      contentsOf: self.routes!.filter {
+        $0 != currentRoute
+      })
+    navigationMapView!.showcase(routes)
+  }
 
   // flutter creation parameters
   private var zoom: Double?
@@ -74,16 +92,15 @@ public class TurnByTurnNative: NSObject, FlutterStreamHandler {
     binaryMessenger messenger: FlutterBinaryMessenger?
   ) {
     self.frame = frame
-
-    self.arguments = args as! NSDictionary
-
+    navigationView = UIView(frame: frame)
+    arguments = args as! NSDictionary
     self.messenger = messenger!
-    self.methodChannel =
+    methodChannel =
       FlutterMethodChannel(
         name: "flutter_mapbox_turn_by_turn/map_view/method",
         binaryMessenger: self.messenger
       )
-    self.eventChannel =
+    eventChannel =
       FlutterEventChannel(
         name: "flutter_mapbox_turn_by_turn/map_view/events",
         binaryMessenger: self.messenger
@@ -120,9 +137,8 @@ public class TurnByTurnNative: NSObject, FlutterStreamHandler {
 
     super.init()
 
-    self.eventChannel.setStreamHandler(self)
-
-    self.methodChannel.setMethodCallHandler { [weak self] (call, result) in
+    eventChannel.setStreamHandler(self)
+    methodChannel.setMethodCallHandler { [weak self] (call, result) in
 
       guard let strongSelf = self else { return }
 
@@ -136,10 +152,14 @@ public class TurnByTurnNative: NSObject, FlutterStreamHandler {
       }
     }
 
+    initializeMapbox()
+  }
+
+  private func initializeMapbox() {
     var mapInitOptions: MapInitOptions?
 
     let hour = Calendar.current.component(.hour, from: Date())
-    if hour < 6 || hour > 8 {  // night mode
+    if hour < 6 || hour > 20 {  // night mode
       mapInitOptions = MapInitOptions(styleURI: StyleURI(url: URL(string: mapStyleUrlNight!)!))
     } else {
       mapInitOptions = MapInitOptions(styleURI: StyleURI(url: URL(string: mapStyleUrlDay!)!))
@@ -149,54 +169,38 @@ public class TurnByTurnNative: NSObject, FlutterStreamHandler {
       let mapView = MapView(frame: frame, mapInitOptions: mapInitOptions!)
       navigationMapView = NavigationMapView(
         frame: frame, navigationCameraType: .mobile, mapView: mapView)
+    } else {
+      navigationMapView = NavigationMapView(
+        frame: frame)
     }
-  }
 
-  private func setupMapView() {
-    /*language = arguments?["language"] as? String ?? language
-      voiceUnits = arguments?["units"] as? String ?? voiceUnits
-      simulateRoute = arguments?["simulateRoute"] as? Bool ?? simulateRoute
-      isOptimized = arguments?["isOptimized"] as? Bool ?? isOptimized
-      allowsUTurnAtWayPoints = arguments?["allowsUTurnAtWayPoints"] as? Bool
-      navigationMode = arguments?["mode"] as? String ?? "drivingWithTraffic"
-      mapStyleUrlDay = arguments?["mapStyleUrlDay"] as? String
-      tilt = arguments?["tilt"] as? Double ?? tilt
-      animateBuildRoute = arguments?["animateBuildRoute"] as? Bool ?? animateBuildRoute
-      longPressDestinationEnabled =
-        arguments?["navigateOnLongClick"] as? Bool ?? navigateOnLongClick
-
-      if mapStyleUrlDay != nil {
-        super.navigationMapView.mapView.mapboxMap.style.uri = StyleURI.init(
-          url: URL(string: mapStyleUrlDay!)!)
-      }
-
-      var currentLocation: CLLocation!
-
-      locationManager.requestWhenInUseAuthorization()
-
-      if CLLocationManager.authorizationStatus() == .authorizedWhenInUse
-        || CLLocationManager.authorizationStatus() == .authorizedAlways
-      {
-        currentLocation = locationManager.location
-
-      }
-
-      let initialLatitude =
-        arguments?["initialLatitude"] as? Double ?? currentLocation?.coordinate.latitude
-      let initialLongitude =
-        arguments?["initialLongitude"] as? Double ?? currentLocation?.coordinate.longitude
-      if initialLatitude != nil && initialLongitude != nil {
-        super.moveCameraToCoordinates(latitude: initialLatitude!, longitude: initialLongitude!)
-      }*/
-  }
-
-  /*if longPressDestinationEnabled {
+    if navigateOnLongClick ?? false {
       let gesture = UILongPressGestureRecognizer(
         target: self, action: #selector(handleLongPress(_:)))
-      gesture.delegate = self
-      self.navigationMapView?.addGestureRecognizer(gesture)
+      navigationMapView!.addGestureRecognizer(gesture)
     }
-  }*/
+
+    let passiveLocationManager = PassiveLocationManager()
+    var passiveLocationProvider = PassiveLocationProvider(locationManager: passiveLocationManager)
+
+    let locationProvider: LocationProvider = passiveLocationProvider
+    navigationMapView!.mapView.location.overrideLocationProvider(with: locationProvider)
+    passiveLocationProvider.startUpdatingLocation()
+
+    navigationMapView!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    navigationMapView!.delegate = self
+    navigationMapView!.userLocationStyle = .puck2D()
+
+    let navigationViewportDataSource = NavigationViewportDataSource(
+      navigationMapView!.mapView, viewportDataSourceType: .raw)
+    navigationViewportDataSource.options.followingCameraOptions.zoomUpdatesAllowed = false
+    navigationViewportDataSource.followingMobileCamera.pitch = CGFloat(pitch!)
+    navigationViewportDataSource.followingMobileCamera.zoom = CGFloat(zoom!)
+    navigationMapView!.navigationCamera.viewportDataSource = navigationViewportDataSource
+
+    navigationView.addSubview(navigationMapView!)
+    navigationMapView!.removeArrow()
+  }
 
   public func onListen(
     withArguments arguments: Any?,
@@ -209,5 +213,81 @@ public class TurnByTurnNative: NSObject, FlutterStreamHandler {
   public func onCancel(withArguments arguments: Any?) -> FlutterError? {
     eventSink = nil
     return nil
+  }
+
+  func requestRoute(destination: CLLocationCoordinate2D) {
+    guard let userLocation = navigationMapView!.mapView.location.latestLocation else { return }
+
+    let location = CLLocation(
+      latitude: userLocation.coordinate.latitude,
+      longitude: userLocation.coordinate.longitude)
+
+    let userWaypoint = Waypoint(
+      location: location,
+      heading: userLocation.heading,
+      name: "user")
+
+    let destinationWaypoint = Waypoint(coordinate: destination)
+
+    var mode: ProfileIdentifier?
+
+    switch routeProfile {
+    case "cycling":
+      mode = .cycling
+      break
+    case "driving":
+      mode = .automobile
+      break
+    case "walking":
+      mode = .walking
+      break
+    default:
+      mode = .automobileAvoidingTraffic
+    }
+
+    let navigationRouteOptions = NavigationRouteOptions(
+      waypoints: [
+        userWaypoint, destinationWaypoint,
+      ], profileIdentifier: mode
+    )
+    navigationRouteOptions.allowsUTurnAtWaypoint = allowUTurnsAtWaypoints
+    navigationRouteOptions.distanceMeasurementSystem =
+      measurementUnits == "imperial" ? .imperial : .metric
+    navigationRouteOptions.locale = Locale(identifier: language)
+
+    Directions.shared.calculate(navigationRouteOptions) { [weak self] (_, result) in
+      switch result {
+      case .failure(let error):
+        print(error.localizedDescription)
+      case .success(let response):
+        guard let self = self else { return }
+
+        self.routeResponse = response
+        if let routes = self.routes,
+          let currentRoute = self.currentRoute
+        {
+          self.navigationMapView!.show(routes)
+          self.navigationMapView!.showWaypoints(on: currentRoute)
+        }
+      }
+    }
+  }
+  
+  public func setRouteAndStartNavigation() {
+    
+  }
+  
+  // Delegate called when user long presses on the map
+  @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+    guard gesture.state == .ended else { return }
+    let location = navigationMapView!.mapView.mapboxMap.coordinate(
+      for: gesture.location(in: navigationMapView!.mapView))
+
+    requestRoute(destination: location)
+  }
+  
+  // Delegate method called when the user selects a route
+  public func navigationMapView(_ mapView: NavigationMapView, didSelect route: Route) {
+    self.currentRouteIndex = self.routes?.firstIndex(of: route) ?? 0
   }
 }

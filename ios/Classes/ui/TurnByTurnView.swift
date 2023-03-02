@@ -24,9 +24,9 @@ class TurnByTurnView: TurnByTurnNative, FlutterPlatformView {
     createFailView()
   }
 
-  func view() -> UIView {
+    func view() -> UIView {
     if super.navigationMapView != nil {
-      return super.navigationMapView!
+      return super.navigationView
     }
 
     return failView
