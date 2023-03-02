@@ -6,6 +6,12 @@ import MapboxMaps
 import MapboxNavigation
 import UIKit
 
+enum NavigationCameraType: String, Codable {
+  case NO_CHANGE = "noChange"
+  case OVERVIEW = "overview"
+  case FOLLOWING = "following"
+}
+
 public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
   NavigationViewControllerDelegate, FlutterStreamHandler
 {
@@ -145,8 +151,17 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
       let arguments = call.arguments as! NSDictionary
 
       switch call.method {
-      case "getPlatformVersion":
-        result("iOS " + UIDevice.current.systemVersion)
+      case "startNavigation":
+        strongSelf.startNavigation(arguments: arguments)
+        break
+      case "stopNavigation":
+        strongSelf.clearRouteAndStopNavigation()
+        break
+      case "addOfflineMap":
+        strongSelf.addOfflineMap(arguments: arguments)
+        break
+      case "toggleMuted":
+        break
       default:
         result("method is not implemented")
       }
@@ -214,20 +229,29 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
     eventSink = nil
     return nil
   }
+  
+  private func startNavigation(arguments: NSDictionary?) {
+    
+  }
 
-  func requestRoute(destination: CLLocationCoordinate2D) {
+  func findRoutes(locations: [CLLocationCoordinate2D], waypointNames: [String], navigationCameraType: String) {
     guard let userLocation = navigationMapView!.mapView.location.latestLocation else { return }
 
-    let location = CLLocation(
-      latitude: userLocation.coordinate.latitude,
-      longitude: userLocation.coordinate.longitude)
-
     let userWaypoint = Waypoint(
-      location: location,
-      heading: userLocation.heading,
-      name: "user")
+      coordinate: CLLocationCoordinate2D(
+        latitude: userLocation.coordinate.latitude,
+        longitude: userLocation.coordinate.longitude),
+      name: "")
 
-    let destinationWaypoint = Waypoint(coordinate: destination)
+    var waypoints: [Waypoint] = [userWaypoint]
+    
+    for index in 0..<locations.count {
+      let waypoint = Waypoint(
+        coordinate: locations[index],
+        name: waypointNames[index]
+        )
+      waypoints.append(waypoint)
+    }
 
     var mode: ProfileIdentifier?
 
@@ -246,13 +270,11 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
     }
 
     let navigationRouteOptions = NavigationRouteOptions(
-      waypoints: [
-        userWaypoint, destinationWaypoint,
-      ], profileIdentifier: mode
+      waypoints: waypoints, profileIdentifier: mode
     )
     navigationRouteOptions.allowsUTurnAtWaypoint = allowUTurnsAtWaypoints
     navigationRouteOptions.distanceMeasurementSystem =
-      measurementUnits == "imperial" ? .imperial : .metric
+    measurementUnits == "imperial" ? MeasurementSystem.imperial : MeasurementSystem.metric
     navigationRouteOptions.locale = Locale(identifier: language)
 
     Directions.shared.calculate(navigationRouteOptions) { [weak self] (_, result) in
@@ -273,7 +295,15 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
     }
   }
   
-  public func setRouteAndStartNavigation() {
+  private func setRouteAndStartNavigation() {
+    
+  }
+  
+  private func clearRouteAndStopNavigation() {
+    
+  }
+  
+  private func addOfflineMap(arguments: NSDictionary?) {
     
   }
   
@@ -283,7 +313,7 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
     let location = navigationMapView!.mapView.mapboxMap.coordinate(
       for: gesture.location(in: navigationMapView!.mapView))
 
-    requestRoute(destination: location)
+    findRoutes(locations: [location], waypointNames: [""], navigationCameraType: NavigationCameraType.NO_CHANGE.rawValue)
   }
   
   // Delegate method called when the user selects a route
