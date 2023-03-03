@@ -20,6 +20,7 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
   var arguments: NSDictionary?
 
   var eventSink: FlutterEventSink?
+  var mapboxTurnByTurnEvents: MapboxTurnByTurnEvents?
 
   let messenger: FlutterBinaryMessenger
   let methodChannel: FlutterMethodChannel
@@ -222,11 +223,13 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
     eventSink: @escaping FlutterEventSink
   ) -> FlutterError? {
     self.eventSink = eventSink
+    mapboxTurnByTurnEvents = MapboxTurnByTurnEvents(eventSink: self.eventSink)
     return nil
   }
 
   public func onCancel(withArguments arguments: Any?) -> FlutterError? {
     eventSink = nil
+    mapboxTurnByTurnEvents = nil
     return nil
   }
   
@@ -288,19 +291,62 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
         if let routes = self.routes,
           let currentRoute = self.currentRoute
         {
-          self.navigationMapView!.show(routes)
-          self.navigationMapView!.showWaypoints(on: currentRoute)
+          self.setRouteAndStartNavigation(routes: routes, currentRoute: currentRoute, navigationCameraType: navigationCameraType)
         }
       }
     }
   }
   
-  private func setRouteAndStartNavigation() {
+  private func setRouteAndStartNavigation(routes: [Route], currentRoute: Route, navigationCameraType: String) {
+    guard let routeResponse = routeResponse else {
+      mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.routeBuildNoRoutesFound)
+      return
+    }
     
+    mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.routeBuilt)
+    
+    self.navigationMapView!.show(routes)
+    self.navigationMapView!.showWaypoints(on: currentRoute)
+    
+    switch(navigationCameraType) {
+    case NavigationCameraType.FOLLOWING.rawValue:
+      self.navigationMapView?.navigationCamera.follow()
+      break
+    case NavigationCameraType.OVERVIEW.rawValue:
+      self.navigationMapView?.navigationCamera.moveToOverview()
+      break
+    default:
+      break
+    }
+    
+    let indexedRouteResponse = IndexedRouteResponse(routeResponse: routeResponse, routeIndex: 0)
+    let navigationService = MapboxNavigationService(indexedRouteResponse: indexedRouteResponse,
+                                                    customRoutingProvider: NavigationSettings.shared.directions,
+                                                    credentials: NavigationSettings.shared.directions.credentials,
+                                                    simulating: .never)
+    let navigationOptions = NavigationOptions(navigationService: navigationService)
+    navigationViewController = NavigationViewController(for: indexedRouteResponse,
+                                                            navigationOptions: navigationOptions)
+    
+    navigationViewController!.delegate = self
+    navigationView.addSubview(navigationViewController!.view)
+    navigationViewController!.view.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+        navigationViewController!.view.leadingAnchor.constraint(equalTo: navigationView.leadingAnchor, constant: 0),
+        navigationViewController!.view.trailingAnchor.constraint(equalTo: navigationView.trailingAnchor, constant: 0),
+        navigationViewController!.view.topAnchor.constraint(equalTo: navigationView.topAnchor, constant: 0),
+        navigationViewController!.view.bottomAnchor.constraint(equalTo: navigationView.bottomAnchor, constant: 0)
+    ])
   }
   
   private func clearRouteAndStopNavigation() {
-    
+    if routeResponse == nil
+    {
+        return
+    }
+
+    routeResponse = nil
+    mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.navigationCancelled)
   }
   
   private func addOfflineMap(arguments: NSDictionary?) {
