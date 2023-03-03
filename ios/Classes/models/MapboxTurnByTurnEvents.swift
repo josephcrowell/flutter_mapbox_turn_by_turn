@@ -32,3 +32,32 @@ enum MapboxEventType: Int, Codable {
   case tileRegionMetadataChanged
   case tileRegionError
 }
+
+public class MapboxTurnByTurnEvent : Codable
+{
+    let eventType: MapboxEventType
+    let data: String
+
+    init(eventType: MapboxEventType, data: String) {
+        self.eventType = eventType
+        self.data = data
+    }
+}
+
+class MapboxTurnByTurnEvents {
+  var eventSink: FlutterEventSink?
+  
+  init(eventSink: FlutterEventSink?) {
+    self.eventSink = eventSink
+  }
+  
+  func sendEvent(eventType: MapboxEventType, data: String = "")
+  {
+      let turnByTurnEvent = MapboxTurnByTurnEvent(eventType: eventType, data: data)
+
+      let jsonEncoder = JSONEncoder()
+      let jsonData = try! jsonEncoder.encode(turnByTurnEvent)
+      let eventJson = String(data: jsonData, encoding: String.Encoding.utf8)
+      eventSink!(eventJson)
+  }
+}
