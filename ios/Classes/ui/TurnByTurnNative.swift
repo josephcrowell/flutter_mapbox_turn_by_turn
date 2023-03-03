@@ -12,11 +12,11 @@ enum NavigationCameraType: String, Codable {
   case FOLLOWING = "following"
 }
 
-public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
+public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
   NavigationViewControllerDelegate, FlutterStreamHandler
 {
-  let navigationView: UIView
-  let frame: CGRect
+  @IBOutlet weak var container: UIView!
+
   var arguments: NSDictionary?
 
   var eventSink: FlutterEventSink?
@@ -98,8 +98,6 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
     arguments args: Any?,
     binaryMessenger messenger: FlutterBinaryMessenger?
   ) {
-    self.frame = frame
-    navigationView = UIView(frame: frame)
     arguments = args as! NSDictionary
     self.messenger = messenger!
     methodChannel =
@@ -142,8 +140,10 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
     routeSevereCongestionColor = arguments?["routeSevereCongestionColor"] as! String
     routeUnknownCongestionColor = arguments?["routeUnknownCongestionColor"] as! String
 
-    super.init()
-
+    super.init(nibName: nil, bundle: nil)
+    
+    view.frame = frame
+    
     eventChannel.setStreamHandler(self)
     methodChannel.setMethodCallHandler { [weak self] (call, result) in
 
@@ -170,7 +170,11 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
 
     initializeMapbox()
   }
-
+  
+  required init?(coder: NSCoder) {
+      fatalError("init(coder:) has not been implemented")
+  }
+  
   private func initializeMapbox() {
     var mapInitOptions: MapInitOptions?
 
@@ -182,12 +186,12 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
     }
 
     if mapInitOptions != nil {
-      let mapView = MapView(frame: frame, mapInitOptions: mapInitOptions!)
+      let mapView = MapView(frame: view.bounds, mapInitOptions: mapInitOptions!)
       navigationMapView = NavigationMapView(
-        frame: frame, navigationCameraType: .mobile, mapView: mapView)
+        frame: view.bounds, navigationCameraType: .mobile, mapView: mapView)
     } else {
       navigationMapView = NavigationMapView(
-        frame: frame)
+        frame: view.bounds)
     }
 
     if navigateOnLongClick ?? false {
@@ -214,7 +218,7 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
     navigationViewportDataSource.followingMobileCamera.zoom = CGFloat(zoom!)
     navigationMapView!.navigationCamera.viewportDataSource = navigationViewportDataSource
 
-    navigationView.addSubview(navigationMapView!)
+    view.addSubview(navigationMapView!)
     navigationMapView!.removeArrow()
   }
 
@@ -329,14 +333,16 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
                                                             navigationOptions: navigationOptions)
     
     navigationViewController!.delegate = self
-    navigationView.addSubview(navigationViewController!.view)
+    addChild(navigationViewController!)
+    container.addSubview(navigationViewController!.view)
     navigationViewController!.view.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
-        navigationViewController!.view.leadingAnchor.constraint(equalTo: navigationView.leadingAnchor, constant: 0),
-        navigationViewController!.view.trailingAnchor.constraint(equalTo: navigationView.trailingAnchor, constant: 0),
-        navigationViewController!.view.topAnchor.constraint(equalTo: navigationView.topAnchor, constant: 0),
-        navigationViewController!.view.bottomAnchor.constraint(equalTo: navigationView.bottomAnchor, constant: 0)
+        navigationViewController!.view.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 0),
+        navigationViewController!.view.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: 0),
+        navigationViewController!.view.topAnchor.constraint(equalTo: container.topAnchor, constant: 0),
+        navigationViewController!.view.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 0)
     ])
+    self.didMove(toParent: self)
   }
   
   private func clearRouteAndStopNavigation() {
@@ -365,5 +371,10 @@ public class TurnByTurnNative: NSObject, NavigationMapViewDelegate,
   // Delegate method called when the user selects a route
   public func navigationMapView(_ mapView: NavigationMapView, didSelect route: Route) {
     self.currentRouteIndex = self.routes?.firstIndex(of: route) ?? 0
+  }
+  
+  // Delecgate called when navigation is cancelled
+  public func navigationViewControllerDidDismiss(_ navigationViewController: NavigationViewController, byCanceling canceled: Bool) {
+    navigationController?.popViewController(animated: true)
   }
 }

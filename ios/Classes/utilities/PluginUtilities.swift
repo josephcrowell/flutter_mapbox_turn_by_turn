@@ -1,5 +1,3 @@
 import Flutter
 
-func sendEvent() {
 
-}

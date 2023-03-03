@@ -6,8 +6,9 @@ import MapboxMaps
 import MapboxNavigation
 import UIKit
 
-class TurnByTurnView: TurnByTurnNative, FlutterPlatformView {
+class TurnByTurnView: NSObject, FlutterPlatformView {
   let viewId: Int64
+  private var nativeView: TurnByTurnNative
   private var failView: UIView
 
   init(
@@ -18,15 +19,17 @@ class TurnByTurnView: TurnByTurnNative, FlutterPlatformView {
   ) {
     failView = UIView()
     self.viewId = viewId
-
-    super.init(frame: frame, arguments: args, binaryMessenger: messenger)
+    
+    nativeView = TurnByTurnNative.init(frame: frame, arguments: args, binaryMessenger: messenger)
+    
+    super.init()
 
     createFailView()
   }
 
-    func view() -> UIView {
-    if super.navigationMapView != nil {
-      return super.navigationView
+  func view() -> UIView {
+    if nativeView.navigationMapView != nil {
+      return nativeView.view
     }
 
     return failView
