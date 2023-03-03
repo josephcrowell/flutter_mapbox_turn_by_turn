@@ -15,8 +15,6 @@ enum NavigationCameraType: String, Codable {
 public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
   NavigationViewControllerDelegate, FlutterStreamHandler
 {
-  @IBOutlet weak var container: UIView!
-
   var arguments: NSDictionary?
 
   var eventSink: FlutterEventSink?
@@ -334,13 +332,13 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
     
     navigationViewController!.delegate = self
     addChild(navigationViewController!)
-    container.addSubview(navigationViewController!.view)
+    view.addSubview(navigationViewController!.view)
     navigationViewController!.view.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
-        navigationViewController!.view.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 0),
-        navigationViewController!.view.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: 0),
-        navigationViewController!.view.topAnchor.constraint(equalTo: container.topAnchor, constant: 0),
-        navigationViewController!.view.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 0)
+        navigationViewController!.view.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 0),
+        navigationViewController!.view.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: 0),
+        navigationViewController!.view.topAnchor.constraint(equalTo: view.topAnchor, constant: 0),
+        navigationViewController!.view.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: 0)
     ])
     self.didMove(toParent: self)
   }
