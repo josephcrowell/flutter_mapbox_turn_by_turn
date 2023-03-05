@@ -236,7 +236,27 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
   }
 
   private func startNavigation(arguments: NSDictionary?) {
-
+    guard let waypointMapList = arguments?["waypoints"] as? NSDictionary else {return}
+    
+    var waypointList = [CLLocationCoordinate2D]()
+    var waypointNamesList = [String]()
+    
+    for item in waypointMapList as NSDictionary
+    {
+        let waypoint = item.value as! NSDictionary
+        guard let name = waypoint["name"] as? String else {return}
+        guard let latitude = waypoint["latitude"] as? Double else {return}
+        guard let longitude = waypoint["longitude"] as? Double else {return}
+      
+      waypointNamesList.append(name)
+      waypointList.append(CLLocationCoordinate2D(latitude: CGFloat(latitude), longitude: CGFloat(longitude)))
+    }
+    
+    let cameraType = arguments?["navigationCameraType"] as! String
+    
+    if !waypointList.isEmpty && !waypointNamesList.isEmpty {
+      findRoutes(locations: waypointList, waypointNames: waypointNamesList, navigationCameraType: cameraType)
+    }
   }
 
   func findRoutes(
