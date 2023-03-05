@@ -139,9 +139,9 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
     routeUnknownCongestionColor = arguments?["routeUnknownCongestionColor"] as! String
 
     super.init(nibName: nil, bundle: nil)
-    
+
     view.frame = frame
-    
+
     eventChannel.setStreamHandler(self)
     methodChannel.setMethodCallHandler { [weak self] (call, result) in
 
@@ -168,11 +168,11 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
 
     initializeMapbox()
   }
-  
+
   required init?(coder: NSCoder) {
-      fatalError("init(coder:) has not been implemented")
+    fatalError("init(coder:) has not been implemented")
   }
-  
+
   private func initializeMapbox() {
     var mapInitOptions: MapInitOptions?
 
@@ -234,12 +234,14 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
     mapboxTurnByTurnEvents = nil
     return nil
   }
-  
+
   private func startNavigation(arguments: NSDictionary?) {
-    
+
   }
 
-  func findRoutes(locations: [CLLocationCoordinate2D], waypointNames: [String], navigationCameraType: String) {
+  func findRoutes(
+    locations: [CLLocationCoordinate2D], waypointNames: [String], navigationCameraType: String
+  ) {
     guard let userLocation = navigationMapView!.mapView.location.latestLocation else { return }
 
     let userWaypoint = Waypoint(
@@ -249,12 +251,12 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
       name: "")
 
     var waypoints: [Waypoint] = [userWaypoint]
-    
+
     for index in 0..<locations.count {
       let waypoint = Waypoint(
         coordinate: locations[index],
         name: waypointNames[index]
-        )
+      )
       waypoints.append(waypoint)
     }
 
@@ -279,7 +281,7 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
     )
     navigationRouteOptions.allowsUTurnAtWaypoint = allowUTurnsAtWaypoints
     navigationRouteOptions.distanceMeasurementSystem =
-    measurementUnits == "imperial" ? MeasurementSystem.imperial : MeasurementSystem.metric
+      measurementUnits == "imperial" ? MeasurementSystem.imperial : MeasurementSystem.metric
     navigationRouteOptions.locale = Locale(identifier: language)
 
     Directions.shared.calculate(navigationRouteOptions) { [weak self] (_, result) in
@@ -293,24 +295,27 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
         if let routes = self.routes,
           let currentRoute = self.currentRoute
         {
-          self.setRouteAndStartNavigation(routes: routes, currentRoute: currentRoute, navigationCameraType: navigationCameraType)
+          self.setRouteAndStartNavigation(
+            routes: routes, currentRoute: currentRoute, navigationCameraType: navigationCameraType)
         }
       }
     }
   }
-  
-  private func setRouteAndStartNavigation(routes: [Route], currentRoute: Route, navigationCameraType: String) {
+
+  private func setRouteAndStartNavigation(
+    routes: [Route], currentRoute: Route, navigationCameraType: String
+  ) {
     guard let routeResponse = routeResponse else {
       mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.routeBuildNoRoutesFound)
       return
     }
-    
+
     mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.routeBuilt)
-    
+
     self.navigationMapView!.show(routes)
     self.navigationMapView!.showWaypoints(on: currentRoute)
-    
-    switch(navigationCameraType) {
+
+    switch navigationCameraType {
     case NavigationCameraType.FOLLOWING.rawValue:
       self.navigationMapView?.navigationCamera.follow()
       break
@@ -320,7 +325,7 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
     default:
       break
     }
-    
+
     let indexedRouteResponse = IndexedRouteResponse(routeResponse: routeResponse, routeIndex: 0)
     let navigationService = MapboxNavigationService(indexedRouteResponse: indexedRouteResponse,
                                                     customRoutingProvider: NavigationSettings.shared.directions,
@@ -335,28 +340,30 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
     view.addSubview(navigationViewController!.view)
     navigationViewController!.view.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
-        navigationViewController!.view.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 0),
-        navigationViewController!.view.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: 0),
-        navigationViewController!.view.topAnchor.constraint(equalTo: view.topAnchor, constant: 0),
-        navigationViewController!.view.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: 0)
+      navigationViewController!.view.leadingAnchor.constraint(
+        equalTo: view.leadingAnchor, constant: 0),
+      navigationViewController!.view.trailingAnchor.constraint(
+        equalTo: view.trailingAnchor, constant: 0),
+      navigationViewController!.view.topAnchor.constraint(equalTo: view.topAnchor, constant: 0),
+      navigationViewController!.view.bottomAnchor.constraint(
+        equalTo: view.bottomAnchor, constant: 0),
     ])
     self.didMove(toParent: self)
   }
-  
+
   private func clearRouteAndStopNavigation() {
-    if routeResponse == nil
-    {
-        return
+    if routeResponse == nil {
+      return
     }
 
     routeResponse = nil
     mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.navigationCancelled)
   }
-  
+
   private func addOfflineMap(arguments: NSDictionary?) {
-    
+
   }
-  
+
   // Delegate called when user long presses on the map
   @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
     guard gesture.state == .ended else { return }
@@ -367,14 +374,16 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
       locations: [location], waypointNames: [""],
       navigationCameraType: NavigationCameraType.NOCHANGE.rawValue)
   }
-  
+
   // Delegate method called when the user selects a route
   public func navigationMapView(_ mapView: NavigationMapView, didSelect route: Route) {
     self.currentRouteIndex = self.routes?.firstIndex(of: route) ?? 0
   }
-  
+
   // Delecgate called when navigation is cancelled
-  public func navigationViewControllerDidDismiss(_ navigationViewController: NavigationViewController, byCanceling canceled: Bool) {
+  public func navigationViewControllerDidDismiss(
+    _ navigationViewController: NavigationViewController, byCanceling canceled: Bool
+  ) {
     navigationController?.popViewController(animated: true)
   }
 }

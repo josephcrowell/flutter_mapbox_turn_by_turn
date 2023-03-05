@@ -19,9 +19,9 @@ class TurnByTurnView: NSObject, FlutterPlatformView {
   ) {
     failView = UIView()
     self.viewId = viewId
-    
+
     nativeView = TurnByTurnNative.init(frame: frame, arguments: args, binaryMessenger: messenger)
-    
+
     super.init()
 
     createFailView()
