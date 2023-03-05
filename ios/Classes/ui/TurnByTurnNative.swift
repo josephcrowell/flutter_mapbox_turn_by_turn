@@ -7,7 +7,7 @@ import MapboxNavigation
 import UIKit
 
 enum NavigationCameraType: String, Codable {
-  case NO_CHANGE = "noChange"
+  case NOCHANGE = "noChange"
   case OVERVIEW = "overview"
   case FOLLOWING = "following"
 }
@@ -363,7 +363,9 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
     let location = navigationMapView!.mapView.mapboxMap.coordinate(
       for: gesture.location(in: navigationMapView!.mapView))
 
-    findRoutes(locations: [location], waypointNames: [""], navigationCameraType: NavigationCameraType.NO_CHANGE.rawValue)
+    findRoutes(
+      locations: [location], waypointNames: [""],
+      navigationCameraType: NavigationCameraType.NOCHANGE.rawValue)
   }
   
   // Delegate method called when the user selects a route

@@ -110,7 +110,7 @@ import kotlin.math.roundToInt
 
 class NavigationCameraType {
     companion object {
-        const val NO_CHANGE: String = "noChange"
+        const val NOCHANGE: String = "noChange"
         const val OVERVIEW: String = "overview"
         const val FOLLOWING: String = "following"
     }
@@ -734,7 +734,7 @@ open class TurnByTurnNative(
                     toggleGestures(true)
                 }
             }
-            NavigationCameraType.NO_CHANGE -> {}
+            NavigationCameraType.NOCHANGE -> {}
         }
         // set the animations lifecycle listener to ensure the NavigationCamera stops
         // automatically following the user location when the map is interacted with
@@ -833,7 +833,7 @@ open class TurnByTurnNative(
             // add long click listener that search for a route to the clicked destination
             if (navigateOnLongClick == true) {
                 binding.mapView.gestures.addOnMapLongClickListener { point ->
-                    findRoutes(listOf(point),listOf(""), NavigationCameraType.NO_CHANGE)
+                    findRoutes(listOf(point),listOf(""), NavigationCameraType.NOCHANGE)
                     true
                 }
             }
@@ -1166,7 +1166,7 @@ open class TurnByTurnNative(
                             "}"
                 )
             }
-            NavigationCameraType.NO_CHANGE -> {}
+            NavigationCameraType.NOCHANGE -> {}
         }
         navigationStarted = true
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_RUNNING)
