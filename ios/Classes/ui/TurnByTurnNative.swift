@@ -328,14 +328,25 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
     }
 
     let indexedRouteResponse = IndexedRouteResponse(routeResponse: routeResponse, routeIndex: 0)
-    let navigationService = MapboxNavigationService(indexedRouteResponse: indexedRouteResponse,
-                                                    customRoutingProvider: NavigationSettings.shared.directions,
-                                                    credentials: NavigationSettings.shared.directions.credentials,
-                                                    simulating: .never)
-    let navigationOptions = NavigationOptions(navigationService: navigationService)
-    navigationViewController = NavigationViewController(for: indexedRouteResponse,
-                                                            navigationOptions: navigationOptions)
-    
+    let navigationService = MapboxNavigationService(
+      indexedRouteResponse: indexedRouteResponse,
+      customRoutingProvider: NavigationSettings.shared.directions,
+      credentials: NavigationSettings.shared.directions.credentials,
+      simulating: .never)
+    var dayStyle = CustomDayStyle()
+    if mapStyleUrlDay != nil {
+      dayStyle = CustomDayStyle(url: mapStyleUrlDay)
+    }
+    var nightStyle = CustomNightStyle()
+    if mapStyleUrlNight != nil {
+      nightStyle = CustomNightStyle(url: mapStyleUrlNight)
+    }
+    let navigationOptions = NavigationOptions(
+      styles: [dayStyle, nightStyle], navigationService: navigationService)
+    navigationViewController = NavigationViewController(
+      for: indexedRouteResponse,
+      navigationOptions: navigationOptions)
+
     navigationViewController!.delegate = self
     addChild(navigationViewController!)
     view.addSubview(navigationViewController!.view)
