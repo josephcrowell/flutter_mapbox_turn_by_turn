@@ -22,7 +22,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   let methodChannel: FlutterMethodChannel
   let eventChannel: FlutterEventChannel
 
-  var navigationMapView: NavigationMapView?
+  var navigationView: NavigationView?
   var navigationViewController: NavigationViewController?
 
   var currentRouteIndex = 0 {
@@ -30,6 +30,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       showCurrentRoute()
     }
   }
+
   var currentRoute: Route? {
     return routes?[currentRouteIndex]
   }
@@ -41,7 +42,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   var routeResponse: RouteResponse? {
     didSet {
       guard currentRoute != nil else {
-        navigationMapView!.removeRoutes()
+        self.navigationView!.navigationMapView.removeRoutes()
         return
       }
       currentRouteIndex = 0
@@ -56,7 +57,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       contentsOf: self.routes!.filter {
         $0 != currentRoute
       })
-    navigationMapView!.showcase(routes)
+    self.navigationView!.navigationMapView.showcase(routes)
   }
 
   // flutter creation parameters
@@ -181,6 +182,8 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       mapInitOptions = MapInitOptions(styleURI: StyleURI(url: URL(string: mapStyleUrlDay!)!))
     }
 
+    let navigationMapView: NavigationMapView?
+
     if mapInitOptions != nil {
       let mapView = MapView(frame: view.bounds, mapInitOptions: mapInitOptions!)
       navigationMapView = NavigationMapView(
@@ -205,17 +208,34 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
     navigationMapView!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     navigationMapView!.delegate = self
-    navigationMapView!.userLocationStyle = .puck2D()
+    navigationMapView!.userLocationStyle = .courseView(_:)()
+
+    navigationView = NavigationView(frame: view.bounds, navigationMapView: navigationMapView!)
+    navigationView!.translatesAutoresizingMaskIntoConstraints = false
+    view.addSubview(navigationView!)
+
+    NSLayoutConstraint.activate([
+      navigationView!.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+      navigationView!.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+      navigationView!.topAnchor.constraint(equalTo: view.topAnchor),
+      navigationView!.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+    ])
 
     let navigationViewportDataSource = NavigationViewportDataSource(
-      navigationMapView!.mapView, viewportDataSourceType: .raw)
-    navigationViewportDataSource.options.followingCameraOptions.zoomUpdatesAllowed = false
-    navigationViewportDataSource.followingMobileCamera.pitch = CGFloat(pitch!)
-    navigationViewportDataSource.followingMobileCamera.zoom = CGFloat(zoom!)
-    navigationMapView!.navigationCamera.viewportDataSource = navigationViewportDataSource
-
-    view.addSubview(navigationMapView!)
-    navigationMapView!.removeArrow()
+      navigationView!.navigationMapView.mapView,
+      viewportDataSourceType: .raw)
+    navigationView!.navigationMapView.navigationCamera.viewportDataSource =
+      navigationViewportDataSource
+    switch navigationCameraType {
+    case NavigationCameraType.FOLLOWING.rawValue:
+      navigationView!.navigationMapView.navigationCamera.follow()
+      break
+    case NavigationCameraType.OVERVIEW.rawValue:
+      navigationView!.navigationMapView.navigationCamera.moveToOverview()
+      break
+    default:
+      break
+    }
   }
 
   public func onListen(
@@ -234,33 +254,35 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   }
 
   private func startNavigation(arguments: NSDictionary?) {
-    guard let waypointMapList = arguments?["waypoints"] as? NSDictionary else {return}
-    
+    guard let waypointMapList = arguments?["waypoints"] as? NSDictionary else { return }
+
     var waypointList = [CLLocationCoordinate2D]()
     var waypointNamesList = [String]()
-    
-    for item in waypointMapList as NSDictionary
-    {
-        let waypoint = item.value as! NSDictionary
-        guard let name = waypoint["name"] as? String else {return}
-        guard let latitude = waypoint["latitude"] as? Double else {return}
-        guard let longitude = waypoint["longitude"] as? Double else {return}
-      
+
+    for item in waypointMapList as NSDictionary {
+      let waypoint = item.value as! NSDictionary
+      guard let name = waypoint["name"] as? String else { return }
+      guard let latitude = waypoint["latitude"] as? Double else { return }
+      guard let longitude = waypoint["longitude"] as? Double else { return }
+
       waypointNamesList.append(name)
-      waypointList.append(CLLocationCoordinate2D(latitude: CGFloat(latitude), longitude: CGFloat(longitude)))
+      waypointList.append(
+        CLLocationCoordinate2D(latitude: CGFloat(latitude), longitude: CGFloat(longitude)))
     }
-    
+
     let cameraType = arguments?["navigationCameraType"] as! String
-    
+
     if !waypointList.isEmpty && !waypointNamesList.isEmpty {
-      findRoutes(locations: waypointList, waypointNames: waypointNamesList, navigationCameraType: cameraType)
+      findRoutes(
+        locations: waypointList, waypointNames: waypointNamesList, navigationCameraType: cameraType)
     }
   }
 
   func findRoutes(
     locations: [CLLocationCoordinate2D], waypointNames: [String], navigationCameraType: String
   ) {
-    guard let userLocation = navigationMapView!.mapView.location.latestLocation else { return }
+    guard let userLocation = navigationView!.navigationMapView.mapView.location.latestLocation
+    else { return }
 
     let userWaypoint = Waypoint(
       coordinate: CLLocationCoordinate2D(
@@ -331,15 +353,12 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
     mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.routeBuilt)
 
-    self.navigationMapView!.show(routes)
-    self.navigationMapView!.showWaypoints(on: currentRoute)
-
     switch navigationCameraType {
     case NavigationCameraType.FOLLOWING.rawValue:
-      self.navigationMapView?.navigationCamera.follow()
+      self.navigationView?.navigationMapView.navigationCamera.follow()
       break
     case NavigationCameraType.OVERVIEW.rawValue:
-      self.navigationMapView?.navigationCamera.moveToOverview()
+      self.navigationView?.navigationMapView.navigationCamera.moveToOverview()
       break
     default:
       break
@@ -351,6 +370,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       customRoutingProvider: NavigationSettings.shared.directions,
       credentials: NavigationSettings.shared.directions.credentials,
       simulating: .never)
+
     var dayStyle = CustomDayStyle()
     if mapStyleUrlDay != nil {
       dayStyle = CustomDayStyle(url: mapStyleUrlDay)
@@ -359,26 +379,18 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     if mapStyleUrlNight != nil {
       nightStyle = CustomNightStyle(url: mapStyleUrlNight)
     }
+
     let navigationOptions = NavigationOptions(
       styles: [dayStyle, nightStyle], navigationService: navigationService)
+
     navigationViewController = NavigationViewController(
       for: indexedRouteResponse,
       navigationOptions: navigationOptions)
 
     navigationViewController!.delegate = self
+
     addChild(navigationViewController!)
-    view.addSubview(navigationViewController!.view)
-    navigationViewController!.view.translatesAutoresizingMaskIntoConstraints = false
-    NSLayoutConstraint.activate([
-      navigationViewController!.view.leadingAnchor.constraint(
-        equalTo: view.leadingAnchor, constant: 0),
-      navigationViewController!.view.trailingAnchor.constraint(
-        equalTo: view.trailingAnchor, constant: 0),
-      navigationViewController!.view.topAnchor.constraint(equalTo: view.topAnchor, constant: 0),
-      navigationViewController!.view.bottomAnchor.constraint(
-        equalTo: view.bottomAnchor, constant: 0),
-    ])
-    self.didMove(toParent: self)
+    self.view.addSubview(navigationViewController!.view)
   }
 
   private func clearRouteAndStopNavigation() {
@@ -397,8 +409,8 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   // Delegate called when user long presses on the map
   @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
     guard gesture.state == .ended else { return }
-    let location = navigationMapView!.mapView.mapboxMap.coordinate(
-      for: gesture.location(in: navigationMapView!.mapView))
+    let location = self.navigationView!.navigationMapView.mapView.mapboxMap.coordinate(
+      for: gesture.location(in: self.navigationView!.navigationMapView.mapView))
 
     findRoutes(
       locations: [location], waypointNames: [""],
