@@ -28,7 +28,7 @@ class TurnByTurnView: NSObject, FlutterPlatformView {
   }
 
   func view() -> UIView {
-    if nativeView.navigationMapView != nil {
+    if nativeView.navigationView != nil {
       return nativeView.view
     }
 
