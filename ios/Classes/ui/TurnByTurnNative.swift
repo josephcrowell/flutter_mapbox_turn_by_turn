@@ -12,9 +12,7 @@ enum NavigationCameraType: String, Codable {
   case FOLLOWING = "following"
 }
 
-public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
-  NavigationViewControllerDelegate, FlutterStreamHandler
-{
+public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   var arguments: NSDictionary?
 
   var eventSink: FlutterEventSink?
@@ -406,16 +404,38 @@ public class TurnByTurnNative: UIViewController, NavigationMapViewDelegate,
       locations: [location], waypointNames: [""],
       navigationCameraType: NavigationCameraType.NOCHANGE.rawValue)
   }
+}
 
-  // Delegate method called when the user selects a route
+extension TurnByTurnNative: NavigationMapViewDelegate {
   public func navigationMapView(_ mapView: NavigationMapView, didSelect route: Route) {
     self.currentRouteIndex = self.routes?.firstIndex(of: route) ?? 0
   }
+}
 
-  // Delecgate called when navigation is cancelled
+extension TurnByTurnNative: NavigationViewControllerDelegate {
+  // Delegate called when navigation is cancelled
   public func navigationViewControllerDidDismiss(
     _ navigationViewController: NavigationViewController, byCanceling canceled: Bool
   ) {
-    navigationController?.popViewController(animated: true)
+    let duration = 1.0
+    navigationViewController.navigationView.topBannerContainerView.hide(duration: duration)
+    navigationViewController.navigationView.bottomBannerContainerView.hide(
+      duration: duration,
+      animations: {
+        navigationViewController.navigationView.wayNameView.alpha = 0.0
+        navigationViewController.navigationView.speedLimitView.alpha = 0.0
+      },
+      completion: { [weak self] _ in
+        navigationViewController.dismiss(animated: false) {
+          guard let self = self else { return }
+
+          self.initializeMapbox()
+          self.navigationViewController = nil
+
+          self.mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.navigationCancelled)
+
+          self.navigationView!.navigationMapView.navigationCamera.moveToOverview()
+        }
+      })
   }
 }
