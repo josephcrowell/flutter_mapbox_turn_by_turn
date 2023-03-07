@@ -1064,7 +1064,7 @@ open class TurnByTurnNative(
         }
     }
 
-    private fun findRoutes(waypoints: List<Point>, waypointNames: List<String>, navigationCameraType: String) {
+    private fun findRoutes(locations: List<Point>, waypointNames: List<String>, navigationCameraType: String) {
         MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILDING)
 
         val originLocation = navigationLocationProvider!!.lastLocation
@@ -1072,7 +1072,7 @@ open class TurnByTurnNative(
             Point.fromLngLat(it.longitude, it.latitude)
         } ?: return
 
-        val combinedWaypoints: List<Point> = listOf(originPoint) + waypoints
+        val combinedCoordinates: List<Point> = listOf(originPoint) + locations
         val combinedWaypointNames: List<String> = listOf("") + waypointNames
 
         val annotations: List<String> = listOf(DirectionsCriteria.ANNOTATION_MAXSPEED)
@@ -1087,7 +1087,7 @@ open class TurnByTurnNative(
                 .annotationsList(annotations)
                 .applyDefaultNavigationOptions()
                 .applyLanguageAndVoiceUnitOptions(pluginContext)
-                .coordinatesList(combinedWaypoints)
+                .coordinatesList(combinedCoordinates)
                 .waypointNamesList(combinedWaypointNames)
                 .profile(routeProfile)
                 .language(language)
