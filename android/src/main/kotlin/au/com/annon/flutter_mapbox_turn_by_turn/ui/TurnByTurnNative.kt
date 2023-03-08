@@ -785,6 +785,9 @@ open class TurnByTurnNative(
                 .build()
         )
 
+        // Fix trip progress view being different color from it's container
+        binding.tripProgressView.setBackgroundColor(Color.TRANSPARENT)
+
         // initialize route line, the withRouteLineBelowLayerId is specified to place
         // the route line below road labels layer on the map
         // the value of this option will depend on the style that you are using
