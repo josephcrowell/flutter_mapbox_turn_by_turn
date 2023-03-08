@@ -5,6 +5,8 @@ import android.os.Looper
 import android.util.Log
 import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnNative
 import com.google.gson.Gson
+import io.flutter.plugin.common.EventChannel
+import io.flutter.plugin.common.EventChannel.EventSink
 
 enum class MapboxEventType(val value: String) {
     PROGRESS_CHANGE("progressChange"),
@@ -38,8 +40,8 @@ enum class MapboxEventType(val value: String) {
     TILE_REGION_ERROR("tileRegionError")
 }
 
-class MapboxTurnByTurnEvents {
-    companion object {
+class MapboxTurnByTurnEvents(private val eventSink: EventSink) {
+
         private val handler: Handler = Handler(Looper.getMainLooper())
 
         fun sendEvent(event: MapboxProgressChangeEvent) {
@@ -48,7 +50,7 @@ class MapboxTurnByTurnEvents {
                     "  \"eventType\": \"${MapboxEventType.PROGRESS_CHANGE.value}\"," +
                     "  \"data\": $dataString" +
                     "}"
-            handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
+            handler.post { eventSink.success(jsonString) }
         }
 
         fun sendEvent(event: MapboxEnhancedLocationChangeEvent) {
@@ -60,7 +62,7 @@ class MapboxTurnByTurnEvents {
                     "\"longitude\": ${event.longitude}" +
                     "}" +
                     "}"
-            handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
+            handler.post { eventSink.success(jsonString) }
         }
 
         fun sendEvent(event: MapboxLocationChangeEvent) {
@@ -72,7 +74,7 @@ class MapboxTurnByTurnEvents {
                     "\"longitude\": ${event.longitude}" +
                     "}" +
                     "}"
-            handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
+            handler.post { eventSink.success(jsonString) }
         }
 
         fun sendEvent(event: MapboxEventType, data: String = "") {
@@ -80,7 +82,7 @@ class MapboxTurnByTurnEvents {
                         "  \"eventType\": \"${event.value}\"," +
                         "  \"data\": \"${data}\"" +
                         "}"
-            handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
+            handler.post { eventSink.success(jsonString) }
         }
 
         fun sendJsonEvent(event: MapboxEventType, data: String = "") {
@@ -94,7 +96,6 @@ class MapboxTurnByTurnEvents {
                     "  \"eventType\": \"${event.value}\"," +
                     "  \"data\": $dataString" +
                     "}"
-            handler.post { TurnByTurnNative.eventSink?.success(jsonString) }
+            handler.post { eventSink.success(jsonString) }
         }
-    }
 }

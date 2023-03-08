@@ -22,11 +22,7 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ViewTreeLifecycleOwner
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
-import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEventType
-import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxEnhancedLocationChangeEvent
-import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxLocationChangeEvent
-import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxProgressChangeEvent
-import au.com.annon.flutter_mapbox_turn_by_turn.models.MapboxTurnByTurnEvents
+import au.com.annon.flutter_mapbox_turn_by_turn.models.*
 import au.com.annon.flutter_mapbox_turn_by_turn.utilities.PluginUtilities
 import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.api.directions.v5.models.RouteOptions
@@ -127,6 +123,9 @@ open class TurnByTurnNative(
     SensorEventListener,
     MethodChannel.MethodCallHandler,
     EventChannel.StreamHandler {
+    var eventSink: EventChannel.EventSink? = null
+
+    private var mapboxTurnByTurnEvents: MapboxTurnByTurnEvents? = null
 
     var methodChannel: MethodChannel? = null
     var eventChannel: EventChannel? = null
@@ -136,6 +135,7 @@ open class TurnByTurnNative(
     private var distanceRemaining: Float? = null
     private var durationRemaining: Double? = null
     private var navigationStarted: Boolean = false
+    var observersRegistered: Boolean = false
 
     // flutter creation parameters
     private val zoom: Double?
@@ -166,6 +166,7 @@ open class TurnByTurnNative(
 
     init {
         Log.d("TurnByTurnNative", "Constructor called")
+
         methodChannel = MethodChannel(messenger!!, "flutter_mapbox_turn_by_turn/map_view/method")
         eventChannel = EventChannel(messenger, "flutter_mapbox_turn_by_turn/map_view/events")
 
@@ -201,8 +202,6 @@ open class TurnByTurnNative(
 
     companion object {
         private const val BUTTON_ANIMATION_DURATION = 1500L
-        var eventSink: EventChannel.EventSink? = null
-        var observersRegistered: Boolean = false
 
         private var measurementUnits: String = "metric"
         private var speedThreshold: Int = 5
@@ -348,7 +347,7 @@ open class TurnByTurnNative(
         var firstLocationUpdateReceived = false
 
         override fun onNewRawLocation(rawLocation: Location) {
-            MapboxTurnByTurnEvents.sendEvent(MapboxLocationChangeEvent(rawLocation))
+            mapboxTurnByTurnEvents?.sendEvent(MapboxLocationChangeEvent(rawLocation))
         }
 
         override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
@@ -436,7 +435,7 @@ open class TurnByTurnNative(
             // update camera position to account for new location
             viewportDataSource!!.onLocationChanged(enhancedLocation)
             viewportDataSource!!.evaluate()
-            MapboxTurnByTurnEvents.sendEvent(MapboxEnhancedLocationChangeEvent(enhancedLocation))
+            mapboxTurnByTurnEvents?.sendEvent(MapboxEnhancedLocationChangeEvent(enhancedLocation))
 
             // if this is the first location update the activity has received,
             // it's best to immediately move the camera to the current user location
@@ -491,7 +490,7 @@ open class TurnByTurnNative(
                 durationRemaining = routeProgress.durationRemaining
 
                 val progressEvent = MapboxProgressChangeEvent(routeProgress)
-                MapboxTurnByTurnEvents.sendEvent(progressEvent)
+                mapboxTurnByTurnEvents?.sendEvent(progressEvent)
 
             } catch (_: java.lang.Exception) {
 
@@ -545,7 +544,7 @@ open class TurnByTurnNative(
                 routeUpdateResult.navigationRoutes.first())
             viewportDataSource!!.evaluate()
 
-            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.REROUTE_ALONG, routeUpdateResult.reason)
+            mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.REROUTE_ALONG, routeUpdateResult.reason)
         } else {
             // remove the route line and route arrow from the map
             val style = mapboxMap!!.getStyle()
@@ -568,15 +567,15 @@ open class TurnByTurnNative(
     private val arrivalObserver = object: ArrivalObserver {
 
         override fun onWaypointArrival(routeProgress: RouteProgress) {
-            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.WAYPOINT_ARRIVAL)
+            mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.WAYPOINT_ARRIVAL)
         }
 
         override fun onNextRouteLegStart(routeLegProgress: RouteLegProgress) {
-            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NEXT_ROUTE_LEG_START)
+            mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.NEXT_ROUTE_LEG_START)
         }
 
         override fun onFinalDestinationArrival(routeProgress: RouteProgress) {
-            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.FINAL_DESTINATION_ARRIVAL)
+            mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.FINAL_DESTINATION_ARRIVAL)
         }
     }
 
@@ -584,7 +583,7 @@ open class TurnByTurnNative(
         override fun onRegionLoadProgress(id: String, progress: TileRegionLoadProgress) {
             val percent =
                 (progress.completedResourceCount.toDouble() / progress.requiredResourceCount.toDouble() * 100).roundToInt()
-            MapboxTurnByTurnEvents.sendJsonEvent(
+            mapboxTurnByTurnEvents?.sendJsonEvent(
                 MapboxEventType.TILE_REGION_PROGRESS,
                 "{" +
                         "\"id\":\"${id}\"," +
@@ -595,13 +594,13 @@ open class TurnByTurnNative(
 
         override fun onRegionLoadFinished(id: String, region: Expected<TileRegionError, TileRegion>) {
             if(region.isValue) {
-                MapboxTurnByTurnEvents.sendJsonEvent(
+                mapboxTurnByTurnEvents?.sendJsonEvent(
                     MapboxEventType.TILE_REGION_FINISHED,
                     "{\"id\":\"${id}\"}"
                 )
             } else {
                 region.error?.let {
-                    MapboxTurnByTurnEvents.sendJsonEvent(
+                    mapboxTurnByTurnEvents?.sendJsonEvent(
                         MapboxEventType.TILE_REGION_ERROR,
                     "{" +
                             "\"id\":\"${id}\"," +
@@ -612,20 +611,20 @@ open class TurnByTurnNative(
         }
 
         override fun onRegionRemoved(id: String) {
-            MapboxTurnByTurnEvents.sendJsonEvent(
+            mapboxTurnByTurnEvents?.sendJsonEvent(
                 MapboxEventType.TILE_REGION_REMOVED,
                 "{\"id\":\"${id}\"}"
             )
         }
 
         override fun onRegionGeometryChanged(id: String, geometry: Geometry) {
-            MapboxTurnByTurnEvents.sendJsonEvent(MapboxEventType.TILE_REGION_GEOMETRY_CHANGED,
+            mapboxTurnByTurnEvents?.sendJsonEvent(MapboxEventType.TILE_REGION_GEOMETRY_CHANGED,
                 "{\"id\":\"${id}\"}"
             )
         }
 
         override fun onRegionMetadataChanged(id: String, value: Value) {
-            MapboxTurnByTurnEvents.sendJsonEvent(MapboxEventType.TILE_REGION_METADATA_CHANGED,
+            mapboxTurnByTurnEvents?.sendJsonEvent(MapboxEventType.TILE_REGION_METADATA_CHANGED,
                 "{\"id\":\"${id}\"}"
             )
         }
@@ -853,7 +852,7 @@ open class TurnByTurnNative(
             if(disableGesturesWhenFollowing == true) {
                 toggleGestures(false)
             }
-            MapboxTurnByTurnEvents.sendJsonEvent(
+            mapboxTurnByTurnEvents?.sendJsonEvent(
                 MapboxEventType.NAVIGATION_CAMERA_CHANGED,
                 "{" +
                     "\"state\":\"${NavigationCameraType.FOLLOWING}\"" +
@@ -866,7 +865,7 @@ open class TurnByTurnNative(
             if(disableGesturesWhenFollowing == true) {
                 toggleGestures(true)
             }
-            MapboxTurnByTurnEvents.sendJsonEvent(
+            mapboxTurnByTurnEvents?.sendJsonEvent(
                 MapboxEventType.NAVIGATION_CAMERA_CHANGED,
                 "{" +
                     "\"state\":\"${NavigationCameraType.OVERVIEW}\"" +
@@ -969,6 +968,7 @@ open class TurnByTurnNative(
     //Flutter stream listener delegate methods
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
         eventSink = events
+        mapboxTurnByTurnEvents = MapboxTurnByTurnEvents(eventSink!!)
     }
 
     override fun onCancel(arguments: Any?) {
@@ -1032,7 +1032,7 @@ open class TurnByTurnNative(
             binding.soundButton.unmute()
         }
 
-        MapboxTurnByTurnEvents.sendJsonEvent(
+        mapboxTurnByTurnEvents?.sendJsonEvent(
             MapboxEventType.MUTE_CHANGED,
             "{" +
                     "\"muted\":${isVoiceInstructionsMuted}" +
@@ -1065,7 +1065,7 @@ open class TurnByTurnNative(
     }
 
     private fun findRoutes(locations: List<Point>, waypointNames: List<String>, navigationCameraType: String) {
-        MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILDING)
+        mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.ROUTE_BUILDING)
 
         val originLocation = navigationLocationProvider!!.lastLocation
         val originPoint = originLocation?.let {
@@ -1112,11 +1112,11 @@ open class TurnByTurnNative(
                     for (reason in reasons){
                         message += reason.message
                     }
-                    MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILD_FAILED, message)
+                    mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.ROUTE_BUILD_FAILED, message)
                 }
 
                 override fun onCanceled(routeOptions: RouteOptions, routerOrigin: RouterOrigin) {
-                    MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILD_CANCELLED)
+                    mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.ROUTE_BUILD_CANCELLED)
                 }
             }
         )
@@ -1124,11 +1124,11 @@ open class TurnByTurnNative(
 
     private fun setRouteAndStartNavigation(routes: List<NavigationRoute>, navigationCameraType: String) {
         if (routes.isEmpty()){
-            MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILD_NO_ROUTES_FOUND)
+            mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.ROUTE_BUILD_NO_ROUTES_FOUND)
             return
         }
 
-        MapboxTurnByTurnEvents.sendEvent(MapboxEventType.ROUTE_BUILT)
+        mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.ROUTE_BUILT)
 
         // set routes, where the first route in the list is the primary route that
         // will be used for active guidance
@@ -1147,7 +1147,7 @@ open class TurnByTurnNative(
                 if(disableGesturesWhenFollowing == true) {
                     toggleGestures(false)
                 }
-                MapboxTurnByTurnEvents.sendJsonEvent(
+                mapboxTurnByTurnEvents?.sendJsonEvent(
                     MapboxEventType.NAVIGATION_CAMERA_CHANGED,
                     "{" +
                             "\"state\":\"${NavigationCameraType.FOLLOWING}\"" +
@@ -1159,7 +1159,7 @@ open class TurnByTurnNative(
                 if(disableGesturesWhenFollowing == true) {
                     toggleGestures(true)
                 }
-                MapboxTurnByTurnEvents.sendJsonEvent(
+                mapboxTurnByTurnEvents?.sendJsonEvent(
                     MapboxEventType.NAVIGATION_CAMERA_CHANGED,
                     "{" +
                             "\"state\":\"${NavigationCameraType.OVERVIEW}\"" +
@@ -1169,7 +1169,7 @@ open class TurnByTurnNative(
             NavigationCameraType.NOCHANGE -> {}
         }
         navigationStarted = true
-        MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_RUNNING)
+        mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.NAVIGATION_RUNNING)
     }
 
     private fun clearRouteAndStopNavigation() {
@@ -1187,7 +1187,7 @@ open class TurnByTurnNative(
             toggleGestures(true)
         }
 
-        MapboxTurnByTurnEvents.sendEvent(MapboxEventType.NAVIGATION_CANCELLED)
+        mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.NAVIGATION_CANCELLED)
     }
 
     private fun addOfflineMap(call: MethodCall) {
@@ -1245,7 +1245,7 @@ open class TurnByTurnNative(
             { progress ->
                 val percent =
                     (progress.completedResourceCount.toDouble() / progress.requiredResourceCount.toDouble() * 100).roundToInt()
-                MapboxTurnByTurnEvents.sendJsonEvent(
+                mapboxTurnByTurnEvents?.sendJsonEvent(
                     MapboxEventType.STYLE_PACK_PROGRESS,
                     "{" +
                             "\"percent\":\"${percent}\"" +
@@ -1255,13 +1255,13 @@ open class TurnByTurnNative(
             { expected ->
                 if (expected.isValue) {
                     expected.value?.let { _ ->
-                        MapboxTurnByTurnEvents.sendEvent(
+                        mapboxTurnByTurnEvents?.sendEvent(
                             MapboxEventType.STYLE_PACK_FINISHED
                         )
                     }
                 }
                 expected.error?.let {
-                    MapboxTurnByTurnEvents.sendJsonEvent(
+                    mapboxTurnByTurnEvents?.sendJsonEvent(
                         MapboxEventType.STYLE_PACK_ERROR,
                         "{" +
                                 "\"error\":\"${it.message}\"" +
