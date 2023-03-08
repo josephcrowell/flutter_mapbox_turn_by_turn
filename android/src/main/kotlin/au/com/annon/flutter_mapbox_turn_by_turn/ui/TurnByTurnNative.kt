@@ -79,6 +79,7 @@ import com.mapbox.navigation.ui.tripprogress.api.MapboxTripProgressApi
 import com.mapbox.navigation.ui.tripprogress.model.*
 import com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView
 import io.flutter.embedding.android.FlutterFragment
+import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
@@ -115,9 +116,9 @@ class NavigationCameraType {
 open class TurnByTurnNative(
     private val pluginActivity: Activity,
     private val pluginContext: Context,
-    private val binding: TurnByTurnNativeBinding,
+    val binding: TurnByTurnNativeBinding,
     private val lifecycleRegistry: LifecycleRegistry,
-    messenger: BinaryMessenger?,
+    private var messenger: BinaryMessenger?,
     creationParams: Map<String?, Any?>?
 ) : FlutterFragment(),
     SensorEventListener,
@@ -1007,6 +1008,14 @@ open class TurnByTurnNative(
     }
 
     override fun onDestroy() {
+        if(observersRegistered) {
+            unregisterObservers()
+        }
+        methodChannel = null
+        eventSink = null
+        eventChannel = null
+        messenger = null
+
         maneuverApi.cancel()
         routeLineApi.cancel()
         routeLineView.cancel()

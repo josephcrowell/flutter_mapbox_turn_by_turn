@@ -20,28 +20,16 @@ class TurnByTurnView(
     private var messenger: BinaryMessenger?,
     creationParams: Map<String?, Any?>?,
     )
-    : PlatformView, TurnByTurnNative(activity, context, binding, lifecycleRegistry, messenger, creationParams) {
+    : PlatformView  {
+    private var nativeView: TurnByTurnNative = TurnByTurnNative(activity, context, binding, lifecycleRegistry, messenger, creationParams)
 
     override fun getView(): View {
-        return binding.root
-    }
-
-    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-        Log.d("TurnByTurnView", "Configuring Flutter engine")
-        flutterEngine
-            .platformViewsController
-            .registry
-            .registerViewFactory("MapView", factory)
-    }
-
-    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
-        Log.d("TurnByTurnView", "Cleaning up Flutter engine")
-        flutterEngine.platformViewsController.detachFromView()
+        return nativeView.binding.root
     }
 
     init {
-        initializeFlutterChannelHandlers()
-        initializeMapbox()
+        nativeView.initializeFlutterChannelHandlers()
+        nativeView.initializeMapbox()
 
         Log.d("TurnByTurnView", "View initialised")
     }
@@ -57,15 +45,7 @@ class TurnByTurnView(
     }
 
     override fun dispose() {
-        if(observersRegistered) {
-            unregisterObservers()
-        }
-        methodChannel = null
-        eventSink = null
-        eventChannel = null
-        messenger = null
-
-        super.onDestroy()
+        nativeView.onDestroy()
         Log.d("TurnByTurnView", "View disposed")
     }
 }
