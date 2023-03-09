@@ -29,7 +29,7 @@ class FlutterMapboxTurnByTurnPlugin
   private lateinit var lifecycleRegistry: LifecycleRegistry
   private var platformViewRegistry: PlatformViewRegistry? = null
   private var binaryMessenger: BinaryMessenger? = null
-  private lateinit var layoutBinding: TurnByTurnNativeBinding
+  private lateinit var nativeBinding: TurnByTurnNativeBinding
 
   companion object {
     private var LOCATION_REQUEST_CODE: Int = 367
@@ -60,9 +60,9 @@ class FlutterMapboxTurnByTurnPlugin
 
     if(platformViewRegistry != null && binaryMessenger != null && activity != null) {
       Log.d("FlutterMapboxTurnByTurnPlugin","Registering view factory")
-      layoutBinding = TurnByTurnNativeBinding.inflate(activity!!.layoutInflater)
-      ViewTreeLifecycleOwner.set(layoutBinding.root, this)
-      val factory = TurnByTurnViewFactory(binaryMessenger!!, activity!!, layoutBinding, lifecycleRegistry)
+      nativeBinding = TurnByTurnNativeBinding.inflate(activity!!.layoutInflater)
+      ViewTreeLifecycleOwner.set(nativeBinding.root, this)
+      val factory = TurnByTurnViewFactory(binaryMessenger!!, activity!!, nativeBinding, lifecycleRegistry)
       lifecycleRegistry.currentState = Lifecycle.State.CREATED
       platformViewRegistry?.registerViewFactory(VIEW_NAME, factory)
       context = binding.activity.baseContext
