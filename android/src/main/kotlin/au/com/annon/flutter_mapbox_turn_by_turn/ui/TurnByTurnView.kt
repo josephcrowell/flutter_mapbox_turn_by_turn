@@ -6,7 +6,6 @@ import android.util.Log
 import android.view.View
 import androidx.lifecycle.LifecycleRegistry
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
-import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.platform.PlatformView
 
@@ -14,10 +13,9 @@ import io.flutter.plugin.platform.PlatformView
 class TurnByTurnView(
     activity: Activity,
     context: Context,
-    private val binding: TurnByTurnNativeBinding,
-    private val factory: TurnByTurnViewFactory,
+    binding: TurnByTurnNativeBinding,
     lifecycleRegistry: LifecycleRegistry,
-    private var messenger: BinaryMessenger?,
+    messenger: BinaryMessenger?,
     creationParams: Map<String?, Any?>?,
     )
     : PlatformView  {

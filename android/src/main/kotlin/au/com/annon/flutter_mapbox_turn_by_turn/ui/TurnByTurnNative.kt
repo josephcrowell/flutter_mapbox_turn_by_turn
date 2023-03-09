@@ -79,7 +79,6 @@ import com.mapbox.navigation.ui.tripprogress.api.MapboxTripProgressApi
 import com.mapbox.navigation.ui.tripprogress.model.*
 import com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView
 import io.flutter.embedding.android.FlutterFragment
-import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
@@ -124,19 +123,19 @@ open class TurnByTurnNative(
     SensorEventListener,
     MethodChannel.MethodCallHandler,
     EventChannel.StreamHandler {
-    var eventSink: EventChannel.EventSink? = null
+    private var eventSink: EventChannel.EventSink? = null
 
     private var mapboxTurnByTurnEvents: MapboxTurnByTurnEvents? = null
 
-    var methodChannel: MethodChannel? = null
-    var eventChannel: EventChannel? = null
+    private var methodChannel: MethodChannel? = null
+    private var eventChannel: EventChannel? = null
 
     private val darkThreshold = 1.0f
     private var lightValue = 1.1f
     private var distanceRemaining: Float? = null
     private var durationRemaining: Double? = null
     private var navigationStarted: Boolean = false
-    var observersRegistered: Boolean = false
+    private var observersRegistered: Boolean = false
 
     // flutter creation parameters
     private val zoom: Double?
@@ -942,7 +941,7 @@ open class TurnByTurnNative(
         Log.d("TurnByTurnNative","Observers registered")
     }
 
-    fun unregisterObservers() {
+    private fun unregisterObservers() {
         if(navigationStarted) {
             clearRouteAndStopNavigation()
         }
