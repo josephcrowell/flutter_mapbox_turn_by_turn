@@ -33,6 +33,7 @@ import com.mapbox.geojson.Geometry
 import com.mapbox.geojson.Point
 import com.mapbox.geojson.Polygon
 import com.mapbox.maps.*
+import com.mapbox.maps.extension.style.layers.generated.backgroundLayer
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.compass.compass
@@ -75,6 +76,9 @@ import com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowOptions
 import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineApi
 import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineView
 import com.mapbox.navigation.ui.maps.route.line.model.*
+import com.mapbox.navigation.ui.speedlimit.api.MapboxSpeedInfoApi
+import com.mapbox.navigation.ui.speedlimit.api.MapboxSpeedLimitApi
+import com.mapbox.navigation.ui.speedlimit.view.MapboxSpeedInfoView
 import com.mapbox.navigation.ui.tripprogress.api.MapboxTripProgressApi
 import com.mapbox.navigation.ui.tripprogress.model.*
 import com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView
@@ -204,6 +208,7 @@ open class TurnByTurnNative(
         private const val BUTTON_ANIMATION_DURATION = 1500L
 
         private var measurementUnits: String = "metric"
+        private var unitType: UnitType = UnitType.METRIC
         private var speedThreshold: Int = 5
         private var showSpeedIndicator: Boolean = true
     }
@@ -299,6 +304,11 @@ open class TurnByTurnNative(
     private lateinit var routeLineView: MapboxRouteLineView
 
     /**
+     * Generates updates for the [MapboxSpeedInfoView] that include current speed and speed limit.
+     */
+    private var speedInfoApi = MapboxSpeedInfoApi()
+
+    /**
      * Generates updates for the [routeArrowView] with the geometries and properties of maneuver arrows that should be drawn on the map.
      */
     private val routeArrowApi: MapboxRouteArrowApi = MapboxRouteArrowApi()
@@ -358,84 +368,16 @@ open class TurnByTurnNative(
                 keyPoints = locationMatcherResult.keyPoints,
             )
 
-            if(showSpeedIndicator) {
-                var speedLimit = locationMatcherResult.speedLimit?.speedKmph
-                if(speedLimit != null) {
-                    if(measurementUnits == DirectionsCriteria.METRIC) {
-                        // speed in Kph
-                        val speed = (enhancedLocation.speed * 3.6).toInt()
-                        val mSpeedLimit = speedLimit + speedThreshold
-
-                        // We should be showing metric speed
-                        pluginActivity.runOnUiThread {
-                            "$speed\nkph".also { binding.speedView.text = it }
-                            if (speed > mSpeedLimit) {
-                                binding.speedView.background = ContextCompat.getDrawable(
-                                    pluginContext,
-                                    R.drawable.speed_limit_speeding
-                                )
-                            } else {
-                                binding.speedView.background = ContextCompat.getDrawable(
-                                    pluginContext,
-                                    R.drawable.speed_limit_normal
-                                )
-                            }
-                        }
-                    } else {
-                        // We should be showing imperial speed
-                        val speed = (enhancedLocation.speed * 3.6 / 1.609).toInt()
-                        speedLimit = (speedLimit.toFloat() / 1.609).toInt()
-                        val mSpeedLimit = speedLimit + speedThreshold
-
-                        // We should be showing metric speed
-                        pluginActivity.runOnUiThread {
-                            "$speed\nmph".also { binding.speedView.text = it }
-                            if (speed > mSpeedLimit) {
-                                binding.speedView.background = ContextCompat.getDrawable(
-                                    pluginContext,
-                                    R.drawable.speed_limit_speeding
-                                )
-                            } else {
-                                binding.speedView.background = ContextCompat.getDrawable(
-                                    pluginContext,
-                                    R.drawable.speed_limit_normal
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    if(measurementUnits == DirectionsCriteria.METRIC) {
-                        // speed in Kph
-                        val speed = (enhancedLocation.speed * 3.6).toInt()
-
-                        // We should be showing metric speed
-                        pluginActivity.runOnUiThread {
-                            "$speed\nkph".also { binding.speedView.text = it }
-                            binding.speedView.background = ContextCompat.getDrawable(
-                                pluginContext,
-                                R.drawable.speed_limit_normal
-                            )
-                        }
-                    } else {
-                        // We should be showing imperial speed
-                        val speed = (enhancedLocation.speed * 3.6 / 1.609).toInt()
-
-                        // We should be showing metric speed
-                        pluginActivity.runOnUiThread {
-                            "$speed\nmph".also { binding.speedView.text = it }
-                            binding.speedView.background = ContextCompat.getDrawable(
-                                pluginContext,
-                                R.drawable.speed_limit_normal
-                            )
-                        }
-                    }
-                }
-            }
-
             // update camera position to account for new location
             viewportDataSource!!.onLocationChanged(enhancedLocation)
             viewportDataSource!!.evaluate()
             mapboxTurnByTurnEvents?.sendEvent(MapboxEnhancedLocationChangeEvent(enhancedLocation))
+
+            val speedValue = speedInfoApi.updatePostedAndCurrentSpeed(
+                locationMatcherResult,
+                DistanceFormatterOptions.Builder(pluginContext).unitType(unitType).build()
+            )
+            binding.speedInfo.render(speedValue)
 
             // if this is the first location update the activity has received,
             // it's best to immediately move the camera to the current user location
@@ -684,7 +626,6 @@ open class TurnByTurnNative(
             TileStoreUsageMode.READ_AND_UPDATE
         }
 
-        var unitType: UnitType = UnitType.METRIC
         if(measurementUnits == DirectionsCriteria.IMPERIAL) {
             unitType = UnitType.IMPERIAL
         }
@@ -1149,6 +1090,9 @@ open class TurnByTurnNative(
         if(showMuteButton == true) {
             binding.soundButton.visibility = View.VISIBLE
         }
+        if(showSpeedIndicator == true) {
+            binding.speedInfo.visibility = View.VISIBLE
+        }
         binding.tripProgressCard.visibility = View.VISIBLE
 
         // move the camera to requested state when new route is available
@@ -1190,6 +1134,7 @@ open class TurnByTurnNative(
 
         // hide UI elements
         binding.soundButton.visibility = View.GONE
+        binding.speedInfo.visibility = View.GONE
         binding.maneuverView.visibility = View.GONE
         binding.tripProgressCard.visibility = View.GONE
 

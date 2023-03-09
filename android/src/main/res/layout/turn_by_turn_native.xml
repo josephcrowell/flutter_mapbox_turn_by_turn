@@ -28,6 +28,17 @@
         app:subManeuverViewBackgroundColor="#000000"
         app:upcomingManeuverViewBackgroundColor="#000000" />
 
+    <com.mapbox.navigation.ui.speedlimit.view.MapboxSpeedInfoView
+        android:id="@+id/speedInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:alpha=".8"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/maneuverView" />
+
     <com.mapbox.navigation.ui.voice.view.MapboxSoundButton
         android:id="@+id/soundButton"
         android:layout_width="wrap_content"
@@ -77,19 +88,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <TextView
-            android:id="@+id/speedView"
-            android:layout_width="68dp"
-            android:layout_height="68dp"
-            android:layout_gravity="center_vertical"
-            android:layout_marginStart="5dp"
-            android:background="@drawable/speed_limit_normal"
-            android:gravity="center"
-            android:padding="6dp"
-            android:textColor="#000000"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
         <Button
             android:id="@+id/stop"
             android:layout_width="48dp"
@@ -105,7 +103,7 @@
             android:id="@+id/tripProgressView"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_gravity="center_horizontal|center_vertical"
+            android:layout_gravity="start|center_vertical"
             android:layout_margin="0dp"
             android:padding="0dp"
             app:tripProgressTextColor="#FFFFFF"
