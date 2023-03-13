@@ -803,6 +803,7 @@ open class TurnByTurnNative(
                 "}"
             )
         }
+
         binding.routeOverview.setOnClickListener {
             navigationCamera!!.requestNavigationCameraToOverview()
             binding.recenter.showTextAndExtend(BUTTON_ANIMATION_DURATION)
