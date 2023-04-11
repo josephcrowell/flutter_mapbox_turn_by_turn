@@ -1,7 +1,9 @@
-import MapboxCoreNavigation
-import MapboxDirections
+import Foundation
+import UIKit
 import MapboxMaps
+import MapboxCoreNavigation
 import MapboxNavigation
+import MapboxDirections
 
 class CustomNightStyle: NightStyle {
 
@@ -30,7 +32,12 @@ class CustomNightStyle: NightStyle {
 
   override func apply() {
     super.apply()
-    // Begin styling the UI
-    //BottomBannerView.appearance().backgroundColor = .orange
+    // Begin styling the phone UI
+    TopBannerView.appearance(for: UITraitCollection(userInterfaceIdiom: .phone)).backgroundColor = UIColor.init(hex: "#1A000000")
+    BottomBannerView.appearance(for: UITraitCollection(userInterfaceIdiom: .phone)).backgroundColor = UIColor.init(hex: "#1A000000")
+    
+    // Begin styling the tablet UI
+    TopBannerView.appearance(for: UITraitCollection(userInterfaceIdiom: .pad)).backgroundColor = UIColor.init(hex: "#1A000000")
+    BottomBannerView.appearance(for: UITraitCollection(userInterfaceIdiom: .pad)).backgroundColor = UIColor.init(hex: "#1A000000")
   }
 }
