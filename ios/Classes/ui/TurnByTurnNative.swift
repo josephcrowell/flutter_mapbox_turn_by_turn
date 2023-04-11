@@ -200,6 +200,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     }
 
     let passiveLocationManager = PassiveLocationManager()
+    passiveLocationManager.delegate = self
     var passiveLocationProvider = PassiveLocationProvider(locationManager: passiveLocationManager)
 
     let locationProvider: LocationProvider = passiveLocationProvider
@@ -226,6 +227,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       viewportDataSourceType: .raw)
     navigationView!.navigationMapView.navigationCamera.viewportDataSource =
       navigationViewportDataSource
+    
     switch navigationCameraType {
     case NavigationCameraType.FOLLOWING.rawValue:
       navigationView!.navigationMapView.navigationCamera.follow()
@@ -388,9 +390,14 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       navigationOptions: navigationOptions)
 
     navigationViewController!.delegate = self
-
+    
     addChild(navigationViewController!)
     self.view.addSubview(navigationViewController!.view)
+    
+    // Animate top and bottom banner views presentation.
+    let duration = 1.0
+    navigationViewController!.navigationView.bottomBannerContainerView.show(duration: duration)
+    navigationViewController!.navigationView.topBannerContainerView.show(duration: duration)
   }
 
   private func clearRouteAndStopNavigation() {
@@ -440,14 +447,36 @@ extension TurnByTurnNative: NavigationViewControllerDelegate {
       completion: { [weak self] _ in
         navigationViewController.dismiss(animated: false) {
           guard let self = self else { return }
-
+          
           self.initializeMapbox()
           self.navigationViewController = nil
-
+          
           self.mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.navigationCancelled)
-
+          
           self.navigationView!.navigationMapView.navigationCamera.moveToOverview()
         }
       })
+  }
+}
+  
+extension TurnByTurnNative: PassiveLocationManagerDelegate {
+  // Delegate called when the location is updated
+  public func passiveLocationManager(_ manager: MapboxCoreNavigation.PassiveLocationManager, didUpdateLocation location: CLLocation, rawLocation: CLLocation) {
+    // Not implemented
+  }
+  
+  // Delegate called when location authorization state is changed
+  public func passiveLocationManagerDidChangeAuthorization(_ manager: MapboxCoreNavigation.PassiveLocationManager) {
+    // Not implemented
+  }
+  
+  // Delegate called when heading changes
+  public func passiveLocationManager(_ manager: MapboxCoreNavigation.PassiveLocationManager, didUpdateHeading newHeading: CLHeading) {
+    // Not implemented
+  }
+  
+  // Delegate called when location updates fail with error
+  public func passiveLocationManager(_ manager: MapboxCoreNavigation.PassiveLocationManager, didFailWithError error: Error) {
+    // Not implemented
   }
 }
