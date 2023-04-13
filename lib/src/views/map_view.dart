@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as logger;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -11,7 +12,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_progress_change_event.dart';
 import 'package:flutter_mapbox_turn_by_turn/src/models/mapbox_turn_by_turn_event.dart';
 import 'package:flutter_mapbox_turn_by_turn/src/models/waypoint.dart';
-import 'package:flutter_mapbox_turn_by_turn/src/utilities.dart';
 
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -376,7 +376,7 @@ class MapView extends StatelessWidget {
 
       String currentInstruction = _instructions.elementAt(0);
 
-      log.d("Voice instruction: $currentInstruction");
+      logger.log("Voice instruction: $currentInstruction");
 
       if (await _flutterTts.speak(currentInstruction) == 1) {
         _instructions.removeAt(0);
@@ -393,9 +393,9 @@ class MapView extends StatelessWidget {
         if (eventNotifier != null) {
           _mapboxTurnByTurnEventSubscription =
               _eventStream!.listen(_onEventData);
-          log.d('Event Notifier is initialized');
+          logger.log('Event Notifier is initialized');
         } else {
-          log.d('Event Notifier is not initialized because it is null');
+          logger.log('Event Notifier is not initialized because it is null');
         }
 
         if (onInitializationFinished != null) {

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as logger;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -172,7 +173,7 @@ class _ExampleAppState extends State<ExampleApp> {
 
   /// Optional function to run after map initialization is complete
   Future<void> _onInitializationFinished() async {
-    log.d(
+    logger.log(
       'Initialization finished function called',
     );
   }
@@ -185,7 +186,7 @@ class _ExampleAppState extends State<ExampleApp> {
         var progressChangeEvent = e.data as MapboxProgressChangeEvent;
         if (progressChangeEvent.currentStepInstruction != null) {
           _instruction = progressChangeEvent.currentStepInstruction!;
-          log.d(
+          logger.log(
             'Progress changed: $_instruction',
           );
         }
@@ -199,7 +200,7 @@ class _ExampleAppState extends State<ExampleApp> {
         );
 
         if (_pastLocation == null) {
-          log.d(
+          logger.log(
             'Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
           );
 
@@ -212,7 +213,7 @@ class _ExampleAppState extends State<ExampleApp> {
                 _currentLocation!,
               ) >
               4) {
-            log.d(
+            logger.log(
               'Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
             );
 
@@ -229,7 +230,7 @@ class _ExampleAppState extends State<ExampleApp> {
         );
 
         if (_pastEnhancedLocation == null) {
-          log.d(
+          logger.log(
             'Enhanced Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
           );
 
@@ -242,7 +243,7 @@ class _ExampleAppState extends State<ExampleApp> {
                 _currentEnhancedLocation!,
               ) >
               4) {
-            log.d(
+            logger.log(
               'Enhanced Location changed. Latitude: ${locationChangeEvent.latitude} Longitude: ${locationChangeEvent.longitude}',
             );
 
@@ -253,18 +254,18 @@ class _ExampleAppState extends State<ExampleApp> {
       case MapboxEventType.muteChanged:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.d(
+        logger.log(
           'Are instructions muted? ${data['muted']}',
         );
         break;
       case MapboxEventType.routeBuilt:
-        log.d('Route built');
+        logger.log('Route built');
         setState(() {
           _routeBuilt = true;
         });
         break;
       case MapboxEventType.routeBuildFailed:
-        log.e('Route build failed');
+        logger.log('Route build failed');
         setState(() {
           _routeBuilt = false;
         });
@@ -275,13 +276,13 @@ class _ExampleAppState extends State<ExampleApp> {
         });
         break;
       case MapboxEventType.waypointArrival:
-        log.d("Waypoint reached");
+        logger.log("Waypoint reached");
         break;
       case MapboxEventType.nextRouteLegStart:
-        log.d("Starting next leg");
+        logger.log("Starting next leg");
         break;
       case MapboxEventType.finalDestinationArrival:
-        log.d('Arrived at final destination');
+        logger.log('Arrived at final destination');
         await Future.delayed(
           const Duration(
             seconds: 3,
@@ -290,7 +291,7 @@ class _ExampleAppState extends State<ExampleApp> {
         await _mapView.stopNavigation();
         break;
       case MapboxEventType.navigationCancelled:
-        log.d('Navigation stopped');
+        logger.log('Navigation stopped');
         setState(() {
           _routeBuilt = false;
           _isNavigating = false;
@@ -299,49 +300,49 @@ class _ExampleAppState extends State<ExampleApp> {
       case MapboxEventType.navigationCameraChanged:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.d(
+        logger.log(
           'Navigation camera changed to : ${data['state']}',
         );
         break;
       case MapboxEventType.stylePackProgress:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.d(
+        logger.log(
           'Offline style pack loading progress: ${data['percent']}%',
         );
         break;
       case MapboxEventType.stylePackFinished:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.d('Offline style pack loading finished');
+        logger.log('Offline style pack loading finished');
         break;
       case MapboxEventType.stylePackError:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.d('Offline style pack loading error: ${data['error']}');
+        logger.log('Offline style pack loading error: ${data['error']}');
         break;
       case MapboxEventType.tileRegionProgress:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.d(
+        logger.log(
           'Offline tile region ${data['id']} loading progress: ${data['percent']}%',
         );
         break;
       case MapboxEventType.tileRegionFinished:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.d('Offline tile region ${data['id']} loading finished');
+        logger.log('Offline tile region ${data['id']} loading finished');
         break;
       case MapboxEventType.tileRegionError:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.d(
+        logger.log(
             'Offline tile region ${data['id']} loading error: ${data['error']}');
         break;
       default:
         String jsonString = e.data as String;
         dynamic data = json.decode(jsonString);
-        log.e('Unrecognized event ${e.eventType} with data: $data');
+        logger.log('Unrecognized event ${e.eventType} with data: $data');
         break;
     }
     setState(() {});
