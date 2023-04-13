@@ -1,15 +1,13 @@
 import Foundation
 
 public class MapboxLocationChangeEvent: Codable {
-  let name: String
+  let isLocationChangeEvent: Bool
   let latitude: Double?
   let longitude: Double?
-  let order: Int?
 
-  init(name: String, latitude: Double?, longitude: Double?, order: Int? = nil) {
-    self.name = name
+  init(latitude: Double?, longitude: Double?) {
+    self.isLocationChangeEvent = true
     self.latitude = latitude
     self.longitude = longitude
-    self.order = order
   }
 }
