@@ -1,5 +1,13 @@
 import Flutter
 import UIKit
+import os.log
+
+extension OSLog {
+  private static var subsystem = Bundle.main.bundleIdentifier!
+
+  /// Logs the view cycles like viewDidLoad.
+  static let TurnByTurnViewFactory = OSLog(subsystem: subsystem, category: "TurnByTurnViewFactory")
+}
 
 class TurnByTurnViewFactory: NSObject, FlutterPlatformViewFactory {
   private var messenger: FlutterBinaryMessenger
@@ -14,6 +22,7 @@ class TurnByTurnViewFactory: NSObject, FlutterPlatformViewFactory {
     viewIdentifier viewId: Int64,
     arguments args: Any?
   ) -> FlutterPlatformView {
+    os_log("Creating view factory", log: OSLog.TurnByTurnViewFactory, type: .debug)
     return TurnByTurnView(
       frame: frame,
       viewIdentifier: viewId,

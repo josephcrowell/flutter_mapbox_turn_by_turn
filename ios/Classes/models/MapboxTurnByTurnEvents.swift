@@ -1,7 +1,16 @@
 import Flutter
 import Foundation
+import os.log
 
 enum MapboxEventType: Int, Codable {
+extension OSLog {
+  private static var subsystem = Bundle.main.bundleIdentifier!
+
+  /// Logs the view cycles like viewDidLoad.
+  static let MapboxTurnByTurnEvents = OSLog(
+    subsystem: subsystem, category: "MapboxTurnByTurnEvents")
+}
+
   case progressChange
   case enhancedLocationChange
   case locationChange

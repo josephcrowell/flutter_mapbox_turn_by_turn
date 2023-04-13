@@ -5,6 +5,14 @@ import MapboxDirections
 import MapboxMaps
 import MapboxNavigation
 import UIKit
+import os.log
+
+extension OSLog {
+    private static var subsystem = Bundle.main.bundleIdentifier!
+
+    /// Logs the view cycles like viewDidLoad.
+    static let TurnByTurnNative = OSLog(subsystem: subsystem, category: "TurnByTurnNative")
+}
 
 enum NavigationCameraType: String, Codable {
   case NOCHANGE = "noChange"
@@ -95,7 +103,8 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     arguments args: Any?,
     binaryMessenger messenger: FlutterBinaryMessenger?
   ) {
-    arguments = args as! NSDictionary
+    os_log("Initializing Mapbox", log: OSLog.TurnByTurnNative, type: .debug)
+    arguments = (args as! NSDictionary)
     self.messenger = messenger!
     methodChannel =
       FlutterMethodChannel(
@@ -246,12 +255,14 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   ) -> FlutterError? {
     self.eventSink = eventSink
     mapboxTurnByTurnEvents = MapboxTurnByTurnEvents(eventSink: self.eventSink)
+    os_log("FlutterEventSink initialized", log: OSLog.TurnByTurnNative, type: .debug)
     return nil
   }
 
   public func onCancel(withArguments arguments: Any?) -> FlutterError? {
     eventSink = nil
     mapboxTurnByTurnEvents = nil
+    os_log("FlutterEventSink cleared", log: OSLog.TurnByTurnNative, type: .debug)
     return nil
   }
 
@@ -330,7 +341,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       switch result {
       case .failure(let error):
         self!.mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.routeBuildFailed)
-        print(error.localizedDescription)
+        os_log("%{public}@", log: OSLog.TurnByTurnNative, type: .error, error.localizedDescription)
       case .success(let response):
         guard let self = self else { return }
 

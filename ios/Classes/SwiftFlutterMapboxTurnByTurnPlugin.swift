@@ -2,6 +2,14 @@ import Flutter
 import Foundation
 import UIKit
 import CoreLocation
+import os.log
+
+extension OSLog {
+    private static var subsystem = Bundle.main.bundleIdentifier!
+
+    /// Logs the view cycles like viewDidLoad.
+    static let TurnByTurnPlugin = OSLog(subsystem: subsystem, category: "TurnByTurnPlugin")
+}
 
 public class SwiftFlutterMapboxTurnByTurnPlugin: NSObject, FlutterPlugin, CLLocationManagerDelegate {
     private var locationManager = CLLocationManager()
@@ -17,15 +25,16 @@ public class SwiftFlutterMapboxTurnByTurnPlugin: NSObject, FlutterPlugin, CLLoca
     }
 
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel =
-            FlutterMethodChannel(
-                name: "flutter_mapbox_turn_by_turn/method",
-                binaryMessenger: registrar.messenger()
-            )
-        let factory = TurnByTurnViewFactory(messenger: registrar.messenger())
-        let instance = SwiftFlutterMapboxTurnByTurnPlugin()
-        registrar.register(factory, withId: "MapView")
-        registrar.addMethodCallDelegate(instance, channel: channel)
+      os_log("Registering view factory", log: OSLog.TurnByTurnPlugin, type: .debug)
+      let channel =
+          FlutterMethodChannel(
+              name: "flutter_mapbox_turn_by_turn/method",
+              binaryMessenger: registrar.messenger()
+          )
+      let instance = SwiftFlutterMapboxTurnByTurnPlugin()
+      let factory = TurnByTurnViewFactory(messenger: registrar.messenger())
+      registrar.register(factory, withId: "MapView")
+      registrar.addMethodCallDelegate(instance, channel: channel)
     }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
