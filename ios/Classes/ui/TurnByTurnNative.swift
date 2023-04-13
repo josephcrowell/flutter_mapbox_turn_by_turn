@@ -51,6 +51,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     didSet {
       guard currentRoute != nil else {
         self.navigationView!.navigationMapView.removeRoutes()
+        self.navigationView!.navigationMapView.removeWaypoints()
         return
       }
       currentRouteIndex = 0
@@ -125,7 +126,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     showMuteButton = arguments?["showMuteButton"] as? Bool
     showStopButton = arguments?["showStopButton"] as? Bool
     showSpeedIndicator = arguments?["showSpeedIndicator"] as! Bool
-    navigationCameraType = arguments?["navigationCameraType"] as! String
+    navigationCameraType = (arguments?["navigationCameraType"] as! String)
     speedThreshold = arguments?["speedThreshold"] as! Int
     routeProfile = arguments?["routeProfile"] as! String
     language = arguments?["language"] as! String
@@ -160,28 +161,19 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       switch call.method {
       case "startNavigation":
         strongSelf.startNavigation(arguments: arguments)
-        break
       case "stopNavigation":
-        strongSelf.clearRouteAndStopNavigation()
-        break
+        if strongSelf.navigationViewController != nil {
+          strongSelf.navigationViewControllerDidDismiss(
+            strongSelf.navigationViewController!, byCanceling: true)
+        }
       case "addOfflineMap":
         strongSelf.addOfflineMap(arguments: arguments)
-        break
       case "toggleMuted":
         break
       default:
         result("method is not implemented")
       }
     }
-
-    initializeMapbox()
-  }
-
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-
-  private func initializeMapbox() {
     var mapInitOptions: MapInitOptions?
 
     let hour = Calendar.current.component(.hour, from: Date())
@@ -210,7 +202,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
     let passiveLocationManager = PassiveLocationManager()
     passiveLocationManager.delegate = self
-    var passiveLocationProvider = PassiveLocationProvider(locationManager: passiveLocationManager)
+    let passiveLocationProvider = PassiveLocationProvider(locationManager: passiveLocationManager)
 
     let locationProvider: LocationProvider = passiveLocationProvider
     navigationMapView!.mapView.location.overrideLocationProvider(with: locationProvider)
@@ -222,6 +214,25 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
     navigationView = NavigationView(frame: view.bounds, navigationMapView: navigationMapView!)
     navigationView!.translatesAutoresizingMaskIntoConstraints = false
+
+
+    let navigationViewportDataSource = NavigationViewportDataSource(
+      navigationView!.navigationMapView.mapView,
+      viewportDataSourceType: .raw)
+    navigationView!.navigationMapView.navigationCamera.viewportDataSource =
+      navigationViewportDataSource
+
+    initializeMapbox()
+
+    methodChannel.invokeMethod("onInitializationFinished", arguments: nil)
+    os_log("Mapbox initialized", log: OSLog.TurnByTurnNative, type: .debug)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init?(coder:) has not been implemented")
+  }
+
+  private func initializeMapbox() {
     view.addSubview(navigationView!)
 
     NSLayoutConstraint.activate([
@@ -231,19 +242,11 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       navigationView!.bottomAnchor.constraint(equalTo: view.bottomAnchor),
     ])
 
-    let navigationViewportDataSource = NavigationViewportDataSource(
-      navigationView!.navigationMapView.mapView,
-      viewportDataSourceType: .raw)
-    navigationView!.navigationMapView.navigationCamera.viewportDataSource =
-      navigationViewportDataSource
-    
     switch navigationCameraType {
     case NavigationCameraType.FOLLOWING.rawValue:
       navigationView!.navigationMapView.navigationCamera.follow()
-      break
     case NavigationCameraType.OVERVIEW.rawValue:
       navigationView!.navigationMapView.navigationCamera.moveToOverview()
-      break
     default:
       break
     }
@@ -318,13 +321,10 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     switch routeProfile {
     case "cycling":
       mode = .cycling
-      break
     case "driving":
       mode = .automobile
-      break
     case "walking":
       mode = .walking
-      break
     default:
       mode = .automobileAvoidingTraffic
     }
@@ -369,10 +369,8 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     switch navigationCameraType {
     case NavigationCameraType.FOLLOWING.rawValue:
       self.navigationView?.navigationMapView.navigationCamera.follow()
-      break
     case NavigationCameraType.OVERVIEW.rawValue:
       self.navigationView?.navigationMapView.navigationCamera.moveToOverview()
-      break
     default:
       break
     }
@@ -396,28 +394,30 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     let navigationOptions = NavigationOptions(
       styles: [dayStyle, nightStyle], navigationService: navigationService)
 
-    navigationViewController = NavigationViewController(
-      for: indexedRouteResponse,
-      navigationOptions: navigationOptions)
+    for subview in self.view.subviews {
+      subview.removeFromSuperview()
+    }
 
-    navigationViewController!.delegate = self
-    
-    addChild(navigationViewController!)
+    if navigationViewController == nil {
+      navigationViewController = NavigationViewController(
+        for: indexedRouteResponse,
+        navigationOptions: navigationOptions)
+
+      navigationViewController!.delegate = self
+
+      addChild(navigationViewController!)
+    } else {
+      navigationViewController!.navigationService.router.updateRoute(
+        with: indexedRouteResponse,
+        routeOptions: navigationViewController!.navigationService.routeProgress.routeOptions,
+        completion: nil)
+    }
     self.view.addSubview(navigationViewController!.view)
-    
+
     // Animate top and bottom banner views presentation.
     let duration = 1.0
     navigationViewController!.navigationView.bottomBannerContainerView.show(duration: duration)
     navigationViewController!.navigationView.topBannerContainerView.show(duration: duration)
-  }
-
-  private func clearRouteAndStopNavigation() {
-    if routeResponse == nil {
-      return
-    }
-
-    routeResponse = nil
-    mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.navigationCancelled)
   }
 
   private func addOfflineMap(arguments: NSDictionary?) {
@@ -458,36 +458,59 @@ extension TurnByTurnNative: NavigationViewControllerDelegate {
       completion: { [weak self] _ in
         navigationViewController.dismiss(animated: false) {
           guard let self = self else { return }
-          
-          self.initializeMapbox()
-          self.navigationViewController = nil
-          
-          self.mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.navigationCancelled)
-          
+
+          for subview in self.view.subviews {
+            subview.removeFromSuperview()
+          }
+
+          self.navigationView!.navigationMapView.removeRoutes()
+          self.navigationView!.navigationMapView.removeWaypoints()
           self.navigationView!.navigationMapView.navigationCamera.moveToOverview()
+
+          if self.routeResponse != nil {
+            self.routeResponse = nil
+          }
+
+          self.initializeMapbox()
+
+          self.mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.navigationCancelled)
         }
       })
   }
+
+  public func navigationViewController(
+    _ navigationViewController: NavigationViewController,
+    didUpdate progress: RouteProgress,
+    with location: CLLocation,
+    rawLocation: CLLocation) {
+    self.mapboxTurnByTurnEvents?.sendEvent(event: MapboxLocationChangeEvent(
+          latitude: rawLocation.coordinate.latitude, longitude: rawLocation.coordinate.longitude))
+
+    self.mapboxTurnByTurnEvents?.sendEvent(event: MapboxEnhancedLocationChangeEvent(
+      latitude: location.coordinate.latitude, longitude: location.coordinate.longitude))
+  }
 }
-  
+
 extension TurnByTurnNative: PassiveLocationManagerDelegate {
-  // Delegate called when the location is updated
-  public func passiveLocationManager(_ manager: MapboxCoreNavigation.PassiveLocationManager, didUpdateLocation location: CLLocation, rawLocation: CLLocation) {
-    // Not implemented
-  }
-  
-  // Delegate called when location authorization state is changed
   public func passiveLocationManagerDidChangeAuthorization(_ manager: MapboxCoreNavigation.PassiveLocationManager) {
-    // Not implemented
+    // placeholder
   }
-  
-  // Delegate called when heading changes
+
+  public func passiveLocationManager(_ manager: MapboxCoreNavigation.PassiveLocationManager, didUpdateLocation location: CLLocation, rawLocation: CLLocation) {
+    os_log("Raw Location: %{public}@,%{public}@", log: OSLog.TurnByTurnNative, type: .info, location.coordinate.latitude, rawLocation.coordinate.longitude)
+    os_log("Enhanced Location: %{public}@,%{public}@", log: OSLog.TurnByTurnNative, type: .info, location.coordinate.latitude, rawLocation.coordinate.longitude)
+    self.mapboxTurnByTurnEvents?.sendEvent(event: MapboxLocationChangeEvent(
+          latitude: rawLocation.coordinate.latitude, longitude: rawLocation.coordinate.longitude))
+
+    self.mapboxTurnByTurnEvents?.sendEvent(event: MapboxEnhancedLocationChangeEvent(
+      latitude: location.coordinate.latitude, longitude: location.coordinate.longitude))
+  }
+
   public func passiveLocationManager(_ manager: MapboxCoreNavigation.PassiveLocationManager, didUpdateHeading newHeading: CLHeading) {
-    // Not implemented
+    // placeholder
   }
-  
-  // Delegate called when location updates fail with error
+
   public func passiveLocationManager(_ manager: MapboxCoreNavigation.PassiveLocationManager, didFailWithError error: Error) {
-    // Not implemented
+    // placeholder
   }
 }
