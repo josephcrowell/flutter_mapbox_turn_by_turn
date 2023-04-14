@@ -8,16 +8,16 @@ import UIKit
 import os.log
 
 extension OSLog {
-    private static var subsystem = Bundle.main.bundleIdentifier!
+  private static var subsystem = Bundle.main.bundleIdentifier!
 
-    /// Logs the view cycles like viewDidLoad.
-    static let TurnByTurnNative = OSLog(subsystem: subsystem, category: "TurnByTurnNative")
+  /// Logs the view cycles like viewDidLoad.
+  static let TurnByTurnNative = OSLog(subsystem: subsystem, category: "TurnByTurnNative")
 }
 
 enum NavigationCameraType: String, Codable {
-  case NOCHANGE = "noChange"
-  case OVERVIEW = "overview"
-  case FOLLOWING = "following"
+  case noChange
+  case overview
+  case following
 }
 
 public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
@@ -31,7 +31,12 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   let eventChannel: FlutterEventChannel
 
   var navigationView: NavigationView?
+  var navigationMapView: NavigationMapView?
   var navigationViewController: NavigationViewController?
+  var passiveLocationManager: PassiveLocationManager?
+  var passiveLocationProvider: PassiveLocationProvider?
+  
+  var latestLocation: CLLocation?
 
   var currentRouteIndex = 0 {
     didSet {
@@ -50,8 +55,8 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   var routeResponse: RouteResponse? {
     didSet {
       guard currentRoute != nil else {
-        self.navigationView!.navigationMapView.removeRoutes()
-        self.navigationView!.navigationMapView.removeWaypoints()
+        self.navigationMapView!.removeRoutes()
+        self.navigationMapView!.removeWaypoints()
         return
       }
       currentRouteIndex = 0
@@ -66,7 +71,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       contentsOf: self.routes!.filter {
         $0 != currentRoute
       })
-    self.navigationView!.navigationMapView.showcase(routes)
+    self.navigationMapView!.showcase(routes)
   }
 
   // flutter creation parameters
@@ -183,8 +188,6 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       mapInitOptions = MapInitOptions(styleURI: StyleURI(url: URL(string: mapStyleUrlDay!)!))
     }
 
-    let navigationMapView: NavigationMapView?
-
     if mapInitOptions != nil {
       let mapView = MapView(frame: view.bounds, mapInitOptions: mapInitOptions!)
       navigationMapView = NavigationMapView(
@@ -194,33 +197,25 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
         frame: view.bounds)
     }
 
-    if navigateOnLongClick ?? false {
-      let gesture = UILongPressGestureRecognizer(
-        target: self, action: #selector(handleLongPress(_:)))
-      navigationMapView!.addGestureRecognizer(gesture)
-    }
-
-    let passiveLocationManager = PassiveLocationManager()
-    passiveLocationManager.delegate = self
-    let passiveLocationProvider = PassiveLocationProvider(locationManager: passiveLocationManager)
-
-    let locationProvider: LocationProvider = passiveLocationProvider
-    navigationMapView!.mapView.location.overrideLocationProvider(with: locationProvider)
-    passiveLocationProvider.startUpdatingLocation()
-
     navigationMapView!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    navigationMapView!.delegate = self
     navigationMapView!.userLocationStyle = .courseView(_:)()
 
     navigationView = NavigationView(frame: view.bounds, navigationMapView: navigationMapView!)
     navigationView!.translatesAutoresizingMaskIntoConstraints = false
 
-
     let navigationViewportDataSource = NavigationViewportDataSource(
-      navigationView!.navigationMapView.mapView,
+      navigationMapView!.mapView,
       viewportDataSourceType: .raw)
-    navigationView!.navigationMapView.navigationCamera.viewportDataSource =
+    navigationMapView!.navigationCamera.viewportDataSource =
       navigationViewportDataSource
+
+    navigationMapView!.delegate = self
+
+    if navigateOnLongClick ?? false {
+      let gesture = UILongPressGestureRecognizer(
+        target: self, action: #selector(handleLongPress(_:)))
+      view.addGestureRecognizer(gesture)
+    }
 
     initializeMapbox()
 
@@ -233,8 +228,24 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   }
 
   private func initializeMapbox() {
-    view.addSubview(navigationView!)
+    if passiveLocationManager == nil {
+      passiveLocationManager = PassiveLocationManager()
+      if passiveLocationProvider == nil {
+        passiveLocationProvider = PassiveLocationProvider(locationManager: passiveLocationManager!)
+      }
+    }
 
+    navigationMapView!.mapView.location.overrideLocationProvider(
+      with: passiveLocationProvider!)
+
+    passiveLocationProvider!.startUpdatingHeading()
+    passiveLocationProvider!.startUpdatingLocation()
+    passiveLocationManager!.startUpdatingLocation()
+    passiveLocationManager!.resumeTripSession()
+
+    passiveLocationManager!.delegate = self
+
+    view.addSubview(navigationView!)
     NSLayoutConstraint.activate([
       navigationView!.leadingAnchor.constraint(equalTo: view.leadingAnchor),
       navigationView!.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -243,10 +254,10 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     ])
 
     switch navigationCameraType {
-    case NavigationCameraType.FOLLOWING.rawValue:
-      navigationView!.navigationMapView.navigationCamera.follow()
-    case NavigationCameraType.OVERVIEW.rawValue:
-      navigationView!.navigationMapView.navigationCamera.moveToOverview()
+    case NavigationCameraType.following.rawValue:
+      navigationMapView!.navigationCamera.follow()
+    case NavigationCameraType.overview.rawValue:
+      navigationMapView!.navigationCamera.moveToOverview()
     default:
       break
     }
@@ -290,14 +301,15 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
     if !waypointList.isEmpty && !waypointNamesList.isEmpty {
       findRoutes(
-        locations: waypointList, waypointNames: waypointNamesList, navigationCameraType: cameraType)
+        locations: waypointList, waypointNames: waypointNamesList, navigationCameraType: cameraType
+      )
     }
   }
 
   func findRoutes(
     locations: [CLLocationCoordinate2D], waypointNames: [String], navigationCameraType: String
   ) {
-    guard let userLocation = navigationView!.navigationMapView.mapView.location.latestLocation
+    guard let userLocation = latestLocation
     else { return }
 
     let userWaypoint = Waypoint(
@@ -367,13 +379,15 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.routeBuilt)
 
     switch navigationCameraType {
-    case NavigationCameraType.FOLLOWING.rawValue:
+    case NavigationCameraType.following.rawValue:
       self.navigationView?.navigationMapView.navigationCamera.follow()
-    case NavigationCameraType.OVERVIEW.rawValue:
+    case NavigationCameraType.overview.rawValue:
       self.navigationView?.navigationMapView.navigationCamera.moveToOverview()
     default:
       break
     }
+
+    passiveLocationManager?.pauseTripSession()
 
     let indexedRouteResponse = IndexedRouteResponse(routeResponse: routeResponse, routeIndex: 0)
     let navigationService = MapboxNavigationService(
@@ -427,12 +441,22 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   // Delegate called when user long presses on the map
   @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
     guard gesture.state == .ended else { return }
-    let location = self.navigationView!.navigationMapView.mapView.mapboxMap.coordinate(
-      for: gesture.location(in: self.navigationView!.navigationMapView.mapView))
 
+    let location = self.navigationMapView!.mapView.mapboxMap.coordinate(
+      for: gesture.location(in: self.navigationMapView!.mapView))
+    
+    os_log(
+      "Long press gesture recognized. Finding route %{public}@,%{public}@",
+      log: OSLog.TurnByTurnView,
+      type: .debug,
+      location.latitude.description,
+      location.longitude.description
+    )
+    
     findRoutes(
       locations: [location], waypointNames: [""],
-      navigationCameraType: NavigationCameraType.NOCHANGE.rawValue)
+      navigationCameraType: NavigationCameraType.noChange.rawValue
+    )
   }
 }
 
@@ -447,6 +471,7 @@ extension TurnByTurnNative: NavigationViewControllerDelegate {
   public func navigationViewControllerDidDismiss(
     _ navigationViewController: NavigationViewController, byCanceling canceled: Bool
   ) {
+    navigationViewController.navigationService.stop()
     let duration = 1.0
     navigationViewController.navigationView.topBannerContainerView.hide(duration: duration)
     navigationViewController.navigationView.bottomBannerContainerView.hide(
@@ -463,9 +488,9 @@ extension TurnByTurnNative: NavigationViewControllerDelegate {
             subview.removeFromSuperview()
           }
 
-          self.navigationView!.navigationMapView.removeRoutes()
-          self.navigationView!.navigationMapView.removeWaypoints()
-          self.navigationView!.navigationMapView.navigationCamera.moveToOverview()
+          self.navigationMapView!.removeRoutes()
+          self.navigationMapView!.removeWaypoints()
+          self.navigationMapView!.navigationCamera.moveToOverview()
 
           if self.routeResponse != nil {
             self.routeResponse = nil
@@ -482,35 +507,54 @@ extension TurnByTurnNative: NavigationViewControllerDelegate {
     _ navigationViewController: NavigationViewController,
     didUpdate progress: RouteProgress,
     with location: CLLocation,
-    rawLocation: CLLocation) {
-    self.mapboxTurnByTurnEvents?.sendEvent(event: MapboxLocationChangeEvent(
-          latitude: rawLocation.coordinate.latitude, longitude: rawLocation.coordinate.longitude))
+    rawLocation: CLLocation
+  ) {
+    latestLocation = location
+    
+    self.mapboxTurnByTurnEvents?.sendEvent(
+      event: MapboxLocationChangeEvent(
+        latitude: rawLocation.coordinate.latitude, longitude: rawLocation.coordinate.longitude))
 
-    self.mapboxTurnByTurnEvents?.sendEvent(event: MapboxEnhancedLocationChangeEvent(
-      latitude: location.coordinate.latitude, longitude: location.coordinate.longitude))
+    self.mapboxTurnByTurnEvents?.sendEvent(
+      event: MapboxEnhancedLocationChangeEvent(
+        latitude: location.coordinate.latitude, longitude: location.coordinate.longitude))
   }
 }
 
 extension TurnByTurnNative: PassiveLocationManagerDelegate {
-  public func passiveLocationManagerDidChangeAuthorization(_ manager: MapboxCoreNavigation.PassiveLocationManager) {
+  public func passiveLocationManagerDidChangeAuthorization(
+    _ manager: MapboxCoreNavigation.PassiveLocationManager
+  ) {
     // placeholder
   }
 
-  public func passiveLocationManager(_ manager: MapboxCoreNavigation.PassiveLocationManager, didUpdateLocation location: CLLocation, rawLocation: CLLocation) {
-    os_log("Raw Location: %{public}@,%{public}@", log: OSLog.TurnByTurnNative, type: .info, location.coordinate.latitude, rawLocation.coordinate.longitude)
-    os_log("Enhanced Location: %{public}@,%{public}@", log: OSLog.TurnByTurnNative, type: .info, location.coordinate.latitude, rawLocation.coordinate.longitude)
-    self.mapboxTurnByTurnEvents?.sendEvent(event: MapboxLocationChangeEvent(
-          latitude: rawLocation.coordinate.latitude, longitude: rawLocation.coordinate.longitude))
+  public func passiveLocationManager(
+    _ manager: MapboxCoreNavigation.PassiveLocationManager,
+    didUpdateLocation location: CLLocation,
+    rawLocation: CLLocation
+  ) {
+    latestLocation = location
+    
+    self.mapboxTurnByTurnEvents?.sendEvent(
+      event: MapboxLocationChangeEvent(
+        latitude: rawLocation.coordinate.latitude, longitude: rawLocation.coordinate.longitude))
 
-    self.mapboxTurnByTurnEvents?.sendEvent(event: MapboxEnhancedLocationChangeEvent(
-      latitude: location.coordinate.latitude, longitude: location.coordinate.longitude))
+    self.mapboxTurnByTurnEvents?.sendEvent(
+      event: MapboxEnhancedLocationChangeEvent(
+        latitude: location.coordinate.latitude, longitude: location.coordinate.longitude))
   }
 
-  public func passiveLocationManager(_ manager: MapboxCoreNavigation.PassiveLocationManager, didUpdateHeading newHeading: CLHeading) {
+  public func passiveLocationManager(
+    _ manager: MapboxCoreNavigation.PassiveLocationManager,
+    didUpdateHeading newHeading: CLHeading
+  ) {
     // placeholder
   }
 
-  public func passiveLocationManager(_ manager: MapboxCoreNavigation.PassiveLocationManager, didFailWithError error: Error) {
+  public func passiveLocationManager(
+    _ manager: MapboxCoreNavigation.PassiveLocationManager,
+    didFailWithError error: Error
+  ) {
     // placeholder
   }
 }
