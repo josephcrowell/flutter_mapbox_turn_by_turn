@@ -20,11 +20,26 @@ enum NavigationCameraType: String, Codable {
   case following
 }
 
+var mapboxTurnByTurnEvents: MapboxTurnByTurnEvents?
+
+class FlutterVoiceController: MapboxSpeechSynthesizer {
+  let methodChannel: FlutterMethodChannel
+  
+  init(methodChannel: FlutterMethodChannel) {
+    self.methodChannel = methodChannel
+    
+    super.init()
+  }
+  
+  override func speak(_ instruction: SpokenInstruction, during legProgress: RouteLegProgress, locale: Locale? = nil) {
+    methodChannel.invokeMethod("playVoiceInstruction", arguments: instruction.text)
+  }
+}
+
 public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   var arguments: NSDictionary?
 
   var eventSink: FlutterEventSink?
-  var mapboxTurnByTurnEvents: MapboxTurnByTurnEvents?
 
   let messenger: FlutterBinaryMessenger
   let methodChannel: FlutterMethodChannel
@@ -35,7 +50,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   var navigationViewController: NavigationViewController?
   var passiveLocationManager: PassiveLocationManager?
   var passiveLocationProvider: PassiveLocationProvider?
-  
+
   var latestLocation: CLLocation?
 
   var currentRouteIndex = 0 {
@@ -205,7 +220,8 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
     let navigationViewportDataSource = NavigationViewportDataSource(
       navigationMapView!.mapView,
-      viewportDataSourceType: .raw)
+      viewportDataSourceType: .raw
+    )
     navigationMapView!.navigationCamera.viewportDataSource =
       navigationViewportDataSource
 
@@ -352,7 +368,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     Directions.shared.calculate(navigationRouteOptions) { [weak self] (_, result) in
       switch result {
       case .failure(let error):
-        self!.mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.routeBuildFailed)
+        mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.routeBuildFailed)
         os_log("%{public}@", log: OSLog.TurnByTurnNative, type: .error, error.localizedDescription)
       case .success(let response):
         guard let self = self else { return }
@@ -395,7 +411,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       customRoutingProvider: NavigationSettings.shared.directions,
       credentials: NavigationSettings.shared.directions.credentials,
       simulating: .never)
-
+    
     var dayStyle = CustomDayStyle()
     if mapStyleUrlDay != nil {
       dayStyle = CustomDayStyle(url: mapStyleUrlDay)
@@ -404,9 +420,21 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     if mapStyleUrlNight != nil {
       nightStyle = CustomNightStyle(url: mapStyleUrlNight)
     }
+    
+    let speechSynthesizer = MultiplexedSpeechSynthesizer([
+      FlutterVoiceController(methodChannel: methodChannel),
+      SystemSpeechSynthesizer()
+    ])
+    let routeVoiceController = RouteVoiceController(
+      navigationService: navigationService,
+      speechSynthesizer: speechSynthesizer
+    )
 
     let navigationOptions = NavigationOptions(
-      styles: [dayStyle, nightStyle], navigationService: navigationService)
+      styles: [dayStyle, nightStyle],
+      navigationService: navigationService,
+      voiceController: routeVoiceController
+    )
 
     for subview in self.view.subviews {
       subview.removeFromSuperview()
@@ -444,7 +472,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
     let location = self.navigationMapView!.mapView.mapboxMap.coordinate(
       for: gesture.location(in: self.navigationMapView!.mapView))
-    
+
     os_log(
       "Long press gesture recognized. Finding route %{public}@,%{public}@",
       log: OSLog.TurnByTurnView,
@@ -452,7 +480,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       location.latitude.description,
       location.longitude.description
     )
-    
+
     findRoutes(
       locations: [location], waypointNames: [""],
       navigationCameraType: NavigationCameraType.noChange.rawValue
@@ -498,7 +526,7 @@ extension TurnByTurnNative: NavigationViewControllerDelegate {
 
           self.initializeMapbox()
 
-          self.mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.navigationCancelled)
+          mapboxTurnByTurnEvents?.sendEvent(eventType: MapboxEventType.navigationCancelled)
         }
       })
   }
@@ -510,12 +538,12 @@ extension TurnByTurnNative: NavigationViewControllerDelegate {
     rawLocation: CLLocation
   ) {
     latestLocation = location
-    
-    self.mapboxTurnByTurnEvents?.sendEvent(
+
+    mapboxTurnByTurnEvents?.sendEvent(
       event: MapboxLocationChangeEvent(
         latitude: rawLocation.coordinate.latitude, longitude: rawLocation.coordinate.longitude))
 
-    self.mapboxTurnByTurnEvents?.sendEvent(
+    mapboxTurnByTurnEvents?.sendEvent(
       event: MapboxEnhancedLocationChangeEvent(
         latitude: location.coordinate.latitude, longitude: location.coordinate.longitude))
   }
@@ -534,12 +562,12 @@ extension TurnByTurnNative: PassiveLocationManagerDelegate {
     rawLocation: CLLocation
   ) {
     latestLocation = location
-    
-    self.mapboxTurnByTurnEvents?.sendEvent(
+
+    mapboxTurnByTurnEvents?.sendEvent(
       event: MapboxLocationChangeEvent(
         latitude: rawLocation.coordinate.latitude, longitude: rawLocation.coordinate.longitude))
 
-    self.mapboxTurnByTurnEvents?.sendEvent(
+    mapboxTurnByTurnEvents?.sendEvent(
       event: MapboxEnhancedLocationChangeEvent(
         latitude: location.coordinate.latitude, longitude: location.coordinate.longitude))
   }
