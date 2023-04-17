@@ -170,10 +170,21 @@ class MapView extends StatelessWidget {
   }) : super(key: key) {
     _methodChannel.setMethodCallHandler(_handleMethod);
 
-    _flutterTts.setLanguage(language ?? Language.englishUS);
     _flutterTts.setSpeechRate(0.5);
     _flutterTts.setPitch(1.0);
     _flutterTts.setVolume(0.5);
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      _flutterTts.setSharedInstance(true);
+
+      _flutterTts.setIosAudioCategory(
+          IosTextToSpeechAudioCategory.ambient,
+          [
+            IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+            IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+            IosTextToSpeechAudioCategoryOptions.mixWithOthers
+          ],
+          IosTextToSpeechAudioMode.voicePrompt);
+    }
 
     _instructionProcessTimer = Timer.periodic(
       const Duration(milliseconds: 500),
