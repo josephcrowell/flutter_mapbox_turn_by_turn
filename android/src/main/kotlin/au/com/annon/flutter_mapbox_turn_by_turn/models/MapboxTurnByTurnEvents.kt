@@ -57,7 +57,7 @@ class MapboxTurnByTurnEvents(private val eventSink: EventSink) {
             val jsonString = "{" +
                     "  \"eventType\": \"${MapboxEventType.ENHANCED_LOCATION_CHANGE.value}\"," +
                     "  \"data\": {" +
-                    "\"isLocationChangeEvent\": ${event.isEnhancedLocationChangeEvent}," +
+                    "\"isEnhancedLocationChangeEvent\": ${event.isEnhancedLocationChangeEvent}," +
                     "\"latitude\": ${event.latitude}," +
                     "\"longitude\": ${event.longitude}" +
                     "}" +
