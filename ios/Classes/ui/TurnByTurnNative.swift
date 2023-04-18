@@ -273,7 +273,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
     let navigationViewportDataSource = NavigationViewportDataSource(
       navigationMapView!.mapView,
-      viewportDataSourceType: .raw
+      viewportDataSourceType: .passive
     )
     navigationMapView!.navigationCamera.viewportDataSource =
       navigationViewportDataSource
