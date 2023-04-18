@@ -20,19 +20,70 @@ enum NavigationCameraType: String, Codable {
   case following
 }
 
+var defaultBorderWidth: CGFloat {
+  2 / UIScreen.main.scale
+}
+
+let overviewIcon = UIImage(
+  named: "overview",
+  in: .mapboxNavigation,
+  compatibleWith: nil)!.withRenderingMode(.alwaysTemplate)
+
+let muteIcon = UIImage(
+  named: "volume_up",
+  in: .mapboxNavigation,
+  compatibleWith: nil)!.withRenderingMode(.alwaysTemplate)
+
+let unmuteIcon = UIImage(
+  named: "volume_off",
+  in: .mapboxNavigation,
+  compatibleWith: nil)!.withRenderingMode(.alwaysTemplate)
+
+let followIcon = UIImage(
+  named: "start",
+  in: .mapboxNavigation,
+  compatibleWith: nil)!.withRenderingMode(.alwaysTemplate)
+
+let overviewButton: FloatingButton = {
+  let floatingButton = FloatingButton.rounded(image: overviewIcon)
+  floatingButton.borderWidth = defaultBorderWidth
+
+  return floatingButton
+}()
+
+let muteButton: FloatingButton = {
+  let floatingButton = FloatingButton.rounded(image: muteIcon)
+  floatingButton.borderWidth = defaultBorderWidth
+
+  return floatingButton
+}()
+
+let followButton: FloatingButton = {
+  let floatingButton = FloatingButton.rounded(image: followIcon)
+  floatingButton.borderWidth = defaultBorderWidth
+
+  return floatingButton
+}()
+
 var mapboxTurnByTurnEvents: MapboxTurnByTurnEvents?
+var isVoiceInstructionsMuted: Bool = false
+var isInFreeDrive: Bool = true
 
 class FlutterVoiceController: MapboxSpeechSynthesizer {
   let methodChannel: FlutterMethodChannel
-  
+
   init(methodChannel: FlutterMethodChannel) {
     self.methodChannel = methodChannel
-    
+
     super.init()
   }
-  
-  override func speak(_ instruction: SpokenInstruction, during legProgress: RouteLegProgress, locale: Locale? = nil) {
-    methodChannel.invokeMethod("playVoiceInstruction", arguments: instruction.text)
+
+  override func speak(
+    _ instruction: SpokenInstruction, during legProgress: RouteLegProgress, locale: Locale? = nil
+  ) {
+    if !isVoiceInstructionsMuted {
+      methodChannel.invokeMethod("playVoiceInstruction", arguments: instruction.text)
+    }
   }
 }
 
@@ -169,6 +220,8 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
     super.init(nibName: nil, bundle: nil)
 
+    isVoiceInstructionsMuted = muted ?? false
+
     view.frame = frame
 
     eventChannel.setStreamHandler(self)
@@ -233,6 +286,16 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       view.addGestureRecognizer(gesture)
     }
 
+    overviewButton.addTarget(self, action: #selector(tappedOverview(sender:)), for: .touchUpInside)
+    muteButton.addTarget(self, action: #selector(tappedMute(sender:)), for: .touchUpInside)
+    followButton.addTarget(self, action: #selector(tappedFollow(sender:)), for: .touchUpInside)
+
+    if isVoiceInstructionsMuted {
+      muteButton.setImage(unmuteIcon, for: .normal)
+    } else {
+      muteButton.setImage(muteIcon, for: .normal)
+    }
+
     initializeMapbox()
 
     methodChannel.invokeMethod("onInitializationFinished", arguments: nil)
@@ -252,7 +315,8 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     }
 
     navigationMapView!.mapView.location.overrideLocationProvider(
-      with: passiveLocationProvider!)
+      with: passiveLocationProvider!
+    )
 
     passiveLocationProvider!.startUpdatingHeading()
     passiveLocationProvider!.startUpdatingLocation()
@@ -260,6 +324,8 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     passiveLocationManager!.resumeTripSession()
 
     passiveLocationManager!.delegate = self
+    
+    isInFreeDrive = true
 
     view.addSubview(navigationView!)
     NSLayoutConstraint.activate([
@@ -269,6 +335,14 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       navigationView!.bottomAnchor.constraint(equalTo: view.bottomAnchor),
     ])
 
+    navigationView!.floatingButtons = [
+      overviewButton,
+      followButton,
+    ]
+    
+    navigationMapView!.mapView.location.options.puckBearingSource = .heading
+    navigationMapView!.mapView.location.options.puckBearingEnabled = true
+    
     switch navigationCameraType {
     case NavigationCameraType.following.rawValue:
       navigationMapView!.navigationCamera.follow()
@@ -412,6 +486,8 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       credentials: NavigationSettings.shared.directions.credentials,
       simulating: .never)
     
+    isInFreeDrive = false
+
     var dayStyle = CustomDayStyle()
     if mapStyleUrlDay != nil {
       dayStyle = CustomDayStyle(url: mapStyleUrlDay)
@@ -420,10 +496,10 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     if mapStyleUrlNight != nil {
       nightStyle = CustomNightStyle(url: mapStyleUrlNight)
     }
-    
+
     let speechSynthesizer = MultiplexedSpeechSynthesizer([
       FlutterVoiceController(methodChannel: methodChannel),
-      SystemSpeechSynthesizer()
+      SystemSpeechSynthesizer(),
     ])
     let routeVoiceController = RouteVoiceController(
       navigationService: navigationService,
@@ -454,6 +530,15 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
         routeOptions: navigationViewController!.navigationService.routeProgress.routeOptions,
         completion: nil)
     }
+    
+    navigationMapView!.mapView.location.options.puckBearingSource = .course
+    
+    navigationViewController!.navigationView.floatingButtons = [
+      muteButton,
+      overviewButton,
+      followButton,
+    ]
+
     self.view.addSubview(navigationViewController!.view)
 
     // Animate top and bottom banner views presentation.
@@ -485,6 +570,31 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       locations: [location], waypointNames: [""],
       navigationCameraType: NavigationCameraType.noChange.rawValue
     )
+  }
+  
+  @objc func tappedMute(sender: UIButton) {
+    isVoiceInstructionsMuted = !isVoiceInstructionsMuted
+
+    if isVoiceInstructionsMuted {
+      muteButton.setImage(unmuteIcon, for: .normal)
+    } else {
+      muteButton.setImage(muteIcon, for: .normal)
+    }
+
+    mapboxTurnByTurnEvents?.sendJsonEvent(
+      eventType: .muteChanged, data: "{" + "\"muted\":" + String(isVoiceInstructionsMuted) + "}")
+  }
+
+  @objc func tappedOverview(sender: UIButton) {
+    os_log("Overview tapped", log: OSLog.TurnByTurnNative, type: .debug)
+    
+    self.navigationMapView!.navigationCamera.moveToOverview()
+  }
+
+  @objc func tappedFollow(sender: UIButton) {
+    os_log("Follow tapped", log: OSLog.TurnByTurnNative, type: .debug)
+    
+    self.navigationMapView!.navigationCamera.follow()
   }
 }
 
@@ -562,7 +672,11 @@ extension TurnByTurnNative: PassiveLocationManagerDelegate {
     rawLocation: CLLocation
   ) {
     latestLocation = location
-
+    
+    self.navigationMapView!.mapView.camera.ease(
+    to: CameraOptions(center: latestLocation!.coordinate),
+    duration: 1.3)
+    
     mapboxTurnByTurnEvents?.sendEvent(
       event: MapboxLocationChangeEvent(
         latitude: rawLocation.coordinate.latitude, longitude: rawLocation.coordinate.longitude))
