@@ -626,6 +626,7 @@ extension TurnByTurnNative: NavigationViewControllerDelegate {
             subview.removeFromSuperview()
           }
 
+          self.navigationViewController!.navigationService.stop()
           self.navigationMapView!.removeRoutes()
           self.navigationMapView!.removeWaypoints()
           self.navigationMapView!.navigationCamera.moveToOverview()
