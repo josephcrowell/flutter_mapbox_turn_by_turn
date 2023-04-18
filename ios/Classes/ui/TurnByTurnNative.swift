@@ -266,7 +266,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     }
 
     navigationMapView!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    navigationMapView!.userLocationStyle = .courseView(_:)()
+    navigationMapView!.userLocationStyle = .courseView()
 
     navigationView = NavigationView(frame: view.bounds, navigationMapView: navigationMapView!)
     navigationView!.translatesAutoresizingMaskIntoConstraints = false
@@ -325,6 +325,9 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
     passiveLocationManager!.delegate = self
     
+    navigationMapView!.mapView.location.options.puckBearingSource = .heading
+    navigationMapView!.mapView.location.options.puckBearingEnabled = true
+    
     isInFreeDrive = true
 
     view.addSubview(navigationView!)
@@ -339,10 +342,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       overviewButton,
       followButton,
     ]
-    
-    navigationMapView!.mapView.location.options.puckBearingSource = .heading
-    navigationMapView!.mapView.location.options.puckBearingEnabled = true
-    
+
     switch navigationCameraType {
     case NavigationCameraType.following.rawValue:
       navigationMapView!.navigationCamera.follow()
@@ -676,6 +676,8 @@ extension TurnByTurnNative: PassiveLocationManagerDelegate {
     self.navigationMapView!.mapView.camera.ease(
     to: CameraOptions(center: latestLocation!.coordinate),
     duration: 1.3)
+    
+    navigationMapView?.moveUserLocation(to: latestLocation!, animated: true)
     
     mapboxTurnByTurnEvents?.sendEvent(
       event: MapboxLocationChangeEvent(
