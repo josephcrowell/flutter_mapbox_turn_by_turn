@@ -58,7 +58,31 @@ class MapboxTurnByTurnEvents {
   init(eventSink: FlutterEventSink?) {
     self.eventSink = eventSink
   }
+  
+  func sendEvent(event: MapboxProgressChangeEvent) {
+    let jsonData = try! JSONEncoder().encode(event)
 
+    let jsonString =
+      "{ \"eventType\": \"\(MapboxEventType.progressChange)\"," + " \"data\": \(jsonData)}"
+    eventSink!(jsonString)
+  }
+  
+  func sendEvent(event: MapboxEnhancedLocationChangeEvent) {
+    let jsonString =
+      "{ \"eventType\": \"\(MapboxEventType.enhancedLocationChange)\"," + " \"data\": {"
+      + "\"isEnhancedLocationChangeEvent\": \(event.isEnhancedLocationChangeEvent),"
+    + "\"latitude\": \(event.latitude ?? 0)," + "\"longitude\": \(event.longitude ?? 0)" + "}}"
+    eventSink!(jsonString)
+  }
+
+  func sendEvent(event: MapboxLocationChangeEvent) {
+    let jsonString =
+      "{ \"eventType\": \"\(MapboxEventType.locationChange)\"," + " \"data\": {"
+      + "\"isEnhancedLocationChangeEvent\": \(event.isLocationChangeEvent),"
+      + "\"latitude\": \(event.latitude ?? 0)," + "\"longitude\": \(event.longitude ?? 0)" + "}}"
+    eventSink!(jsonString)
+  }
+  
   func sendEvent(eventType: MapboxEventType, data: String = "") {
     do {
       let turnByTurnEvent = MapboxTurnByTurnEvent(eventType: eventType, data: data)
@@ -71,20 +95,16 @@ class MapboxTurnByTurnEvents {
       os_log("Could not create event JSON data", log: OSLog.MapboxTurnByTurnEvents, type: .error)
     }
   }
-
-  func sendEvent(event: MapboxEnhancedLocationChangeEvent) {
-    let jsonString =
-      "{" + "  \"eventType\": \"\(MapboxEventType.enhancedLocationChange)\"," + "  \"data\": {"
-      + "\"isEnhancedLocationChangeEvent\": \(event.isEnhancedLocationChangeEvent),"
-    + "\"latitude\": \(event.latitude ?? 0)," + "\"longitude\": \(event.longitude ?? 0)" + "}" + "}"
-    eventSink!(jsonString)
-  }
-
-  func sendEvent(event: MapboxLocationChangeEvent) {
-    let jsonString =
-      "{" + "  \"eventType\": \"\(MapboxEventType.locationChange)\"," + "  \"data\": {"
-      + "\"isEnhancedLocationChangeEvent\": \(event.isLocationChangeEvent),"
-      + "\"latitude\": \(event.latitude ?? 0)," + "\"longitude\": \(event.longitude ?? 0)" + "}" + "}"
+  
+  func sendJsonEvent(eventType: MapboxEventType, data: String = "") {
+    var dataString = "\"\""
+    
+    if !data.isEmpty {
+      dataString = data
+    }
+    
+    let jsonString = "{ \"eventType\": \"\(eventType)\"," +
+      " \"data\": " + dataString + "}"
     eventSink!(jsonString)
   }
 }
