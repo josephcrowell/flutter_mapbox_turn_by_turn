@@ -1,4 +1,3 @@
-// swiftlint:disable force_cast
 import Flutter
 import MapboxCoreNavigation
 import MapboxDirections
@@ -95,7 +94,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
   let messenger: FlutterBinaryMessenger
   let methodChannel: FlutterMethodChannel
   let eventChannel: FlutterEventChannel
-  
+
   let bearingThrottle = Throttle(minimumDelay: 5)
 
   var navigationView: NavigationView?
@@ -221,7 +220,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     routeHeavyCongestionColor = arguments?["routeHeavyCongestionColor"] as! String
     routeSevereCongestionColor = arguments?["routeSevereCongestionColor"] as! String
     routeUnknownCongestionColor = arguments?["routeUnknownCongestionColor"] as! String
-    
+
     switch initNavigationCameraType {
     case NavigationCameraType.following.rawValue:
       navigationCameraType = .following
@@ -335,10 +334,10 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     passiveLocationManager!.resumeTripSession()
 
     passiveLocationManager!.delegate = self
-    
+
     navigationMapView!.mapView.location.options.puckBearingSource = .heading
     navigationMapView!.mapView.location.options.puckBearingEnabled = true
-    
+
     isInFreeDrive = true
 
     view.addSubview(navigationView!)
@@ -353,7 +352,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       overviewButton,
       followButton,
     ]
-        
+
     navigationViewportDataSource!.followingMobileCamera.pitch = pitch!
     navigationViewportDataSource!.followingMobileCamera.zoom = zoom!
     navigationViewportDataSource!.options.followingCameraOptions.centerUpdatesAllowed = true
@@ -413,7 +412,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
     var cameraType: NavigationCameraType
     let initCameraType = arguments?["navigationCameraType"] as! String
-    
+
     switch initCameraType {
     case NavigationCameraType.following.rawValue:
       cameraType = .following
@@ -422,7 +421,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     default:
       cameraType = .noChange
     }
-    
+
     if !waypointList.isEmpty && !waypointNamesList.isEmpty {
       findRoutes(
         locations: waypointList, waypointNames: waypointNamesList, navigationCameraType: cameraType
@@ -510,7 +509,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       customRoutingProvider: NavigationSettings.shared.directions,
       credentials: NavigationSettings.shared.directions.credentials,
       simulating: .never)
-    
+
     isInFreeDrive = false
 
     var dayStyle = CustomDayStyle()
@@ -555,15 +554,15 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
         routeOptions: navigationViewController!.navigationService.routeProgress.routeOptions,
         completion: nil)
     }
-    
+
     navigationMapView!.mapView.location.options.puckBearingSource = .course
-    
+
     navigationViewController!.navigationView.floatingButtons = [
       muteButton,
       overviewButton,
       followButton,
     ]
-    
+
     switch navigationCameraType {
     case .overview:
       navigationViewController!.navigationView.navigationMapView.navigationCamera.moveToOverview()
@@ -603,7 +602,7 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
       navigationCameraType: .noChange
     )
   }
-  
+
   @objc func tappedMute(sender: UIButton) {
     isVoiceInstructionsMuted = !isVoiceInstructionsMuted
 
@@ -619,10 +618,10 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
 
   @objc func tappedOverview(sender: UIButton) {
     os_log("Overview tapped", log: OSLog.TurnByTurnNative, type: .debug)
-    
+
     self.navigationMapView!.navigationCamera.moveToOverview()
     self.navigationViewController?.navigationView.navigationMapView.navigationCamera.moveToOverview()
-    
+
     if isInFreeDrive {
       if latestLocation != nil {
         self.navigationMapView!.mapView.camera.ease(
@@ -633,16 +632,16 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     } else {
       // placeholder
     }
-    
+
     navigationCameraType = .overview
   }
 
   @objc func tappedFollow(sender: UIButton) {
     os_log("Follow tapped", log: OSLog.TurnByTurnNative, type: .debug)
-    
+
     self.navigationMapView!.navigationCamera.follow()
     self.navigationViewController?.navigationView.navigationMapView.navigationCamera.follow()
-    
+
     navigationCameraType = .following
   }
 }
@@ -681,7 +680,7 @@ extension TurnByTurnNative: NavigationViewControllerDelegate {
 
           self.routeResponse = nil
           self.currentRouteIndex = 0
-          
+
           self.initializeMapbox()
 
           os_log("Navigation cancelled", log: OSLog.TurnByTurnNative, type: .debug)

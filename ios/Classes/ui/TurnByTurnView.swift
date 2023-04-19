@@ -17,7 +17,7 @@ extension OSLog {
 class TurnByTurnView: NSObject, FlutterPlatformView {
   let viewId: Int64
   private var nativeView: TurnByTurnNative
-  
+
   init(
     frame: CGRect,
     viewIdentifier viewId: Int64,
@@ -25,14 +25,14 @@ class TurnByTurnView: NSObject, FlutterPlatformView {
     binaryMessenger messenger: FlutterBinaryMessenger?
   ) {
     self.viewId = viewId
-    
+
     nativeView = TurnByTurnNative.init(frame: frame, arguments: args, binaryMessenger: messenger)
-    
+
     super.init()
-    
+
     os_log("View initialized", log: OSLog.TurnByTurnView, type: .debug)
   }
-  
+
   func view() -> UIView {
     return nativeView.view
   }

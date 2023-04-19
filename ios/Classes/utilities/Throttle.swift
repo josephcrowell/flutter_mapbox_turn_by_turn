@@ -31,15 +31,15 @@ public class Throttle {
     private var _assignmentLock = NSLock()
     private var _assignment: (() -> Void)?
     public private(set) var assignment: (() -> Void)? {
-        set {
-            _assignmentLock.lock()
-            defer { _assignmentLock.unlock() }
-            _assignment = newValue
-        }
         get {
             _assignmentLock.lock()
             defer { _assignmentLock.unlock() }
             return _assignment
+        }
+        set {
+            _assignmentLock.lock()
+            defer { _assignmentLock.unlock() }
+            _assignment = newValue
         }
     }
 
@@ -131,9 +131,7 @@ public class Throttle {
                 // Throttle release to execution
                 releaseExec(capturedJob: capturedJob)
             }
-        }
-        else // never called before, release to execution
-        {
+        } else { // never called before, release to execution
             releaseExec(capturedJob: capturedJob)
         }
 

@@ -58,15 +58,19 @@ class MapboxTurnByTurnEvents {
   init(eventSink: FlutterEventSink?) {
     self.eventSink = eventSink
   }
-  
+
   func sendEvent(event: MapboxProgressChangeEvent) {
-    let jsonData = try! JSONEncoder().encode(event)
+    do {
+      let jsonData = try JSONEncoder().encode(event)
+    } catch {
+      os_log("Could not create event JSON data", log: OSLog.MapboxTurnByTurnEvents, type: .error)
+    }
 
     let jsonString =
       "{ \"eventType\": \"\(MapboxEventType.progressChange)\"," + " \"data\": \(jsonData)}"
     eventSink!(jsonString)
   }
-  
+
   func sendEvent(event: MapboxEnhancedLocationChangeEvent) {
     let jsonString =
       "{ \"eventType\": \"\(MapboxEventType.enhancedLocationChange)\"," + " \"data\": {"
@@ -82,7 +86,7 @@ class MapboxTurnByTurnEvents {
       + "\"latitude\": \(event.latitude ?? 0)," + "\"longitude\": \(event.longitude ?? 0)" + "}}"
     eventSink!(jsonString)
   }
-  
+
   func sendEvent(eventType: MapboxEventType, data: String = "") {
     do {
       let turnByTurnEvent = MapboxTurnByTurnEvent(eventType: eventType, data: data)
@@ -95,14 +99,14 @@ class MapboxTurnByTurnEvents {
       os_log("Could not create event JSON data", log: OSLog.MapboxTurnByTurnEvents, type: .error)
     }
   }
-  
+
   func sendJsonEvent(eventType: MapboxEventType, data: String = "") {
     var dataString = "\"\""
-    
+
     if !data.isEmpty {
       dataString = data
     }
-    
+
     let jsonString = "{ \"eventType\": \"\(eventType)\"," +
       " \"data\": " + dataString + "}"
     eventSink!(jsonString)
