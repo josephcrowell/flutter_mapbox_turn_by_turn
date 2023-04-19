@@ -361,13 +361,13 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     navigationViewportDataSource!.options.followingCameraOptions.pitchUpdatesAllowed = false
     navigationViewportDataSource!.options.followingCameraOptions.paddingUpdatesAllowed = true
     navigationViewportDataSource!.options.followingCameraOptions.zoomUpdatesAllowed = false
-    
+
     switch navigationCameraType {
     case .following:
-      navigationMapView!.navigationCamera.follow()
+      self.navigationMapView!.navigationCamera.follow()
     default:
-      navigationMapView!.navigationCamera.moveToOverview()
-      
+      self.navigationMapView!.navigationCamera.moveToOverview()
+
       if latestLocation != nil {
         self.navigationMapView!.mapView.camera.ease(
           to: CameraOptions(center: latestLocation!.coordinate, zoom: 16, bearing: 0, pitch: 0),
@@ -696,7 +696,19 @@ extension TurnByTurnNative: NavigationViewControllerDelegate {
     with location: CLLocation,
     rawLocation: CLLocation
   ) {
-    latestLocation = location
+    if navigationCameraType == .following && isInFreeDrive && latestBearing != nil {
+      latestLocation = CLLocation(
+        coordinate: location.coordinate,
+        altitude: location.altitude,
+        horizontalAccuracy: location.horizontalAccuracy,
+        verticalAccuracy: location.verticalAccuracy,
+        course: latestBearing ?? location.course,
+        speed: location.speed,
+        timestamp: location.timestamp
+      )
+    } else {
+      latestLocation = location
+    }
 
     mapboxTurnByTurnEvents?.sendEvent(
       event: MapboxLocationChangeEvent(
@@ -720,23 +732,23 @@ extension TurnByTurnNative: PassiveLocationManagerDelegate {
     didUpdateLocation location: CLLocation,
     rawLocation: CLLocation
   ) {
-    if navigationCameraType == .following && isInFreeDrive {
+    if navigationCameraType == .following && isInFreeDrive && latestBearing != nil {
       latestLocation = CLLocation(
         coordinate: location.coordinate,
         altitude: location.altitude,
         horizontalAccuracy: location.horizontalAccuracy,
         verticalAccuracy: location.verticalAccuracy,
-        course: latestBearing ?? 0,
+        course: latestBearing ?? location.course,
         speed: location.speed,
         timestamp: location.timestamp
       )
     } else {
       latestLocation = location
     }
-    
+
     navigationMapView?.moveUserLocation(to: latestLocation!, animated: true)
-    self.navigationMapView!.mapView.camera.ease(to: CameraOptions(bearing: latestBearing), duration: 1)
-    
+    // navigationMapView?.mapView.camera.ease(to: CameraOptions(bearing: latestBearing), duration: 1)
+
     mapboxTurnByTurnEvents?.sendEvent(
       event: MapboxLocationChangeEvent(
         latitude: rawLocation.coordinate.latitude, longitude: rawLocation.coordinate.longitude))
@@ -751,9 +763,7 @@ extension TurnByTurnNative: PassiveLocationManagerDelegate {
     didUpdateHeading newHeading: CLHeading
   ) {
     if navigationCameraType == .following && isInFreeDrive {
-      bearingThrottle.throttle {
-        self.latestBearing = newHeading.magneticHeading
-      }
+      // self.latestBearing = newHeading.magneticHeading
     }
   }
 
