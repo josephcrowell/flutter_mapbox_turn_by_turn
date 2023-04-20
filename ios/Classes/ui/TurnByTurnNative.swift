@@ -634,6 +634,11 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     }
 
     navigationCameraType = .overview
+
+    mapboxTurnByTurnEvents?.sendJsonEvent(
+      eventType: MapboxEventType.navigationCameraChanged,
+      data: "{\"state\":\"\(navigationCameraType!)\"}"
+    )
   }
 
   @objc func tappedFollow(sender: UIButton) {
@@ -643,6 +648,11 @@ public class TurnByTurnNative: UIViewController, FlutterStreamHandler {
     self.navigationViewController?.navigationView.navigationMapView.navigationCamera.follow()
 
     navigationCameraType = .following
+
+    mapboxTurnByTurnEvents?.sendJsonEvent(
+      eventType: MapboxEventType.navigationCameraChanged,
+      data: "{\"state\":\"\(navigationCameraType!)\"}"
+    )
   }
 }
 
