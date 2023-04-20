@@ -62,13 +62,13 @@ class MapboxTurnByTurnEvents {
   func sendEvent(event: MapboxProgressChangeEvent) {
     do {
       let jsonData = try JSONEncoder().encode(event)
+
+      let jsonString =
+        "{ \"eventType\": \"\(MapboxEventType.progressChange)\"," + " \"data\": \(jsonData)}"
+      eventSink!(jsonString)
     } catch {
       os_log("Could not create event JSON data", log: OSLog.MapboxTurnByTurnEvents, type: .error)
     }
-
-    let jsonString =
-      "{ \"eventType\": \"\(MapboxEventType.progressChange)\"," + " \"data\": \(jsonData)}"
-    eventSink!(jsonString)
   }
 
   func sendEvent(event: MapboxEnhancedLocationChangeEvent) {
