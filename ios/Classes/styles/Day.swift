@@ -32,20 +32,14 @@ class CustomDayStyle: DayStyle {
 
   override func apply() {
     super.apply()
+    
     // Begin styling the phone UI
+    let traitCollection = UIScreen.main.traitCollection
     TopBannerView.appearance(
-      for: UITraitCollection(userInterfaceIdiom: .phone)
-    ).backgroundColor = UIColor.init(hex: "#1A000000")
+      for: traitCollection
+    ).backgroundColor = UIColor.init(hex: "#1A0000FF")
     BottomBannerView.appearance(
-      for: UITraitCollection(userInterfaceIdiom: .phone)
-    ).backgroundColor = UIColor.init(hex: "#1A000000")
-
-    // Begin styling the tablet UI
-    TopBannerView.appearance(
-      for: UITraitCollection(userInterfaceIdiom: .pad)
-    ).backgroundColor = UIColor.init(hex: "#1A000000")
-    BottomBannerView.appearance(
-      for: UITraitCollection(userInterfaceIdiom: .pad)
-    ).backgroundColor = UIColor.init(hex: "#1A000000")
+      for: traitCollection
+    ).backgroundColor = UIColor.init(hex: "#1AFFFFFF")
   }
 }
