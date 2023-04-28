@@ -8,7 +8,7 @@ import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.ViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
 import au.com.annon.flutter_mapbox_turn_by_turn.ui.TurnByTurnViewFactory
 import io.flutter.Log
@@ -61,8 +61,8 @@ class FlutterMapboxTurnByTurnPlugin
     if(platformViewRegistry != null && binaryMessenger != null && activity != null) {
       Log.d("FlutterMapboxTurnByTurnPlugin","Registering view factory")
       nativeBinding = TurnByTurnNativeBinding.inflate(activity!!.layoutInflater)
-      ViewTreeLifecycleOwner.set(nativeBinding.root, this)
-      val factory = TurnByTurnViewFactory(binaryMessenger!!, activity!!, nativeBinding, lifecycleRegistry)
+      nativeBinding.root.setViewTreeLifecycleOwner(this)
+      val factory = TurnByTurnViewFactory(binaryMessenger!!, nativeBinding, lifecycleRegistry)
       lifecycleRegistry.currentState = Lifecycle.State.CREATED
       platformViewRegistry?.registerViewFactory(VIEW_NAME, factory)
       context = binding.activity.baseContext
@@ -145,7 +145,6 @@ class FlutterMapboxTurnByTurnPlugin
     )
   }
 
-  override fun getLifecycle(): Lifecycle {
-    return lifecycleRegistry
-  }
+  override val lifecycle: Lifecycle
+    get() = lifecycleRegistry
 }

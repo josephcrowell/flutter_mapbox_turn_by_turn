@@ -19,7 +19,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.ViewTreeLifecycleOwner
+import androidx.lifecycle.findViewTreeLifecycleOwner
 import au.com.annon.flutter_mapbox_turn_by_turn.R
 import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBinding
 import au.com.annon.flutter_mapbox_turn_by_turn.models.*
@@ -33,7 +33,6 @@ import com.mapbox.geojson.Geometry
 import com.mapbox.geojson.Point
 import com.mapbox.geojson.Polygon
 import com.mapbox.maps.*
-import com.mapbox.maps.extension.style.layers.generated.backgroundLayer
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.compass.compass
@@ -77,7 +76,6 @@ import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineApi
 import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineView
 import com.mapbox.navigation.ui.maps.route.line.model.*
 import com.mapbox.navigation.ui.speedlimit.api.MapboxSpeedInfoApi
-import com.mapbox.navigation.ui.speedlimit.api.MapboxSpeedLimitApi
 import com.mapbox.navigation.ui.speedlimit.view.MapboxSpeedInfoView
 import com.mapbox.navigation.ui.tripprogress.api.MapboxTripProgressApi
 import com.mapbox.navigation.ui.tripprogress.model.*
@@ -117,7 +115,6 @@ class NavigationCameraType {
 }
 
 open class TurnByTurnNative(
-    private val pluginActivity: Activity,
     private val pluginContext: Context,
     val binding: TurnByTurnNativeBinding,
     private val lifecycleRegistry: LifecycleRegistry,
@@ -962,7 +959,7 @@ open class TurnByTurnNative(
         routeLineView.cancel()
 
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
-        ViewTreeLifecycleOwner.get(binding.root)?.let { MapboxNavigationApp.detach(it) }
+        binding.root.findViewTreeLifecycleOwner()?.let { MapboxNavigationApp.detach(it) }
         MapboxNavigationApp.disable()
 
         super.onDestroy()
@@ -970,9 +967,8 @@ open class TurnByTurnNative(
         Log.d("TurnByTurnNative","Activity destroyed")
     }
 
-    override fun getLifecycle(): Lifecycle {
-        return lifecycleRegistry
-    }
+    override val lifecycle: Lifecycle
+        get() = lifecycleRegistry
 
     // mute/unmute voice instructions
     private fun toggleMuted() {
@@ -1091,7 +1087,7 @@ open class TurnByTurnNative(
         if(showMuteButton == true) {
             binding.soundButton.visibility = View.VISIBLE
         }
-        if(showSpeedIndicator == true) {
+        if(showSpeedIndicator) {
             binding.speedInfo.visibility = View.VISIBLE
         }
         binding.tripProgressCard.visibility = View.VISIBLE
@@ -1211,7 +1207,7 @@ open class TurnByTurnNative(
             },
             { expected ->
                 if (expected.isValue) {
-                    expected.value?.let { _ ->
+                    expected.value?.let {
                         mapboxTurnByTurnEvents?.sendEvent(
                             MapboxEventType.STYLE_PACK_FINISHED
                         )

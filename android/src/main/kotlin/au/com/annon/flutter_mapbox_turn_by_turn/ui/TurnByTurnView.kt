@@ -1,6 +1,5 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
-import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.view.View
@@ -11,7 +10,6 @@ import io.flutter.plugin.platform.PlatformView
 
 
 class TurnByTurnView(
-    activity: Activity,
     context: Context,
     binding: TurnByTurnNativeBinding,
     lifecycleRegistry: LifecycleRegistry,
@@ -19,7 +17,7 @@ class TurnByTurnView(
     creationParams: Map<String?, Any?>?,
     )
     : PlatformView  {
-    private var nativeView: TurnByTurnNative = TurnByTurnNative(activity, context, binding, lifecycleRegistry, messenger, creationParams)
+    private var nativeView: TurnByTurnNative = TurnByTurnNative(context, binding, lifecycleRegistry, messenger, creationParams)
 
     override fun getView(): View {
         return nativeView.binding.root

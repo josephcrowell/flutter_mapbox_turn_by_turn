@@ -99,14 +99,14 @@ android {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
-    implementation "androidx.core:core-ktx:1.9.0"
+    implementation "androidx.core:core-ktx:1.10.0"
 
     implementation 'androidx.annotation:annotation:1.6.0'
     implementation "androidx.appcompat:appcompat:1.6.1"
     implementation "androidx.cardview:cardview:1.0.0"
     implementation "androidx.constraintlayout:constraintlayout:2.1.4"
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    def lifecycle_version = "2.5.1"
+    def lifecycle_version = "2.6.1"
     //noinspection KtxExtensionAvailable
     implementation "androidx.lifecycle:lifecycle-viewmodel:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
