@@ -2,7 +2,7 @@ group 'au.com.annon.flutter_mapbox_turn_by_turn'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.8.10'
+    ext.kotlin_version = '1.8.20'
     repositories {
         google()
         mavenCentral()
@@ -52,9 +52,9 @@ rootProject.allprojects {
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-
 android {
     compileSdkVersion 33
+    namespace 'au.com.annon.flutter_mapbox_turn_by_turn_example'
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
@@ -99,7 +99,7 @@ android {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
-    implementation "androidx.core:core-ktx:1.10.0"
+    implementation "androidx.core:core-ktx:1.10.1"
 
     implementation 'androidx.annotation:annotation:1.6.0'
     implementation "androidx.appcompat:appcompat:1.6.1"
@@ -114,7 +114,7 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.8.9'
     implementation "com.google.android.gms:play-services-location:21.0.1"
-    implementation "com.google.android.material:material:1.8.0"
+    implementation "com.google.android.material:material:1.9.0"
 
     implementation "com.mapbox.navigation:android:2.12.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
