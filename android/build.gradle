@@ -1,3 +1,5 @@
+def args = ["-Xlint:deprecation"]
+
 group 'au.com.annon.flutter_mapbox_turn_by_turn'
 version '1.0-SNAPSHOT'
 
@@ -23,7 +25,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.4.2'
+        classpath 'com.android.tools.build:gradle:8.0.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "com.mapbox.gradle.plugins:access-token:0.4.0"
     }
@@ -54,7 +56,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 android {
     compileSdkVersion 33
-    namespace 'au.com.annon.flutter_mapbox_turn_by_turn_example'
+    namespace 'au.com.annon.flutter_mapbox_turn_by_turn'
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'

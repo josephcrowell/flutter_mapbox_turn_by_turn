@@ -127,6 +127,7 @@ class NavigationCameraType {
 Stream<MapboxTurnByTurnEvent>? _onMapboxTurnByTurnEvent;
 FlutterTts _flutterTts = FlutterTts();
 List<String> _instructions = <String>[];
+Timer? instructionProcessTimer;
 
 // The widget that show the mapbox MapView
 class MapView extends StatelessWidget {
@@ -186,7 +187,7 @@ class MapView extends StatelessWidget {
           IosTextToSpeechAudioMode.voicePrompt);
     }
 
-    _instructionProcessTimer = Timer.periodic(
+    instructionProcessTimer = Timer.periodic(
       const Duration(milliseconds: 500),
       (Timer timer) {
         _processInstructionCache();
@@ -199,8 +200,6 @@ class MapView extends StatelessWidget {
       _mapboxTurnByTurnEventSubscription;
   late final Function? onInitializationFinished;
   static bool _instructionPlaying = false;
-
-  late Timer _instructionProcessTimer;
 
   final double? zoom;
   final double? pitch;
@@ -377,7 +376,7 @@ class MapView extends StatelessWidget {
 
   /// Clean up the timer object
   void dispose() {
-    _instructionProcessTimer.cancel();
+    instructionProcessTimer?.cancel();
     _mapboxTurnByTurnEventSubscription?.cancel();
   }
 

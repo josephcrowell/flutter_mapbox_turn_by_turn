@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field, unused_local_variable
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as logger;
@@ -54,7 +56,7 @@ class _ExampleAppState extends State<ExampleApp> {
       language: Language.englishUK,
     );
 
-    _orientationButton = OrientationButton();
+    _orientationButton = const OrientationButton();
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.

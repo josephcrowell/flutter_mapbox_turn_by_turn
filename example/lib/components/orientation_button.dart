@@ -6,7 +6,7 @@ import 'package:flutter_font_icons/flutter_font_icons.dart';
 /// OrientationButton provides a widget button to switch orientation for the entire app
 class OrientationButton extends StatefulWidget {
   /// The constructor for the orientation button
-  OrientationButton({Key? key}) : super(key: key);
+  const OrientationButton({Key? key}) : super(key: key);
 
   @override
   State<OrientationButton> createState() => _OrientationButtonState();
@@ -33,8 +33,6 @@ class _OrientationButtonState extends State<OrientationButton> {
 
   @override
   Widget build(BuildContext context) {
-    double _screenWidth = MediaQuery.of(context).size.width;
-
     return IconButton(
       icon: _buttonIcon,
       iconSize: 30,
