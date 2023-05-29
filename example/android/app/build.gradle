@@ -28,6 +28,10 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 android {
     compileSdkVersion 33
 
+    if (project.android.hasProperty("namespace")) {
+        namespace 'au.com.annon.flutter_mapbox_turn_by_turn_example'
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -56,7 +60,6 @@ android {
             signingConfig signingConfigs.debug
         }
     }
-    namespace 'au.com.annon.flutter_mapbox_turn_by_turn_example'
 }
 
 flutter {

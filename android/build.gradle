@@ -56,7 +56,10 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 android {
     compileSdkVersion 33
-    namespace 'au.com.annon.flutter_mapbox_turn_by_turn'
+
+    if (project.android.hasProperty("namespace")) {
+        namespace 'au.com.annon.flutter_mapbox_turn_by_turn'
+    }
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
