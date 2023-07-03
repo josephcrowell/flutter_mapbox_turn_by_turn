@@ -26,7 +26,7 @@ apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 34
 
     if (project.android.hasProperty("namespace")) {
         namespace 'au.com.annon.flutter_mapbox_turn_by_turn_example'
@@ -48,7 +48,7 @@ android {
     defaultConfig {
         applicationId "au.com.annon.flutter_mapbox_turn_by_turn_example"
         minSdkVersion 23
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
