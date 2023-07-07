@@ -120,6 +120,7 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.9'
     implementation "com.google.android.gms:play-services-location:21.0.1"
     implementation "com.google.android.material:material:1.9.0"
+    implementation "com.google.auto.value:auto-value-annotations:1.10.1"
 
     implementation "com.mapbox.navigation:android:2.14.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
