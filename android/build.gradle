@@ -4,7 +4,7 @@ group 'au.com.annon.flutter_mapbox_turn_by_turn'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.8.20'
+    ext.kotlin_version = '1.8.22'
     repositories {
         google()
         mavenCentral()
@@ -121,7 +121,7 @@ dependencies {
     implementation "com.google.android.gms:play-services-location:21.0.1"
     implementation "com.google.android.material:material:1.9.0"
 
-    implementation "com.mapbox.navigation:android:2.13.2"
+    implementation "com.mapbox.navigation:android:2.14.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4"
 
