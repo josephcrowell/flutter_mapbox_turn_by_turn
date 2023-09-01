@@ -4,7 +4,7 @@ group 'au.com.annon.flutter_mapbox_turn_by_turn'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.8.22'
+    ext.kotlin_version = '1.9.10'
     repositories {
         google()
         mavenCentral()
@@ -117,16 +117,16 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
     implementation "androidx.multidex:multidex:2.0.1"
 
-    implementation 'com.google.code.gson:gson:2.8.9'
+    implementation 'com.google.code.gson:gson:2.10.1'
     implementation "com.google.android.gms:play-services-location:21.0.1"
     implementation "com.google.android.material:material:1.9.0"
-    implementation "com.google.auto.value:auto-value-annotations:1.10.1"
+    implementation 'com.google.auto.value:auto-value-annotations:1.10.3'
 
-    implementation "com.mapbox.navigation:android:2.14.0"
+    implementation "com.mapbox.navigation:android:2.15.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4"
 
-    debugImplementation "com.squareup.leakcanary:leakcanary-android:2.10"
+    debugImplementation "com.squareup.leakcanary:leakcanary-android:2.12"
 
     testImplementation 'junit:junit:4.13.2'
 
