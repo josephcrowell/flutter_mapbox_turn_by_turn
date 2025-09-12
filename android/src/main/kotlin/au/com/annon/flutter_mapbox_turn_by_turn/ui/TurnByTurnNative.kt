@@ -1,7 +1,6 @@
 package au.com.annon.flutter_mapbox_turn_by_turn.ui
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -10,7 +9,6 @@ import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
-import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -29,6 +27,7 @@ import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Expected
 import com.mapbox.bindgen.Value
 import com.mapbox.common.*
+import com.mapbox.common.location.Location
 import com.mapbox.geojson.Geometry
 import com.mapbox.geojson.Point
 import com.mapbox.geojson.Polygon
@@ -59,8 +58,8 @@ import com.mapbox.navigation.core.trip.session.LocationMatcherResult
 import com.mapbox.navigation.core.trip.session.LocationObserver
 import com.mapbox.navigation.core.trip.session.RouteProgressObserver
 import com.mapbox.navigation.core.trip.session.VoiceInstructionsObserver
-import com.mapbox.navigation.ui.maneuver.api.MapboxManeuverApi
-import com.mapbox.navigation.ui.maneuver.view.MapboxManeuverView
+import com.mapbox.navigation.tripdata.maneuver.api.MapboxManeuverApi
+import com.mapbox.navigation.ui.components.maneuver.view.MapboxManeuverView
 import com.mapbox.navigation.ui.maps.camera.NavigationCamera
 import com.mapbox.navigation.ui.maps.camera.data.MapboxNavigationViewportDataSource
 import com.mapbox.navigation.ui.maps.camera.data.ViewportDataSourceUpdateObserver
@@ -75,11 +74,11 @@ import com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowOptions
 import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineApi
 import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineView
 import com.mapbox.navigation.ui.maps.route.line.model.*
-import com.mapbox.navigation.ui.speedlimit.api.MapboxSpeedInfoApi
-import com.mapbox.navigation.ui.speedlimit.view.MapboxSpeedInfoView
-import com.mapbox.navigation.ui.tripprogress.api.MapboxTripProgressApi
-import com.mapbox.navigation.ui.tripprogress.model.*
-import com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView
+import com.mapbox.navigation.tripdata.speedlimit.api.MapboxSpeedInfoApi
+import com.mapbox.navigation.ui.components.speedlimit.view.MapboxSpeedInfoView
+import com.mapbox.navigation.tripdata.progress.api.MapboxTripProgressApi
+import com.mapbox.navigation.tripdata.progress.model.*
+import com.mapbox.navigation.ui.components.tripprogress.view.MapboxTripProgressView
 import io.flutter.embedding.android.FlutterFragment
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
@@ -88,6 +87,7 @@ import io.flutter.plugin.common.MethodChannel
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.roundToInt
+import androidx.core.graphics.toColorInt
 
 
 /**
@@ -137,6 +137,8 @@ open class TurnByTurnNative(
     private var durationRemaining: Double? = null
     private var navigationStarted: Boolean = false
     private var observersRegistered: Boolean = false
+
+    private var tileStore: TileStore? = null
 
     // flutter creation parameters
     private val zoom: Double?
@@ -374,7 +376,7 @@ open class TurnByTurnNative(
                 locationMatcherResult,
                 DistanceFormatterOptions.Builder(pluginContext).unitType(unitType).build()
             )
-            binding.speedInfo.render(speedValue)
+            speedValue?.let { binding.speedInfo.render(it) }
 
             // if this is the first location update the activity has received,
             // it's best to immediately move the camera to the current user location
@@ -401,7 +403,7 @@ open class TurnByTurnNative(
         viewportDataSource!!.evaluate()
 
         // draw the upcoming maneuver arrow on the map
-        val style = mapboxMap!!.getStyle()
+        val style = mapboxMap?.style
         if (style != null) {
             val maneuverArrowResult = routeArrowApi.addUpcomingManeuverArrow(routeProgress)
             routeArrowView.renderManeuverUpdate(style, maneuverArrowResult)
@@ -459,21 +461,17 @@ open class TurnByTurnNative(
      * Gets notified whenever the tracked routes change.
      *
      * A change can mean:
-     * - routes get changed with [MapboxNavigation.setRoutes]
+     * - routes get changed with [MapboxNavigation.setNavigationRoutes]
      * - routes annotations get refreshed (for example, congestion annotation that indicate the live traffic along the route)
      * - driver got off route and a reroute was executed
      */
     private val routesObserver = RoutesObserver { routeUpdateResult ->
-        if (routeUpdateResult.navigationRoutes.toDirectionsRoutes().isNotEmpty()) {
+        if (routeUpdateResult.navigationRoutes.isNotEmpty()) {
             // generate route geometries asynchronously and render them
-            val routeLines = routeUpdateResult.navigationRoutes.toDirectionsRoutes()
-                .map { RouteLine(it, null) }
-
-            routeLineApi.setNavigationRouteLines(
-                routeLines
-                    .toNavigationRouteLines()
+            routeLineApi.setNavigationRoutes(
+                routeUpdateResult.navigationRoutes
             ) { value ->
-                mapboxMap!!.getStyle()?.apply {
+                binding.mapView.mapboxMap.style?.apply {
                     routeLineView.renderRouteDrawData(this, value)
                 }
             }
@@ -486,7 +484,7 @@ open class TurnByTurnNative(
             mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.REROUTE_ALONG, routeUpdateResult.reason)
         } else {
             // remove the route line and route arrow from the map
-            val style = mapboxMap!!.getStyle()
+            val style = mapboxMap?.style
             if (style != null) {
                 routeLineApi.clearRouteLine { value ->
                     routeLineView.renderClearRouteLineValue(
@@ -600,28 +598,19 @@ open class TurnByTurnNative(
 
         accessToken = PluginUtilities.getResourceFromContext(pluginContext, "mapbox_access_token")
 
-        mapboxMap = binding.mapView.getMapboxMap()
+        mapboxMap = binding.mapView.mapboxMap
 
-        mapboxMap!!.getResourceOptions().tileStore?.apply {
-            setOption(
-                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
-                TileDataDomain.MAPS,
-                Value(accessToken)
-            )
-            setOption(
-                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
-                TileDataDomain.NAVIGATION,
-                Value(accessToken)
-            )
-            setOption(
+        tileStore = TileStore.create(pluginContext.applicationInfo.dataDir)
+        tileStore.apply {
+            this?.setOption(
                 TileStoreOptions.DISK_QUOTA,
                 Value(10737418240)
             )
         }
 
-        mapboxMap!!.getResourceOptions().tileStoreUsageMode.apply {
-            TileStoreUsageMode.READ_AND_UPDATE
-        }
+        val routingTilesOptions= RoutingTilesOptions.Builder()
+            .tileStore(tileStore)
+            .build()
 
         if(measurementUnits == DirectionsCriteria.IMPERIAL) {
             unitType = UnitType.IMPERIAL
@@ -631,20 +620,17 @@ open class TurnByTurnNative(
             .unitType(unitType)
             .build()
 
-        val routingTilesOptions = RoutingTilesOptions.Builder()
-            .tileStore(mapboxMap!!.getResourceOptions().tileStore)
-            .build()
+        // TODO: reimplement tilestore
 
         // initialize Mapbox Navigation
         MapboxNavigationApp.setup(
             NavigationOptions.Builder(pluginContext)
-                .accessToken(accessToken)
                 .routingTilesOptions(routingTilesOptions)
                 .distanceFormatterOptions(distanceFormatterOptions)
                 .build()
         )
 
-        offlineManager = OfflineManager(mapboxMap!!.getResourceOptions())
+        offlineManager = OfflineManager()
 
         binding.mapView.scalebar.enabled = false
         binding.mapView.compass.enabled = false
@@ -717,8 +703,8 @@ open class TurnByTurnNative(
                 .percentRouteTraveledFormatter(
                     PercentDistanceTraveledFormatter()
                 )
-                .estimatedTimeToArrivalFormatter(
-                    EstimatedTimeToArrivalFormatter(pluginContext, TimeFormat.NONE_SPECIFIED)
+                .estimatedTimeOfArrivalFormatter(
+                    EstimatedTimeOfArrivalFormatter(pluginContext, TimeFormat.NONE_SPECIFIED)
                 )
                 .build()
         )
@@ -731,29 +717,30 @@ open class TurnByTurnNative(
         // the value of this option will depend on the style that you are using
         // and under which layer the route line should be placed on the map layers stack
         val customColorResources = RouteLineColorResources.Builder()
-            .routeCasingColor(Color.parseColor(routeCasingColor))
-            .routeDefaultColor(Color.parseColor(routeDefaultColor))
-            .restrictedRoadColor(Color.parseColor(restrictedRoadColor))
-            .routeLineTraveledColor(Color.parseColor(routeLineTraveledColor))
-            .routeLineTraveledCasingColor(Color.parseColor(routeLineTraveledCasingColor))
-            .routeClosureColor(Color.parseColor(routeClosureColor))
-            .routeLowCongestionColor(Color.parseColor(routeLowCongestionColor))
-            .routeModerateCongestionColor(Color.parseColor(routeModerateCongestionColor))
-            .routeHeavyCongestionColor(Color.parseColor(routeHeavyCongestionColor))
-            .routeSevereCongestionColor(Color.parseColor(routeSevereCongestionColor))
-            .routeUnknownCongestionColor(Color.parseColor(routeUnknownCongestionColor))
+            .routeCasingColor(routeCasingColor.toColorInt())
+            .routeDefaultColor(routeDefaultColor.toColorInt())
+            .restrictedRoadColor(restrictedRoadColor.toColorInt())
+            .routeLineTraveledColor(routeLineTraveledColor.toColorInt())
+            .routeLineTraveledCasingColor(routeLineTraveledCasingColor.toColorInt())
+            .routeClosureColor(routeClosureColor.toColorInt())
+            .routeLowCongestionColor(routeLowCongestionColor.toColorInt())
+            .routeModerateCongestionColor(routeModerateCongestionColor.toColorInt())
+            .routeHeavyCongestionColor(routeHeavyCongestionColor.toColorInt())
+            .routeSevereCongestionColor(routeSevereCongestionColor.toColorInt())
+            .routeUnknownCongestionColor(routeUnknownCongestionColor.toColorInt())
             .build()
 
-        val routeLineResources = RouteLineResources.Builder()
+        val mapboxRouteLineApiOptions = MapboxRouteLineApiOptions.Builder()
+            .vanishingRouteLineEnabled(true)
+            .build()
+
+        val mapboxRouteLineViewOptions = MapboxRouteLineViewOptions.Builder(pluginContext)
             .routeLineColorResources(customColorResources)
+            .routeLineBelowLayerId("road-label")
             .build()
 
-        val mapboxRouteLineOptions = MapboxRouteLineOptions.Builder(pluginContext)
-            .withRouteLineResources(routeLineResources)
-            .withRouteLineBelowLayerId("road-label")
-            .build()
-        routeLineApi = MapboxRouteLineApi(mapboxRouteLineOptions)
-        routeLineView = MapboxRouteLineView(mapboxRouteLineOptions)
+        routeLineApi = MapboxRouteLineApi(mapboxRouteLineApiOptions)
+        routeLineView = MapboxRouteLineView(mapboxRouteLineViewOptions)
 
         // initialize maneuver arrow view to draw arrows on the map
         val routeArrowOptions = RouteArrowOptions.Builder(pluginContext)
@@ -767,9 +754,12 @@ open class TurnByTurnNative(
         }
 
         // load map style
-        mapboxMap!!.loadStyleUri(
+        mapboxMap!!.loadStyle(
             styleUri
         ) {
+            // Ensure that the route line related layers are present before the route arrow
+            routeLineView.initializeLayers(it)
+
             // add long click listener that search for a route to the clicked destination
             if (navigateOnLongClick == true) {
                 binding.mapView.gestures.addOnMapLongClickListener { point ->
@@ -832,15 +822,13 @@ open class TurnByTurnNative(
 
         // initialize the location puck
         binding.mapView.location.apply {
-            locationPuck = LocationPuck2D(
-                bearingImage = ContextCompat.getDrawable(
-                    pluginContext,
+            setLocationProvider(navigationLocationProvider!!)
+            this.locationPuck = LocationPuck2D(
+                bearingImage = ImageHolder.Companion.from(
                     R.drawable.mapbox_navigation_puck_icon
                 )
             )
-
-            setLocationProvider(navigationLocationProvider!!)
-
+            puckBearingEnabled = true
             enabled = true
         }
 
@@ -873,7 +861,7 @@ open class TurnByTurnNative(
         mapboxNavigation.registerLocationObserver(locationObserver)
         mapboxNavigation.registerVoiceInstructionsObserver(voiceInstructionsObserver)
         mapboxNavigation.registerArrivalObserver(arrivalObserver)
-        mapboxMap!!.getResourceOptions().tileStore?.addObserver(tileStoreObserver)
+        tileStore?.addObserver(tileStoreObserver)
 
         observersRegistered = true
 
@@ -892,7 +880,7 @@ open class TurnByTurnNative(
         mapboxNavigation.unregisterLocationObserver(locationObserver)
         mapboxNavigation.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
         mapboxNavigation.unregisterArrivalObserver(arrivalObserver)
-        mapboxMap!!.getResourceOptions().tileStore?.removeObserver(tileStoreObserver)
+        tileStore?.removeObserver(tileStoreObserver)
         // disable the location puck
         binding.mapView.location.apply {
             enabled = false
@@ -1048,7 +1036,7 @@ open class TurnByTurnNative(
             object : NavigationRouterCallback {
                 override fun onRoutesReady(
                     routes: List<NavigationRoute>,
-                    routerOrigin: RouterOrigin
+                    routerOrigin: String
                 ) {
                     setRouteAndStartNavigation(routes, navigationCameraType)
                 }
@@ -1064,7 +1052,7 @@ open class TurnByTurnNative(
                     mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.ROUTE_BUILD_FAILED, message)
                 }
 
-                override fun onCanceled(routeOptions: RouteOptions, routerOrigin: RouterOrigin) {
+                override fun onCanceled(routeOptions: RouteOptions, routerOrigin: String) {
                     mapboxTurnByTurnEvents?.sendEvent(MapboxEventType.ROUTE_BUILD_CANCELLED)
                 }
             }
@@ -1223,7 +1211,7 @@ open class TurnByTurnNative(
             }
         )
 
-        mapboxMap!!.getResourceOptions().tileStore?.loadTileRegion(
+        tileStore?.loadTileRegion(
             areaId,
             tileRegionLoadOptions
         )

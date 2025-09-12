@@ -14,7 +14,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.mapbox.navigation.ui.maneuver.view.MapboxManeuverView
+    <com.mapbox.navigation.ui.components.maneuver.view.MapboxManeuverView
         android:id="@+id/maneuverView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -28,7 +28,7 @@
         app:subManeuverViewBackgroundColor="#000000"
         app:upcomingManeuverViewBackgroundColor="#000000" />
 
-    <com.mapbox.navigation.ui.speedlimit.view.MapboxSpeedInfoView
+    <com.mapbox.navigation.ui.components.speedlimit.view.MapboxSpeedInfoView
         android:id="@+id/speedInfo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -39,7 +39,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/maneuverView" />
 
-    <com.mapbox.navigation.ui.voice.view.MapboxSoundButton
+    <com.mapbox.navigation.ui.components.voice.view.MapboxSoundButton
         android:id="@+id/soundButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -50,7 +50,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/maneuverView" />
 
-    <com.mapbox.navigation.ui.maps.camera.view.MapboxRouteOverviewButton
+    <com.mapbox.navigation.ui.components.maps.camera.view.MapboxRouteOverviewButton
         android:id="@+id/routeOverview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -61,7 +61,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/soundButton" />
 
-    <com.mapbox.navigation.ui.maps.camera.view.MapboxRecenterButton
+    <com.mapbox.navigation.ui.components.maps.camera.view.MapboxRecenterButton
         android:id="@+id/recenter"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -99,7 +99,7 @@
             android:gravity="center_vertical|end"
             android:visibility="gone" />
 
-        <com.mapbox.navigation.ui.tripprogress.view.MapboxTripProgressView
+        <com.mapbox.navigation.ui.components.tripprogress.view.MapboxTripProgressView
             android:id="@+id/tripProgressView"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"

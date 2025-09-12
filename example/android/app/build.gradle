@@ -26,19 +26,19 @@ apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    compileSdk 34
-
+    compileSdkVersion 36
+    ndkVersion "28.2.13676358"
     if (project.android.hasProperty("namespace")) {
         namespace 'au.com.annon.flutter_mapbox_turn_by_turn_example'
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     sourceSets {
@@ -48,7 +48,7 @@ android {
     defaultConfig {
         applicationId "au.com.annon.flutter_mapbox_turn_by_turn_example"
         minSdkVersion 23
-        targetSdkVersion 34
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
@@ -67,6 +67,6 @@ flutter {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10"
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.12'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.14'
 }
