@@ -637,6 +637,8 @@ open class TurnByTurnNative(
 
         // initialize Navigation Camera
         viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap!!)
+        viewportDataSource!!.options.followingFrameOptions.maximizeViewableGeometryWhenPitchZero = false
+        viewportDataSource!!.options.followingFrameOptions.bearingSmoothing.enabled = false
         viewportDataSource!!.registerUpdateObserver(viewportDataSourceUpdateObserver)
         navigationCamera = NavigationCamera(
             mapboxMap!!,
