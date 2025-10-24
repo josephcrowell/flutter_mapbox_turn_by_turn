@@ -237,67 +237,68 @@ class MapView extends StatelessWidget {
 
     String routeCasingColorString = "#0066ff";
     if (routeCasingColor != null) {
-      routeCasingColorString = "#${routeCasingColor?.value.toRadixString(16)}";
+      routeCasingColorString =
+          "#${routeCasingColor?.toARGB32().toRadixString(16).substring(2).toUpperCase()}";
     }
 
     String routeDefaultColorString = "#0066ff";
     if (routeDefaultColor != null) {
       routeDefaultColorString =
-          "#${routeDefaultColor?.value.toRadixString(16)}";
+          "#${routeDefaultColor?.toARGB32().toRadixString(16).substring(2).toUpperCase()}";
     }
 
     String restrictedRoadColorString = "#737373";
     if (restrictedRoadColor != null) {
       restrictedRoadColorString =
-          "#${restrictedRoadColor?.value.toRadixString(16)}";
+          "#${restrictedRoadColor?.toARGB32().toRadixString(16).substring(2).toUpperCase()}";
     }
 
     String routeLineTraveledColorString = "#b3b3b3";
     if (routeLineTraveledColor != null) {
       routeLineTraveledColorString =
-          "#${routeLineTraveledColor?.value.toRadixString(16)}";
+          "#${routeLineTraveledColor?.toARGB32().toRadixString(16).substring(2).toUpperCase()}";
     }
 
     String routeLineTraveledCasingColorString = "#b3b3b3";
     if (routeLineTraveledCasingColor != null) {
       routeLineTraveledCasingColorString =
-          "#${routeLineTraveledCasingColor?.value.toRadixString(16)}";
+          "#${routeLineTraveledCasingColor?.toARGB32().toRadixString(16).substring(2).toUpperCase()}";
     }
 
     String routeClosureColorString = "#4a4a4a";
     if (routeClosureColor != null) {
       routeClosureColorString =
-          "#${routeClosureColor?.value.toRadixString(16)}";
+          "#${routeClosureColor?.toARGB32().toRadixString(16).substring(2).toUpperCase()}";
     }
 
     String routeLowCongestionColorString = "#0066ff";
     if (routeLowCongestionColor != null) {
       routeLowCongestionColorString =
-          "#${routeLowCongestionColor?.value.toRadixString(16)}";
+          "#${routeLowCongestionColor?.toARGB32().toRadixString(16).substring(2).toUpperCase()}";
     }
 
     String routeModerateCongestionColorString = "#ffc400";
     if (routeModerateCongestionColor != null) {
       routeModerateCongestionColorString =
-          "#${routeModerateCongestionColor?.value.toRadixString(16)}";
+          "#${routeModerateCongestionColor?.toARGB32().toRadixString(16).substring(2).toUpperCase()}";
     }
 
     String routeHeavyCongestionColorString = "#ff8000";
     if (routeHeavyCongestionColor != null) {
       routeHeavyCongestionColorString =
-          "#${routeHeavyCongestionColor?.value.toRadixString(16)}";
+          "#${routeHeavyCongestionColor?.toARGB32().toRadixString(16).substring(2).toUpperCase()}";
     }
 
     String routeSevereCongestionColorString = "#ff0000";
     if (routeSevereCongestionColor != null) {
       routeSevereCongestionColorString =
-          "#${routeSevereCongestionColor?.value.toRadixString(16)}";
+          "#${routeSevereCongestionColor?.toARGB32().toRadixString(16).substring(2).toUpperCase()}";
     }
 
     String routeUnknownCongestionColorString = "#0066ff";
     if (routeUnknownCongestionColor != null) {
       routeUnknownCongestionColorString =
-          "#${routeUnknownCongestionColor?.value.toRadixString(16)}";
+          "#${routeUnknownCongestionColor?.toARGB32().toRadixString(16).substring(2).toUpperCase()}";
     }
 
     // Pass parameters to the platform side.
@@ -343,8 +344,8 @@ class MapView extends StatelessWidget {
               (BuildContext context, PlatformViewController controller) {
             return AndroidViewSurface(
               controller: controller as AndroidViewController,
-              gestureRecognizers: const <
-                  Factory<OneSequenceGestureRecognizer>>{},
+              gestureRecognizers: const <Factory<
+                  OneSequenceGestureRecognizer>>{},
               hitTestBehavior: PlatformViewHitTestBehavior.opaque,
             );
           },
