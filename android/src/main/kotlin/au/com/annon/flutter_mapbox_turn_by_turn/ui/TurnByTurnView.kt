@@ -8,20 +8,18 @@ import au.com.annon.flutter_mapbox_turn_by_turn.databinding.TurnByTurnNativeBind
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.platform.PlatformView
 
-
 class TurnByTurnView(
     context: Context,
     binding: TurnByTurnNativeBinding,
     lifecycleRegistry: LifecycleRegistry,
     messenger: BinaryMessenger?,
     creationParams: Map<String?, Any?>?,
-    )
-    : PlatformView  {
-    private var nativeView: TurnByTurnNative = TurnByTurnNative(context, binding, lifecycleRegistry, messenger, creationParams)
+) : PlatformView {
+    // Use applicationContext to avoid memory leaks - the native view can outlive the activity
+    private var nativeView: TurnByTurnNative =
+        TurnByTurnNative(context.applicationContext, binding, lifecycleRegistry, messenger, creationParams)
 
-    override fun getView(): View {
-        return nativeView.binding.root
-    }
+    override fun getView(): View = nativeView.binding.root
 
     init {
         nativeView.initializeFlutterChannelHandlers()

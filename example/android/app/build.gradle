@@ -35,7 +35,7 @@ android {
 
     defaultConfig {
         applicationId "au.com.annon.flutter_mapbox_turn_by_turn_example"
-        minSdkVersion 23
+        minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

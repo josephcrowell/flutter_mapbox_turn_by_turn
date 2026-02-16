@@ -21,130 +21,148 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.platform.PlatformViewRegistry
 
 /** FlutterMapboxTurnByTurnPlugin */
-class FlutterMapboxTurnByTurnPlugin
-  : FlutterPlugin, PluginRegistry.RequestPermissionsResultListener, ActivityAware, MethodCallHandler, LifecycleOwner {
-  private var activity: Activity? = null
-  private lateinit var methodChannel : MethodChannel
-  private lateinit var context: Context
-  private lateinit var lifecycleRegistry: LifecycleRegistry
-  private var platformViewRegistry: PlatformViewRegistry? = null
-  private var binaryMessenger: BinaryMessenger? = null
-  private lateinit var nativeBinding: TurnByTurnNativeBinding
+class FlutterMapboxTurnByTurnPlugin :
+    FlutterPlugin,
+    PluginRegistry.RequestPermissionsResultListener,
+    ActivityAware,
+    MethodCallHandler,
+    LifecycleOwner {
+    private var activity: Activity? = null
+    private lateinit var methodChannel: MethodChannel
 
-  companion object {
-    private var LOCATION_REQUEST_CODE: Int = 367
-    private var pendingPermissionResult: Result? = null
-    private const val VIEW_NAME = "MapView"
-  }
+    // Use application context to avoid memory leaks - it's safe to hold for the plugin's lifetime
+    private lateinit var context: Context
+    private lateinit var lifecycleRegistry: LifecycleRegistry
+    private var platformViewRegistry: PlatformViewRegistry? = null
+    private var binaryMessenger: BinaryMessenger? = null
+    private var nativeBinding: TurnByTurnNativeBinding? = null
 
-  override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-    Log.d("FlutterMapboxTurnByTurnPlugin","Engine attached")
-    binaryMessenger = binding.binaryMessenger
-    platformViewRegistry = binding.platformViewRegistry
-    lifecycleRegistry = LifecycleRegistry(this)
-    lifecycleRegistry.currentState = Lifecycle.State.INITIALIZED
-    methodChannel = MethodChannel(binaryMessenger!!, "flutter_mapbox_turn_by_turn/method")
-    methodChannel.setMethodCallHandler(this)
-  }
-
-  override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-    Log.d("FlutterMapboxTurnByTurnPlugin","Engine detached")
-    activity = null
-    methodChannel.setMethodCallHandler(null)
-  }
-
-  override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-    Log.d("FlutterMapboxTurnByTurnPlugin","Activity attached")
-    activity = binding.activity
-    binding.addRequestPermissionsResultListener(this)
-
-    if(platformViewRegistry != null && binaryMessenger != null && activity != null) {
-      Log.d("FlutterMapboxTurnByTurnPlugin","Registering view factory")
-      nativeBinding = TurnByTurnNativeBinding.inflate(activity!!.layoutInflater)
-      nativeBinding.root.setViewTreeLifecycleOwner(this)
-      val factory = TurnByTurnViewFactory(binaryMessenger!!, nativeBinding, lifecycleRegistry)
-      lifecycleRegistry.currentState = Lifecycle.State.CREATED
-      platformViewRegistry?.registerViewFactory(VIEW_NAME, factory)
-      context = binding.activity.baseContext
+    companion object {
+        private var LOCATION_REQUEST_CODE: Int = 367
+        private var pendingPermissionResult: Result? = null
+        private const val VIEW_NAME = "MapView"
     }
-  }
 
-  override fun onDetachedFromActivity() {
-    Log.d("FlutterMapboxTurnByTurnPlugin","Activity detached")
-    activity!!.finish()
-    activity = null
-    pendingPermissionResult = null
-  }
-
-  override fun onDetachedFromActivityForConfigChanges() {
-    Log.d("FlutterMapboxTurnByTurnPlugin","Activity detached for config changes")
-    activity = null
-    pendingPermissionResult = null
-  }
-
-  override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-    Log.d("FlutterMapboxTurnByTurnPlugin","Activity reattached for config changes")
-    activity = binding.activity
-    binding.addRequestPermissionsResultListener(this)
-    lifecycleRegistry.currentState = Lifecycle.State.RESUMED
-  }
-
-  override fun onMethodCall(call: MethodCall, result: Result) {
-    when (call.method) {
-      "hasPermission" -> {
-        hasPermission(result)
-      }
-      else -> {
-        result.notImplemented()
-      }
+    override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        Log.d("FlutterMapboxTurnByTurnPlugin", "Engine attached")
+        binaryMessenger = binding.binaryMessenger
+        platformViewRegistry = binding.platformViewRegistry
+        // Use application context to avoid memory leaks - this is safe to hold
+        context = binding.applicationContext
+        lifecycleRegistry = LifecycleRegistry(this)
+        lifecycleRegistry.currentState = Lifecycle.State.INITIALIZED
+        methodChannel = MethodChannel(binaryMessenger!!, "flutter_mapbox_turn_by_turn/method")
+        methodChannel.setMethodCallHandler(this)
     }
-  }
 
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        Log.d("FlutterMapboxTurnByTurnPlugin", "Engine detached")
+        methodChannel.setMethodCallHandler(null)
+        // Clean up to prevent context leak - only clear when engine is fully detached
+        nativeBinding?.root?.setViewTreeLifecycleOwner(null)
+        nativeBinding = null
+        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
+        binaryMessenger = null
+        platformViewRegistry = null
+        activity = null
+    }
 
-  override fun onRequestPermissionsResult(
-    requestCode: Int,
-    permissions: Array<out String>,
-    grantResults: IntArray
-  ): Boolean {
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        Log.d("FlutterMapboxTurnByTurnPlugin", "Activity attached")
+        activity = binding.activity
+        binding.addRequestPermissionsResultListener(this)
 
-    if (requestCode == LOCATION_REQUEST_CODE) {
-      if (pendingPermissionResult != null) {
-        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          pendingPermissionResult!!.success(true)
-        } else {
-          pendingPermissionResult!!.error("-2", "Permission denied", null)
+        if (platformViewRegistry != null && binaryMessenger != null && activity != null) {
+            Log.d("FlutterMapboxTurnByTurnPlugin", "Registering view factory")
+            nativeBinding = TurnByTurnNativeBinding.inflate(activity!!.layoutInflater)
+            nativeBinding?.root?.setViewTreeLifecycleOwner(this)
+            val factory = TurnByTurnViewFactory(binaryMessenger!!, nativeBinding!!, lifecycleRegistry)
+            lifecycleRegistry.currentState = Lifecycle.State.CREATED
+            platformViewRegistry?.registerViewFactory(VIEW_NAME, factory)
         }
+    }
+
+    override fun onDetachedFromActivity() {
+        Log.d("FlutterMapboxTurnByTurnPlugin", "Activity detached")
+        // Note: Don't clear nativeBinding here as the factory still holds a reference to it
+        // and may need to create new views. The binding will be cleaned up in onDetachedFromEngine.
+        // Also don't call activity.finish() - Flutter manages the activity lifecycle.
+        activity = null
         pendingPermissionResult = null
-        return true
-      }
     }
 
-    return false
-  }
-
-  private fun hasPermission(result: Result) {
-    if (!isPermissionGranted()) {
-      pendingPermissionResult = result
-      askForPermission()
-    } else {
-      result.success(true)
+    override fun onDetachedFromActivityForConfigChanges() {
+        Log.d("FlutterMapboxTurnByTurnPlugin", "Activity detached for config changes")
+        activity = null
+        pendingPermissionResult = null
     }
-  }
 
-  private fun isPermissionGranted(): Boolean {
-    val coarseResult: Int = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
-    val fineResult: Int = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+        Log.d("FlutterMapboxTurnByTurnPlugin", "Activity reattached for config changes")
+        activity = binding.activity
+        binding.addRequestPermissionsResultListener(this)
+        lifecycleRegistry.currentState = Lifecycle.State.RESUMED
+    }
 
-    return coarseResult == PackageManager.PERMISSION_GRANTED && fineResult == PackageManager.PERMISSION_GRANTED
-  }
+    override fun onMethodCall(
+        call: MethodCall,
+        result: Result,
+    ) {
+        when (call.method) {
+            "hasPermission" -> {
+                hasPermission(result)
+            }
 
-  private fun askForPermission() {
-    ActivityCompat.requestPermissions(
-      activity!!, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION),
-      LOCATION_REQUEST_CODE
-    )
-  }
+            else -> {
+                result.notImplemented()
+            }
+        }
+    }
 
-  override val lifecycle: Lifecycle
-    get() = lifecycleRegistry
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ): Boolean {
+        if (requestCode == LOCATION_REQUEST_CODE) {
+            if (pendingPermissionResult != null) {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    pendingPermissionResult!!.success(true)
+                } else {
+                    pendingPermissionResult!!.error("-2", "Permission denied", null)
+                }
+                pendingPermissionResult = null
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private fun hasPermission(result: Result) {
+        if (!isPermissionGranted()) {
+            pendingPermissionResult = result
+            askForPermission()
+        } else {
+            result.success(true)
+        }
+    }
+
+    private fun isPermissionGranted(): Boolean {
+        val coarseResult: Int = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+        val fineResult: Int = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+
+        return coarseResult == PackageManager.PERMISSION_GRANTED && fineResult == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun askForPermission() {
+        ActivityCompat.requestPermissions(
+            activity!!,
+            arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION),
+            LOCATION_REQUEST_CODE,
+        )
+    }
+
+    override val lifecycle: Lifecycle
+        get() = lifecycleRegistry
 }
