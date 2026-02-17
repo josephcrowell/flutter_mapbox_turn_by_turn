@@ -24,9 +24,9 @@ if (flutterVersionName == null) {
 
 android {
     compileSdkVersion 36
-    ndkVersion "28.2.13676358"
+    ndkVersion = "28.2.13676358"
     if (project.android.hasProperty("namespace")) {
-        namespace 'au.com.annon.flutter_mapbox_turn_by_turn_example'
+        namespace = 'au.com.annon.flutter_mapbox_turn_by_turn_example'
     }
 
     sourceSets {
@@ -59,13 +59,13 @@ android {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            signingConfig = signingConfigs.debug
         }
     }
 }
 
 flutter {
-    source '../..'
+    source = '../..'
 }
 
 dependencies {
