@@ -84,9 +84,11 @@ class FlutterMapboxTurnByTurnPlugin :
 
     override fun onDetachedFromActivity() {
         Log.d("FlutterMapboxTurnByTurnPlugin", "Activity detached")
-        // Note: Don't clear nativeBinding here as the factory still holds a reference to it
-        // and may need to create new views. The binding will be cleaned up in onDetachedFromEngine.
-        // Also don't call activity.finish() - Flutter manages the activity lifecycle.
+        // Clean up native binding to prevent memory leaks
+        // The native Mapbox SDK holds JNI references that need to be released
+        nativeBinding?.root?.setViewTreeLifecycleOwner(null)
+        nativeBinding = null
+        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
         activity = null
         pendingPermissionResult = null
     }

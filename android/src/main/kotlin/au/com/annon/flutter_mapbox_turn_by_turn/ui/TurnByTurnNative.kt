@@ -1019,19 +1019,27 @@ open class TurnByTurnNative(
         routeLineApi.cancel()
         routeLineView.cancel()
 
+        // Clear navigation camera references before destroying MapView
+        navigationCamera = null
+        viewportDataSource = null
+        navigationLocationProvider = null
+        navigationBasicGesturesHandler = null
+
         // Properly destroy MapView to release native resources
         binding.mapView.onDestroy()
 
         // Detach and disable Mapbox Navigation - this releases JNI references
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
         binding.root.findViewTreeLifecycleOwner()?.let { MapboxNavigationApp.detach(it) }
-        MapboxNavigationApp.disable()
+
+        // Only disable if not already disabled to avoid warning
+        try {
+            MapboxNavigationApp.disable()
+        } catch (e: IllegalStateException) {
+            Log.d("TurnByTurnNative", "MapboxNavigation already disabled: ${e.message}")
+        }
 
         // Clear Mapbox object references to allow garbage collection
-        navigationCamera = null
-        viewportDataSource = null
-        navigationLocationProvider = null
-        navigationBasicGesturesHandler = null
         mapboxMap = null
         tileStore = null
 

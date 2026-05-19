@@ -52,7 +52,6 @@ rootProject.allprojects {
 }
 
 apply plugin: 'com.android.library'
-apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
     compileSdkVersion 36
@@ -82,7 +81,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = "17"
     }
 
     buildFeatures {
@@ -102,8 +101,6 @@ android {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.2.21"
-
     implementation "androidx.core:core-ktx:1.17.0"
 
     implementation 'androidx.annotation:annotation:1.9.1'
